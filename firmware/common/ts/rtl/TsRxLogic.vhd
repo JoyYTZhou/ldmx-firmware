@@ -208,7 +208,7 @@ begin
 
 
 
-      if (r.state = WAIT_COMMA_S and (tsRxDispErr /= "00" or tsRxDecErr /= "00")) then
+      if (tsRxPhyResetDone = '1' and (tsRxDispErr /= "00" or tsRxDecErr /= "00")) then
          v.state := INIT_S;
       end if;
 
