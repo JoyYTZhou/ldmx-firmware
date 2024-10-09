@@ -28,10 +28,7 @@ class DaqEvent:
     
 @dataclass
 class TsData6ChMsg:
-    pulseId: int
-    bunchCount: int
-    contributorId: int
-    subsystemId: int
+    event: DaqEvent
     capId: int
     ce: int
     bc0: int
@@ -40,12 +37,14 @@ class TsData6ChMsg:
 
     @classmethod
     def from_numpy(cls, data):
+        event = DaqEvent.from_numpy(data)
+        
         msg = cls(
-            adc = [int(data[i]) for i in range(0, 6)],
-            tdc = [int(data[i]) for i in range(8, 14)],
-            capId = int(data[14] & 0x3),
-            ce = int(data[14]>>2 & 0x1),
-            bc0 = int(data[14]>>3 & 0x1))
+            adc = [int(event.data[i]) for i in range(0, 6)],
+            tdc = [int(event.data[i]) for i in range(8, 14)],
+            capId = int(event.data[14] & 0x3),
+            ce = int(event.data[14]>>2 & 0x1),
+            bc0 = int(event.data[14]>>3 & 0x1))
         return msg
     
         
@@ -58,11 +57,12 @@ class TsDaqEventReceiver(rogue.interfaces.stream.Slave):
         rawNumpy = frame.getNumpy(0, frame.getPayload())
 
         event = DaqEvent.from_numpy(rawNumpy)
+        print(event)
 
-        data = event.data
-        data.resize(data.size//16, 16)
+#         data = event.data
+#         data.resize(data.size//16, 16)
         
-        msgs = [TsData6ChMsg.from_numpy(arr) for arr in data]
+#         msgs = [TsData6ChMsg.from_numpy(arr) for arr in data]
 
-        print(msgs)
+#         print(msgs)
 
