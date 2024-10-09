@@ -144,7 +144,7 @@ begin
          TPD_G         => TPD_G,
          PULSE_WIDTH_G => 10)
       port map (
-         clk     => axilClk,            -- [in]
+         clk     => tsUserClk125,       -- [in]
          dataIn  => tsRxPhyInit,        -- [in]
          dataOut => tsRxPhyInitSync);   -- [out]
 
@@ -201,7 +201,7 @@ begin
 
    -- Don't need MMCM
    tsRecClkMmcm       <= tsRecClkGt;
-   tsRecClkMmcmLocked <= '1'; -- tsRxPmaResetDone;
+   tsRecClkMmcmLocked <= '1';           -- tsRxPmaResetDone;
 
    RstSync_1 : entity surf.RstSync
       generic map (
@@ -223,7 +223,7 @@ begin
          DURATION_G => 12500)           -- 100us in sim; 1s in silicon
       port map (
          arst   => '0',                 -- [in]
-         clk    => axilClk,             -- [in]
+         clk    => tsUserClk125,        -- [in]
          rstOut => resetRxPwrUp);       -- [out]
 
 
