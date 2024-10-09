@@ -56,7 +56,7 @@ class TsRxLogic(pr.Device):
             mode = 'RO',
             offset = 0x14,
             bitSize = 4,
-            bitOffset 0,
+            bitOffset = 0,
             enum = {
                 0x0: 'INIT_S',
                 0x1: 'WAIT_RESETDONE_LOW_S',
