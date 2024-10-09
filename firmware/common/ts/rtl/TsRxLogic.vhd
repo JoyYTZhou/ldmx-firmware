@@ -77,6 +77,7 @@ architecture rtl of TsRxLogic is
       state           : StateType;
       rxFrameCount    : slv(63 downto 0);
       rxErrorCount    : slv(31 downto 0);
+      reset           : sl;
       countReset      : sl;
       tsRxPhyInit     : sl;
       tsRxPhyLoopback : slv(2 downto 0);
@@ -89,12 +90,13 @@ architecture rtl of TsRxLogic is
       state           => WAIT_COMMA_S,
       rxFrameCount    => (others => '0'),
       rxErrorCount    => (others => '0'),
+      reset           => '0',
       countReset      => '0',
       tsRxPhyInit     => '0',
       tsRxPhyLoopback => "010",
       tsRxMsg         => TS_DATA_6CH_MSG_INIT_C,
       axilReadSlave   => AXI_LITE_READ_SLAVE_INIT_C,
-      axilWriteSlave   => AXI_LITE_WRITE_SLAVE_INIT_C);
+      axilWriteSlave  => AXI_LITE_WRITE_SLAVE_INIT_C);
 
    signal r   : RegType := REG_INIT_C;
    signal rin : RegType;
@@ -110,7 +112,7 @@ begin
 
    U_AxiLiteAsync_1 : entity surf.AxiLiteAsync
       generic map (
-         TPD_G            => TPD_G)
+         TPD_G => TPD_G)
       port map (
          sAxiClk         => axilClk,              -- [in]
          sAxiClkRst      => axilRst,              -- [in]
@@ -139,7 +141,7 @@ begin
 
    comb : process (r, syncAxilReadMaster, syncAxilWriteMaster, tsRst250, tsRxData, tsRxDataK,
                    tsRxDecErr, tsRxDispErr, tsRxPhyResetDone) is
-      variable v : RegType := REG_INIT_C;
+      variable v      : RegType := REG_INIT_C;
       variable axilEp : AxiLiteEndpointType;
    begin
       v := r;
@@ -204,9 +206,13 @@ begin
             v.state                      := WAIT_COMMA_S;
       end case;
 
-      
+
 
       if (r.state = WAIT_COMMA_S and (tsRxDispErr /= "00" or tsRxDecErr /= "00")) then
+         v.state := INIT_S;
+      end if;
+
+      if (r.reset = '1') then
          v.state := INIT_S;
       end if;
 
@@ -218,6 +224,7 @@ begin
          v.rxFrameCount := (others => '0');
          v.rxErrorCount := (others => '0');
       end if;
+      v.reset := '0';
 
       axiSlaveWaitTxn(axilEp, syncAxilWriteMaster, syncAxilReadMaster, v.axilWriteSlave, v.axilReadSlave);
 
@@ -226,12 +233,24 @@ begin
       axiSlaveRegister(axilEp, X"04", 0, v.tsRxPhyLoopback);
       axiSlaveRegisterR(axilEp, X"08", 0, r.rxFrameCount);
       axiSlaveRegisterR(axilEp, X"10", 0, r.rxErrorCount);
+      axiSlaveRegisterR(axilEp, X"14", 0, ite(r.state = INIT_S, "0000",
+                                              ite(r.state = WAIT_RESETDONE_LOW_S, "0001",
+                                                  ite(r.state = WAIT_RESETDONE_HIGH_S, "0010",
+                                                      ite(r.state = WAIT_COMMA_S, "1000",
+                                                          ite(r.state = WORD_1_S, "1001",
+                                                              ite(r.state = WORD_2_S, "1010",
+                                                                  ite(r.state = WORD_3_S, "1011",
+                                                                      ite(r.state = WORD_4_S, "1100",
+                                                                          ite(r.state = WORD_5_S, "1101", "1111"))))))))));
+      axiSlaveRegister(axilEp, X"18", 0, v.reset);
+      axiSlaveRegisterR(axilEp, X"20", 0, tsRxData);
+      axiSlaveRegisterR(axilEp, X"20", 8, tsRxDataK);
 
       axiSlaveDefault(axilEp, v.axilWriteSlave, v.axilReadSlave, AXI_RESP_DECERR_C);
 
       -- Reset
       if (tsRst250 = '1') then
-         v := REG_INIT_C;
+         v              := REG_INIT_C;
          v.rxFrameCount := r.rxFrameCount;
          v.rxErrorCount := r.rxErrorCount;
       end if;
