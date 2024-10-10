@@ -190,7 +190,7 @@ architecture mapping of TsGtyIpCoreWrapper is
    signal rxPmaReset        : sl              := '0';
    signal txPcsReset        : sl              := '0';
    signal txPmaReset        : sl              := '0';
-   signal rxPmaResetDoneInt    : sl              := '0';
+   signal rxPmaResetDoneInt : sl              := '0';
    signal txPmaResetDone    : sl              := '0';
    signal rxByteIsAligned   : sl              := '0';
    signal rxByteReAlign     : sl              := '0';
@@ -235,7 +235,7 @@ begin
          gtwiz_userclk_tx_active_in(0)         => txUsrActive,
          gtwiz_userclk_rx_active_in(0)         => rxUsrActive,
          gtwiz_reset_clk_freerun_in(0)         => stableClk,
-         gtwiz_reset_all_in(0)                 => rxResetGt, --stableRst,
+         gtwiz_reset_all_in(0)                 => rxResetGt,   --stableRst,
          gtwiz_buffbypass_tx_reset_in(0)       => buffBypassTxReset,
          gtwiz_buffbypass_tx_start_user_in(0)  => buffBypassTxStart,
          gtwiz_buffbypass_tx_done_out(0)       => buffBypassTxDone,
@@ -248,7 +248,7 @@ begin
          gtwiz_reset_tx_pll_and_datapath_in(0) => '0',
          gtwiz_reset_tx_datapath_in(0)         => txResetGt,
          gtwiz_reset_rx_pll_and_datapath_in(0) => '0',
-         gtwiz_reset_rx_datapath_in(0)         => '0', 
+         gtwiz_reset_rx_datapath_in(0)         => '0',
          gtwiz_reset_rx_cdr_stable_out         => open,
          gtwiz_reset_tx_done_out               => open,
          gtwiz_reset_rx_done_out               => open,
@@ -264,7 +264,7 @@ begin
          gtyrxn_in(0)                          => gtRxN,
          gtyrxp_in(0)                          => gtRxP,
          gtrefclk0_in(0)                       => gtRefClk,
-         loopback_in                           => loopback,         
+         loopback_in                           => loopback,
          rx8b10ben_in(0)                       => '1',
          rxcommadeten_in(0)                    => '1',
          rxmcommaalignen_in(0)                 => rxMcommaAlignEn,
@@ -400,19 +400,19 @@ begin
          drpDi           => drpDi,                -- [out]
          drpDo           => drpDo);               -- [in]
 
-   
+
    txctrl2     <= "000000" & txDataK;
-   txUsrActive <= txPmaResetDone;   
+   txUsrActive <= txPmaResetDone;
    rxUsrActive <= rxUsrClkActive and rxPmaResetDoneInt;
-   
+
 --   rstSyncRxIn <= rxResetAlignCheck or rxReset;
    rstSyncRxIn <= rxResetAlignCheck or not rxPmaResetDoneInt;
-   rxResetGt   <= rxResetAlignCheck; -- or rxReset;
+   rxResetGt   <= rxResetAlignCheck;    -- or rxReset;
 
    rxOutClk <= rxOutClkB;
 
-   txResetGt   <= txReset;
-   
+   txResetGt <= txReset;
+
    rxPmaResetDone <= rxPmaResetDoneInt;
 
    U_RstSyncTx : entity surf.RstSync
