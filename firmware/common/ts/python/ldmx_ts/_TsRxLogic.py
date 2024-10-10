@@ -80,7 +80,7 @@ class TsRxLogic(pr.Device):
             name = 'RxDataK',
             offset = 0x20,
             bitSize = 2,
-            bitOffset = 8,
+            bitOffset = 16,
             base = pr.UInt,
             mode = 'RO'))
         

@@ -244,7 +244,7 @@ begin
                                                                           ite(r.state = WORD_5_S, "1101", "1111"))))))))));
       axiSlaveRegister(axilEp, X"18", 0, v.reset);
       axiSlaveRegisterR(axilEp, X"20", 0, tsRxData);
-      axiSlaveRegisterR(axilEp, X"20", 8, tsRxDataK);
+      axiSlaveRegisterR(axilEp, X"20", 16, tsRxDataK);
 
       axiSlaveDefault(axilEp, v.axilWriteSlave, v.axilReadSlave, AXI_RESP_DECERR_C);
 
