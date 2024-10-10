@@ -71,7 +71,7 @@ class TsRxLogic(pr.Device):
         self.add(pr.RemoteVariable(
             name = 'RxData',
             offset = 0x20,
-            bitSize = 8,
+            bitSize = 16,
             bitOffset = 0,
             base = pr.UInt,
             mode = 'RO'))

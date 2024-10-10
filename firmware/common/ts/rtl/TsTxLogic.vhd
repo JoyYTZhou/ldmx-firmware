@@ -56,7 +56,7 @@ end entity TsTxLogic;
 
 architecture rtl of TsTxLogic is
 
-   constant K28_1_C : slv(7 downto 0) := "00111100";
+   constant K28_1_C : slv(7 downto 0) := "00111100";  -- K28.1, 0x3C
    constant K28_5_C : slv(7 downto 0) := "10111100";  -- K28.5, 0xBC
    constant K28_2_C : slv(7 downto 0) := "01011100";  -- K28.2, 0x5C
    constant K29_7_C : slv(7 downto 0) := "11111101";  -- K29.7, 0xFD
