@@ -195,9 +195,6 @@ begin
                v.tsRxMsg.capId              := tsRxData(11 downto 10);
                v.tsRxMsg.tdc(0)(3 downto 0) := tsRxData(15 downto 12);
                v.state                      := WORD_1_S;
-            elsif (tsRxDataK = "00") then
-               -- It is an error if two bytes of normal data are received
-               v.state := INIT_S;
             end if;
          when WORD_1_S =>
             v.tsRxMsg.adc(0) := tsRxData(7 downto 0);
