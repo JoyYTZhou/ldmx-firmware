@@ -79,7 +79,7 @@ architecture rtl of TsRxLogic is
       rxErrorCount    : slv(31 downto 0);
       initCount       : slv(31 downto 0);
       reset           : sl;
-      waitCounter     : slv(15 downto 0);
+      waitCounter     : slv(31 downto 0);
       countReset      : sl;
       tsRxPhyInit     : sl;
       tsRxPhyLoopback : slv(2 downto 0);
@@ -168,7 +168,7 @@ begin
             end if;
 
             v.waitCounter := r.waitCounter+1;
-            if (r.waitCounter = 65535) then
+            if (r.waitCounter = 260000000) then
                v.waitCounter := (others => '0');
                v.state       := INIT_S;
             end if;
