@@ -15,7 +15,7 @@ class Lcls2TimingRx(pr.Device):
 
         self.add(LclsTimingCore.TPGMiniCore(
             name   = "TPGMini",
-            offset = 0x3000))
+            offset = 0x30000))
 
         self.add(ldmx_tdaq.TimingGtCoreWrapper(
             name   = "GTY",
