@@ -77,8 +77,9 @@ architecture rtl of TsRxLogic is
       state           : StateType;
       rxFrameCount    : slv(63 downto 0);
       rxErrorCount    : slv(31 downto 0);
+      initCount       : slv(31 downto 0);
       reset           : sl;
-      count           : slv(15 downto 0);
+      waitCounter     : slv(15 downto 0);
       countReset      : sl;
       tsRxPhyInit     : sl;
       tsRxPhyLoopback : slv(2 downto 0);
@@ -91,8 +92,9 @@ architecture rtl of TsRxLogic is
       state           => WAIT_RESETDONE_HIGH_S,
       rxFrameCount    => (others => '0'),
       rxErrorCount    => (others => '0'),
+      initCount       => (others => '0'),
       reset           => '0',
-      count           => (others => '0'),
+      waitCounter     => (others => '0'),
       countReset      => '0',
       tsRxPhyInit     => '0',
       tsRxPhyLoopback => "010",
@@ -165,16 +167,20 @@ begin
                v.state := WAIT_COMMA_S;
             end if;
 
-            v.count := r.count+1;
-            if (r.count = 65535) then
-               v.count := (others => '0');
-               v.state := INIT_S;
+            v.waitCounter := r.waitCounter+1;
+            if (r.waitCounter = 65535) then
+               v.waitCounter := (others => '0');
+               v.state       := INIT_S;
             end if;
 
          when INIT_S =>
             v.tsRxPhyInit := '1';
-            v.count       := (others => '0');
-            v.state       := WAIT_RESETDONE_HIGH_S;
+            v.waitCounter := (others => '0');
+            v.initCount   := r.initCount + 1;
+            if (r.initCount = X"FFFFFFFF") then
+               v.initCount := r.initCount;
+            end if;
+            v.state := WAIT_RESETDONE_HIGH_S;
 
 --          when WAIT_RESETDONE_LOW_S =>
 --             if (tsRxPhyResetDone = '0') then
@@ -182,7 +188,7 @@ begin
 --             end if;
 
          when WAIT_COMMA_S =>
-            if (tsRxDataK(0) = '1' and tsRxData(7 downto 0) = K28_5_C) then
+            if (tsRxDataK = "01" and tsRxData(7 downto 0) = K28_5_C) then
                v.tsRxMsg.bc0                := tsRxData(8);
                v.tsRxMsg.ce                 := tsRxData(9);
                v.tsRxMsg.capId              := tsRxData(11 downto 10);
@@ -234,6 +240,7 @@ begin
       if (r.countReset = '1') then
          v.rxFrameCount := (others => '0');
          v.rxErrorCount := (others => '0');
+         v.initCount    := (others => '0');
       end if;
       v.reset := '0';
 
@@ -246,16 +253,17 @@ begin
       axiSlaveRegisterR(axilEp, X"10", 0, r.rxErrorCount);
       axiSlaveRegisterR(axilEp, X"14", 0, ite(r.state = INIT_S, "0000",
 --                                              ite(r.state = WAIT_RESETDONE_LOW_S, "0001",
-                                                  ite(r.state = WAIT_RESETDONE_HIGH_S, "0010",
-                                                      ite(r.state = WAIT_COMMA_S, "1000",
-                                                          ite(r.state = WORD_1_S, "1001",
-                                                              ite(r.state = WORD_2_S, "1010",
-                                                                  ite(r.state = WORD_3_S, "1011",
-                                                                      ite(r.state = WORD_4_S, "1100",
-                                                                          ite(r.state = WORD_5_S, "1101", "1111")))))))));
+                                              ite(r.state = WAIT_RESETDONE_HIGH_S, "0010",
+                                                  ite(r.state = WAIT_COMMA_S, "1000",
+                                                      ite(r.state = WORD_1_S, "1001",
+                                                          ite(r.state = WORD_2_S, "1010",
+                                                              ite(r.state = WORD_3_S, "1011",
+                                                                  ite(r.state = WORD_4_S, "1100",
+                                                                      ite(r.state = WORD_5_S, "1101", "1111")))))))));
       axiSlaveRegister(axilEp, X"18", 0, v.reset);
       axiSlaveRegisterR(axilEp, X"20", 0, tsRxData);
       axiSlaveRegisterR(axilEp, X"20", 16, tsRxDataK);
+      axiSlaveRegisterR(axilEp, X"24", 0, r.initCount);
 
       axiSlaveDefault(axilEp, v.axilWriteSlave, v.axilReadSlave, AXI_RESP_DECERR_C);
 
