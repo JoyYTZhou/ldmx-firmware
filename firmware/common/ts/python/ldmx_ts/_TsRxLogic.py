@@ -42,6 +42,7 @@ class TsRxLogic(pr.Device):
             offset = 0x08,
             bitSize = 64,
             base = pr.UInt,
+            disp = '{:d}',
             mode = 'RO'))
 
         self.add(pr.RemoteVariable(
@@ -49,6 +50,15 @@ class TsRxLogic(pr.Device):
             offset = 0x10,
             bitSize = 32,
             base = pr.UInt,
+            disp = '{:d}',
+            mode = 'RO'))
+
+        self.add(pr.RemoteVariable(
+            name = 'InitCount',
+            offset = 0x24,
+            bitSize = 32,
+            base = pr.UInt,
+            disp = '{:d}',
             mode = 'RO'))
 
         self.add(pr.RemoteVariable(
@@ -83,6 +93,3 @@ class TsRxLogic(pr.Device):
             bitOffset = 16,
             base = pr.UInt,
             mode = 'RO'))
-        
-                
-        
