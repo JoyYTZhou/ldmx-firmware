@@ -348,6 +348,7 @@ begin
          TPD_G          => TPD_G,
          SIMULATION_G   => SIMULATION_G,
          GT_TYPE_G      => "GTYE4",
+         LOCK_VALUE_G   => 20,
          AXI_CLK_FREQ_G => AXIL_CLK_FREQ_G,
          DRP_ADDR_G     => AXIL_XBAR_CFG_C(1).baseAddr)
       port map (
