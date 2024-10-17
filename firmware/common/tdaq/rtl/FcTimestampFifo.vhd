@@ -44,9 +44,11 @@ entity FcTimestampFifo is
       wrClk       : in  sl;
       wrFull      : out sl;
       wrTimestamp : in  FcTimestampType;
+      wrCount     : out slv(ADDR_WIDTH_G-1 downto 0);
 
       rdClk       : in  sl;
       rdEn        : in  sl;
+      rdCount     : out slv(ADDR_WIDTH_G-1 downto 0);
       rdTimestamp : out FcTimestampType;
       rdValid     : out sl);
 
@@ -78,12 +80,12 @@ begin
          wr_clk        => wrClk,              -- [in]
          wr_en         => wrTimestamp.valid,  -- [in]
          din           => fifoDin,            -- [in]
-         wr_data_count => open,               -- [out]
+         wr_data_count => wrCount,            -- [out]
          full          => wrFull,             -- [out]
          rd_clk        => rdClk,              -- [in]
          rd_en         => rdEn,               -- [in]
          dout          => fifoDout,           -- [out]
-         rd_data_count => open,               -- [out]
+         rd_data_count => rdCount,            -- [out]
          valid         => fifoValid);         -- [out]
 
    rdValid     <= fifoValid;

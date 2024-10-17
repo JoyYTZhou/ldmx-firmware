@@ -62,6 +62,14 @@ class TsRxLogic(pr.Device):
             mode = 'RO'))
 
         self.add(pr.RemoteVariable(
+            name = 'Bc0Count',
+            offset = 0x28,
+            bitSize = 32,
+            base = pr.UInt,
+            disp = '{:d}',
+            mode = 'RO'))
+
+        self.add(pr.RemoteVariable(
             name = 'State',
             mode = 'RO',
             offset = 0x14,

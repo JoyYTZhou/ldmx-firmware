@@ -76,6 +76,7 @@ architecture rtl of TsRxLogic is
    type RegType is record
       state           : StateType;
       rxFrameCount    : slv(63 downto 0);
+      bc0Count        : slv(31 downto 0);
       rxErrorCount    : slv(31 downto 0);
       initCount       : slv(31 downto 0);
       reset           : sl;
@@ -92,6 +93,7 @@ architecture rtl of TsRxLogic is
       state           => WAIT_RESETDONE_HIGH_S,
       rxFrameCount    => (others => '0'),
       rxErrorCount    => (others => '0'),
+      bc0Count        => (others => '0'),
       initCount       => (others => '0'),
       reset           => '0',
       waitCounter     => (others => '0'),
@@ -224,7 +226,9 @@ begin
             v.state                      := WAIT_COMMA_S;
       end case;
 
-
+      if (r.tsRxMsg.strobe = '1' and r.tsRxMsg.bc0 = '1') then
+         v.bc0Count := r.bc0Count + 1;
+      end if;
 
       if (tsRxPhyResetDone = '1' and (tsRxDispErr /= "00" or tsRxDecErr /= "00")) then
          v.state := INIT_S;
@@ -241,8 +245,10 @@ begin
       if (r.countReset = '1') then
          v.rxFrameCount := (others => '0');
          v.rxErrorCount := (others => '0');
+         v.bc0Count     := (others => '0');
          v.initCount    := (others => '0');
       end if;
+
       v.reset := '0';
 
       axiSlaveWaitTxn(axilEp, syncAxilWriteMaster, syncAxilReadMaster, v.axilWriteSlave, v.axilReadSlave);
@@ -265,6 +271,7 @@ begin
       axiSlaveRegisterR(axilEp, X"20", 0, tsRxData);
       axiSlaveRegisterR(axilEp, X"20", 16, tsRxDataK);
       axiSlaveRegisterR(axilEp, X"24", 0, r.initCount);
+      axiSlaveRegisterR(axilEp, X"28", 0, r.bc0Count);
 
       axiSlaveDefault(axilEp, v.axilWriteSlave, v.axilReadSlave, AXI_RESP_DECERR_C);
 
@@ -273,6 +280,8 @@ begin
          v              := REG_INIT_C;
          v.rxFrameCount := r.rxFrameCount;
          v.rxErrorCount := r.rxErrorCount;
+         v.initCount    := r.initCount;
+         v.bc0Count     := r.bc0Count;
       end if;
 
       -- Outputs

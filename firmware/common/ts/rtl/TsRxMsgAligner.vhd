@@ -66,6 +66,11 @@ end entity TsRxMsgAligner;
 
 architecture rtl of TsRxMsgAligner is
 
+   constant TS_MSG_FIFO_ADDR_WIDTH_C    : integer := 8;
+   constant TIMESTAMP_FIFO_ADDR_WIDTH_C : integer := 8;
+
+   type TsMsgCountArray is array (TS_LANES_G-1 downto 0) of slv(TS_MSG_FIFO_ADDR_WIDTH_C-1 downto 0);
+
    type StateType is (
       WAIT_BC0_STATE_S,
       WAIT_BC0_DATA_S,
@@ -79,6 +84,8 @@ architecture rtl of TsRxMsgAligner is
       timestampFifoWrData : FcTimestampType;
       fcTsRxMsgs          : TsData6ChMsgArray(TS_LANES_G-1 downto 0);
       fcMsgTimestamp      : FcTimestampType;
+      axilReadSlave       : AxiLiteReadSlaveType;
+      axilWriteSlave      : AxiLiteWriteSlaveType;
    end record RegType;
 
    constant REG_INIT_C : RegType := (
@@ -87,7 +94,9 @@ architecture rtl of TsRxMsgAligner is
       timestampFifoRdEn   => '0',
       timestampFifoWrData => FC_TIMESTAMP_INIT_C,
       fcTsRxMsgs          => (others => TS_DATA_6CH_MSG_INIT_C),
-      fcMsgTimestamp      => FC_TIMESTAMP_INIT_C);
+      fcMsgTimestamp      => FC_TIMESTAMP_INIT_C,
+      axilReadSlave       => AXI_LITE_READ_SLAVE_INIT_C,
+      axilWriteSlave      => AXI_LITE_WRITE_SLAVE_INIT_C);
 
    signal r   : RegType := REG_INIT_C;
    signal rin : RegType;
@@ -95,12 +104,38 @@ architecture rtl of TsRxMsgAligner is
    -- Ts Msg FIFO
    signal tsMsgFifoRdData : TsData6ChMsgArray(TS_LANES_G-1 downto 0);
    signal tsMsgFifoValid  : slv(TS_LANES_G-1 downto 0);
+   signal tsMsgFifoCount  : TsMsgCountArray;
+
 
    -- Timestamp FIFO
    signal timestampFifoRdData : FcTimestampType;
    signal timestampFifoValid  : sl;
+   signal timestampFifoCount  : slv(TIMESTAMP_FIFO_ADDR_WIDTH_C-1 downto 0);
+
+
+   signal syncAxilReadMaster  : AxiLiteReadMasterType;
+   signal syncAxilReadSlave   : AxiLiteReadSlaveType;
+   signal syncAxilWriteMaster : AxiLiteWriteMasterType;
+   signal syncAxilWriteSlave  : AxiLiteWriteSlaveType;
 
 begin
+
+   U_AxiLiteAsync_1 : entity surf.AxiLiteAsync
+      generic map (
+         TPD_G => TPD_G)
+      port map (
+         sAxiClk         => axilClk,              -- [in]
+         sAxiClkRst      => axilRst,              -- [in]
+         sAxiReadMaster  => axilReadMaster,       -- [in]
+         sAxiReadSlave   => axilReadSlave,        -- [out]
+         sAxiWriteMaster => axilWriteMaster,      -- [in]
+         sAxiWriteSlave  => axilWriteSlave,       -- [out]
+         mAxiClk         => fcClk185,             -- [in]
+         mAxiClkRst      => fcRst185,             -- [in]
+         mAxiReadMaster  => syncAxilReadMaster,   -- [out]
+         mAxiReadSlave   => syncAxilReadSlave,    -- [in]
+         mAxiWriteMaster => syncAxilWriteMaster,  -- [out]
+         mAxiWriteSlave  => syncAxilWriteSlave);  -- [in]
 
    -------------------------------------------------------------------------------------------------
    -- Incomming TS messages go into FIFOs
@@ -113,8 +148,8 @@ begin
             TPD_G           => TPD_G,
             GEN_SYNC_FIFO_G => false,
             SYNTH_MODE_G    => "inferred",
-            MEMORY_TYPE_G   => "distributed",
-            ADDR_WIDTH_G    => 4)
+            MEMORY_TYPE_G   => "block",
+            ADDR_WIDTH_G    => 8)
          port map (
             rst     => tsRecRsts(i),        -- [in]
             wrClk   => tsRecClks(i),        -- [in]
@@ -123,6 +158,7 @@ begin
             wrMsg   => tsRxMsgs(i),         -- [in]
             rdClk   => fcClk185,            -- [in]
             rdEn    => r.tsMsgFifoRdEn(i),  -- [in]
+            rdCount => tsMsgFifoCount(i),   -- [out]            
             rdMsg   => tsMsgFifoRdData(i),  -- [out]
             rdValid => tsMsgFifoValid(i));  -- [out]
    end generate GEN_TS_RX_FIFOS;
@@ -143,16 +179,17 @@ begin
          rst         => fcRst185,               -- [in]
          wrClk       => fcClk185,               -- [in]
          wrTimestamp => r.timestampFifoWrData,  -- [in]
---         wr_data_count => open,                   -- [out]
+         wrCount     => timestampFifoCount,     -- [out]
          rdClk       => fcClk185,               -- [in]
          rdEn        => r.timestampFifoRdEn,    -- [in]
          rdTimestamp => timestampFifoRdData,    -- [out]
          rdValid     => timestampFifoValid);    -- [out]   
 
 
-   comb : process (fcBus, fcRst185, r, timestampFifoRdData, timestampFifoValid, tsMsgFifoRdData,
-                   tsMsgFifoValid) is
-      variable v : RegType := REG_INIT_C;
+   comb : process (fcBus, fcRst185, r, syncAxilReadMaster, syncAxilWriteMaster, timestampFifoRdData,
+                   timestampFifoValid, tsMsgFifoRdData, tsMsgFifoValid) is
+      variable v      : RegType := REG_INIT_C;
+      variable axilEp : AxiLiteEndpointType;
    begin
       v := r;
 
@@ -174,7 +211,7 @@ begin
                v.timestampFifoRdEn := timestampFifoValid;
             end if;
 
-            -- Start alignment when FC runState moves to CLOCK_ALIGN state
+            -- Start alignment when FC runState moves to BC0 state
             if (fcBus.bc0 = '1') then
                -- Stop bleeding the timestamp fifo
                v.timestampFifoRdEn              := '0';
@@ -245,6 +282,20 @@ begin
 
          when others => null;
       end case;
+
+      axiSlaveWaitTxn(axilEp, syncAxilWriteMaster, syncAxilReadMaster, v.axilWriteSlave, v.axilReadSlave);
+
+      axiSlaveRegisterR(axilEp, X"00", 0, ite(r.state = WAIT_BC0_STATE_S, "001",
+                                              ite(r.state = WAIT_BC0_DATA_S, "010",
+                                                  ite(r.state = ALIGNED_S, "100", "111"))));
+
+      axiSlaveRegisterR(axilEp, X"04", 0, timestampFifoCount);
+
+      for i in TS_LANES_G-1 downto 0 loop
+         axiSlaveRegisterR(axilEp, X"10" + toslv(i, 8), 0, tsMsgFifoCount(i));
+      end loop;
+
+      axiSlaveDefault(axilEp, v.axilWriteSlave, v.axilReadSlave, AXI_RESP_DECERR_C);
 
       -- Reset
       if (fcRst185 = '1') then
