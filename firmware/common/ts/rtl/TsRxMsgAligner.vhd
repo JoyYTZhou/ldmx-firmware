@@ -292,7 +292,7 @@ begin
       axiSlaveRegisterR(axilEp, X"04", 0, timestampFifoCount);
 
       for i in TS_LANES_G-1 downto 0 loop
-         axiSlaveRegisterR(axilEp, X"10" + toslv(i, 8), 0, tsMsgFifoCount(i));
+         axiSlaveRegisterR(axilEp, X"10" + toslv(i*4, 8), 0, tsMsgFifoCount(i));
       end loop;
 
       axiSlaveDefault(axilEp, v.axilWriteSlave, v.axilReadSlave, AXI_RESP_DECERR_C);
@@ -301,6 +301,10 @@ begin
       if (fcRst185 = '1') then
          v := REG_INIT_C;
       end if;
+
+      -- Signals
+      syncAxilReadSlave  <= r.axilReadSlave;
+      syncAxilWriteSlave <= r.axilWriteSlave;
 
       -- Outputs
       fcTsRxMsgs     <= r.fcTsRxMsgs;

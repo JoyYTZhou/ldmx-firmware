@@ -11,7 +11,8 @@ class TsDataRx(pr.Device):
             lanes = lanes))
 
         self.add(ldmx_ts.TsRxMsgAligner(
-            offset = 0x10_0000))
+            offset = 0x10_0000,
+            lanes = lanes))
 
         self.add(ldmx_ts.TsTxMsgPlayback(
             offset = 0x1000_0000,
