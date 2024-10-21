@@ -280,24 +280,24 @@ architecture mapping of zccmApplication is
      );
 
    constant RM_DEVICE_MAP_C : I2cAxiLiteDevArray(3 downto 0) := (
-    0              => MakeI2cAxiLiteDevType(                    -- GPIO (1000)
+    0              => MakeI2cAxiLiteDevType(                    -- GPIO (10000)
       i2cAddress  => "1000001",
       dataSize    => 8,
       addrSize    => 8,
       endianness  => '1'),
-    1              => MakeI2cAxiLiteDevType(                    -- EEPROM(1400)
+    1              => MakeI2cAxiLiteDevType(                    -- EEPROM(14000)
       i2cAddress  => "1010000",
       dataSize    => 8,
       addrSize    => 12,
       endianness  => '1',
       repeatStart => '1'),
-    2              => MakeI2cAxiLiteDevType(                    -- I2C                                                                                                                    --extenderv1                                       
-      i2cAddress  => "0111101",                                 --x3D                                              
+    2              => MakeI2cAxiLiteDevType(                    -- I2C (18000)                                                                                                             --extenderv1                                       
+      i2cAddress  => "0111110",                                 --0x3E                                              
       dataSize    => 8,
       addrSize    => 8,
       endianness  => '1',
       repeatStart => '0'),
-    3              => MakeI2cAxiLiteDevType(                    -- UART-bridge(1800)
+    3              => MakeI2cAxiLiteDevType(                    -- UART-bridge(1C000)
       i2cAddress  => "1001101",
       dataSize    => 8, 
       addrSize    => 8,
