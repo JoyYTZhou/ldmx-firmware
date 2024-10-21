@@ -407,7 +407,7 @@ begin
    rxUsrActive <= rxUsrClkActive and rxPmaResetDoneInt;
 
 --   rstSyncRxIn <= rxResetAlignCheck or rxReset;
-   rstSyncRxIn <= rxResetAlignCheck or not rxPmaResetDoneInt;
+   rstSyncRxIn <= rxResetAlignCheck; -- or not rxPmaResetDoneInt;
    rxResetGt   <= rxResetAlignCheck;    -- or rxReset;
 
    rxOutClk <= rxOutClkB;
