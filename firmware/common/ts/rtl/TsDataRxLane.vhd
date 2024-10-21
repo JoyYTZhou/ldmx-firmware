@@ -104,13 +104,15 @@ architecture rtl of TsDataRxLane is
    signal tsRxDecErr       : slv(1 downto 0);
 
    signal tsTxPhyInit      : sl;
+   signal tsTxPhyInitSync  : sl;
    signal tsTxPhyResetDone : sl;
    signal tsTxData         : slv(15 downto 0);
    signal tsTxDataK        : slv(1 downto 0);
 
-   signal loopback     : slv(2 downto 0) := "000";
-   signal resetRxPwrUp : sl;
-   signal rxReset      : sl;
+   signal loopback   : slv(2 downto 0) := "000";
+   signal resetPwrUp : sl;
+   signal rxReset    : sl;
+   signal txReset    : sl;
 
 begin
 
@@ -139,7 +141,7 @@ begin
    -- Various Reset synchronization
    -------------------------------------------------------------------------------------------------
    --Sync phy init to stableClk (axilClk)
-   U_RstSync_1 : entity surf.SynchronizerOneShot
+   U_SynchronizerOneShot_1 : entity surf.SynchronizerOneShot
       generic map (
          TPD_G         => TPD_G,
          PULSE_WIDTH_G => 10)
@@ -147,6 +149,16 @@ begin
          clk     => tsUserClk125,       -- [in]
          dataIn  => tsRxPhyInit,        -- [in]
          dataOut => tsRxPhyInitSync);   -- [out]
+
+   U_SynchronizerOneShot_2 : entity surf.SynchronizerOneShot
+      generic map (
+         TPD_G         => TPD_G,
+         PULSE_WIDTH_G => 10)
+      port map (
+         clk     => tsUserClk125,       -- [in]
+         dataIn  => tsTxPhyInit,        -- [in]
+         dataOut => tsTxPhyInitSync);   -- [out]
+
 
 --    U_RstSync_1 : entity surf.RstSync
 --       generic map (
@@ -187,7 +199,7 @@ begin
          rxDecErr        => tsRxDecErr,                       -- [out]
          rxPolarity      => '0',                              -- [in]
          rxOutClk        => tsRecClkGt,                       -- [out]
-         txReset         => tsTxPhyInit,                      -- [in]
+         txReset         => txReset,                          -- [in]
          txResetDone     => tsTxPhyResetDone,                 -- [out]
          txData          => tsTxData,                         -- [in]
          txDataK         => tsTxDataK,                        -- [in]
@@ -203,7 +215,7 @@ begin
    tsRecClkMmcm       <= tsRecClkGt;
    tsRecClkMmcmLocked <= '1';           -- tsRxPmaResetDone;
 
-   RstSync_1 : entity surf.RstSync
+   U_RstSync_1 : entity surf.RstSync
       generic map (
          TPD_G           => TPD_G,
          IN_POLARITY_G   => '0',
@@ -217,17 +229,18 @@ begin
    tsRecClk <= tsRecClkMmcm;
    tsRecRst <= tsRecClkRst;
 
-   U_RstSync_2 : entity surf.PwrUpRst
+   U_PwrUpRst_1 : entity surf.PwrUpRst
       generic map (
          TPD_G      => TPD_G,
          DURATION_G => 12500)           -- 100us in sim; 1s in silicon
       port map (
          arst   => '0',                 -- [in]
          clk    => tsUserClk125,        -- [in]
-         rstOut => resetRxPwrUp);       -- [out]
+         rstOut => resetPwrUp);         -- [out]
 
 
-   rxReset <= tsRxPhyInitSync or resetRxPwrUp;
+   rxReset <= tsRxPhyInitSync or resetPwrUp;
+   txReset <= tsTxPhyInitSync or resetPwrUp;
 
    -------------------------------------------------------------------------------------------------
    -- TS Message Decoder
