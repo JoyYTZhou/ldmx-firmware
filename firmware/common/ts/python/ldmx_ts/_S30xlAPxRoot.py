@@ -53,7 +53,14 @@ class S30xlAPxRoot(pr.Root):
             expand = True))
 
         self.tsDaqEventReceiver = ldmx_ts.TsDaqEventReceiver()
-        self.addInterface(self.tsDaqEventReceiver)
+        self.tsThresholdTrigEventReceiver = ldmx_ts.TsThresholdTrigEventReceiver()
+        self.addInterface(self.tsDaqEventReceiver, self.tsThresholdTrigEventReceiver)
 
         self.tsDaqEventStream >> self.tsDaqEventReceiver
-#        self.trigDataStream >> self.dataReceiver
+        self.tsTrigEventStream >> self.tsThresholdTrigEventReceiver
+
+        self.add(ldmx_ts.SqliteFileWriter())
+
+        self.sqliteReceiver = ldmx_ts.TsRawDAQSqliteStreamReceiver(self.SqliteFileWriter)
+
+        self.tsDaqEventStream >> self.sqliteReceiver
