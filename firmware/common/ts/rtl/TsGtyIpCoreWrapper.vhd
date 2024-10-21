@@ -304,9 +304,10 @@ begin
          rxresetdone_out(0)                    => open,
 --         rxsyncdone_out(0)                     => rxSyncDone,
          txpmaresetdone_out(0)                 => txPmaResetDone,
-         txresetdone_out(0)                    => txResetDone);
+         txresetdone_out(0)                    => open);
 
    rxResetDone <= buffBypassRxDone;
+   txResetDone <= buffBypassTxDone;
 
    RXOUTCLK_BUFG_GT : BUFG_GT
       port map (
