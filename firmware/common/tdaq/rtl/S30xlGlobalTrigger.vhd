@@ -230,7 +230,7 @@ begin
          synTriggerData         => triggerData(0),                             -- [in]
          triggerTimestamp       => triggerTimestamp,                           -- [in]
          fcBus                  => fcBus,                                      -- [in]
-         gtRor                  => gtRor,
+         gtRor                  => gtRor,                                      -- [out]
          gtDaqAxisMaster        => gtDaqAxisMaster,
          gtDaqAxisSlave         => gtDaqAxisSlave,
 --          axilClk                => axilClk,                                    -- [in]
