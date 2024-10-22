@@ -2,10 +2,10 @@
 -- Title      : Trigger Scintillator Support Package
 -------------------------------------------------------------------------------
 -- Company    : SLAC National Accelerator Laboratory
--- Platform   : 
+-- Platform   :
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
--- Description: 
+-- Description:
 -------------------------------------------------------------------------------
 -- This file is part of LDMX. It is subject to
 -- the license terms in the LICENSE.txt file found in the top-level directory
@@ -155,10 +155,11 @@ package body TsPkg is
       ret(47 downto 40) := tsData.adc(5);
 
       ret(69 downto 64)   := tsData.tdc(0);
-      ret(85 downto 80)   := tsData.tdc(1);
-      ret(93 downto 88)   := tsData.tdc(2);
-      ret(101 downto 96)  := tsData.tdc(3);
-      ret(109 downto 104) := tsData.tdc(4);
+      ret(77 downto 72)   := tsData.tdc(1);
+      ret(85 downto 80)   := tsData.tdc(2);
+      ret(93 downto 88)   := tsData.tdc(3);
+      ret(101 downto 96)  := tsData.tdc(4);
+      ret(109 downto 104) := tsData.tdc(5);
 
       ret(113 downto 112) := tsData.capId;  -- Byte 14
       ret(114)            := tsData.ce;

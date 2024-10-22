@@ -259,7 +259,6 @@ begin
    -- Trigger DAQ block
    -------------------------------------------------------------------------------------------------
    U_TsTrigDaq_1 : entity ldmx_ts.TsTrigDaq
-
       generic map (
          TPD_G      => TPD_G,
          TS_LANES_G => TS_LANES_G)

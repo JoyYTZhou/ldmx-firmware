@@ -275,7 +275,7 @@ begin
          TPD_G => TPD_G)
       port map (
          tsClk250         => tsUserClk250,                       -- [in]
-         tsRst250         => '0',                                -- [in] Add this back
+         tsRst250         => tsUserRst250,                       -- [in] 
          tsTxPhyInit      => tsTxPhyInit,                        -- [out]
          tsTxPhyResetDone => tsTxPhyResetDone,                   -- [in]
          tsTxMsg          => tsTxMsg,                            -- [in]
