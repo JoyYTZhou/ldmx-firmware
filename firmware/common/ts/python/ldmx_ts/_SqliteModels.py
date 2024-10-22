@@ -1,11 +1,12 @@
+import enum
+
 from sqlalchemy import Column, Integer, BigInteger, SmallInteger, CheckConstraint
 from sqlalchemy.ext.hybrid import hybrid_property
 
-import enum
-
-import ldmx_ts
-
 import rogue
+
+import ldmx_tdaq
+import ldmx_ts
 
 
 class MsgType(enum.Enum):
@@ -13,8 +14,8 @@ class MsgType(enum.Enum):
     eight_channel = '8_channel'
 
 # Define the 'ts_raw_daq_events' table
-class TsRawDaqEvent(ldmx_ts.SqliteFileWriter.SqliteBase):
-    __tablename__ = 'ts_raw_daq_events'
+class TsRawDaqEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
+    __tablename__ = 'ts_raw_daq_event'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 #    event_id = Column(Integer, ForeignKey('events.id'), nullable=False)
@@ -78,19 +79,21 @@ class TsRawDaqEvent(ldmx_ts.SqliteFileWriter.SqliteBase):
             self.tdc6, self.tdc7 = None, None  # Set to None for 6-channel events
             
 
-class TsRawDAQSqliteStreamReceiver(rogue.interfaces.stream.Slave):
-    def __init__(self, writer, **kwargs):
+class TsRawDaqEventSqlReceiver(rogue.interfaces.stream.Slave):
+    def __init__(self, database, **kwargs):
         super().__init__(**kwargs)
 
-        self.writer = writer
-        self.sessionFactory = writer.SessionFactory
+        self.database = database
 
     def _acceptFrame(self, frame):
+        # Read the frame into numpy array
         rawNumpy = frame.getNumpy(0, frame.getPayload())
 
+        # Parse the numpy array
         event = ldmx_ts.TsDaqRawEvent.from_numpy(rawNumpy)
 
-        with self.writer.SessionFactory() as session:
+        # Write the parsed data to the database
+        with self.database.SessionFactory() as session:
             for i, msg in enumerate(event.msgs):
                 sqlEvent = TsRawDaqEvent(
                     pulse_id = event.header.pulseId,
@@ -103,8 +106,53 @@ class TsRawDAQSqliteStreamReceiver(rogue.interfaces.stream.Slave):
                     adc = msg.adc,
                     tdc = msg.tdc)
 
-                print('Writing TsRawEvent to database')
-                print(sqlEvent)
+                session.add(sqlEvent)
+
+            session.commit()
+
+class TsS30xlThresholdTriggerEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
+    __tablename__ = 'ts_s30xl_threshold_trigger_event'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    pulse_id = Column(BigInteger, nullable=False) # uint64 -> BigInteger
+    bunch_count = Column(SmallInteger, nullable=False) # uint8 -> SmallInteger
+    hits = Column(Integer, nullable=False)
+     # Dynamically add amplitude columns
+    for i in range(12):
+        locals()[f'amplitude{i}'] = Column(Integer, nullable=False)
+
+    @hybrid_property
+    def amplitudes(self):
+        return [getattr(self, f'amplitude{i}') for i in range(12)]
+
+    @amplitudes.setter
+    def adc(self, values):
+        for i in range(12):
+            setattr(self, f'amplitude{i}', values[i])
+
+
+class TsS30xlThresholdTriggerEventSqlReceiver(rogue.interfaces.stream.Slave):
+    def __init__(self, database, **kwargs):
+        super().__init__(**kwargs)
+
+        self.database = database
+
+    def _acceptFrame(self, frame):
+        # Read the frame into numpy array
+        rawNumpy = frame.getNumpy(0, frame.getPayload())
+
+        # Parse the numpy array
+        event = ldmx_ts.TsS30xlThresholdTriggerEvent.from_numpy(rawNumpy)
+
+        # Write the parsed data to the database
+        with self.database.SessionFactory() as session:
+            for i, msg in enumerate(event.msgs):
+                sqlEvent = TsS30xlThresholdTriggerEventSql(
+                    pulse_id = event.header.pulseId,
+                    bunch_count = event.header.bunchCount,
+                    hits = event.hits,
+                    amplitude = event.amplitudes)
+
                 session.add(sqlEvent)
 
             session.commit()

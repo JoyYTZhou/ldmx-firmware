@@ -52,15 +52,42 @@ class S30xlAPxRoot(pr.Root):
             memBase = self.srp,
             expand = True))
 
-        self.tsDaqEventReceiver = ldmx_ts.TsDaqEventReceiver()
-        self.tsThresholdTrigEventReceiver = ldmx_ts.TsThresholdTrigEventReceiver()
-        self.addInterface(self.tsDaqEventReceiver, self.tsThresholdTrigEventReceiver)
+        # Create a filter for TS RAW DAQ Events and send the TS DAQ data through it
+        self.tsRawDaqEventFilter = ldmx_ts.TsRawDaqEventFilter()
+        self.addInterface(self.tsRawDaqEventFilter)
+        self.tsDaqEventStream >> self.tsRawDaqEventFilter
 
-        self.tsDaqEventStream >> self.tsDaqEventReceiver
-        self.tsTrigEventStream >> self.tsThresholdTrigEventReceiver
+        # Generic TS Raw event receiver for debug
+        self.tsRawDaqEventReceiver = ldmx_ts.TsRawDaqEventReceiver()
+        self.addInterface(self.tsRawDaqEventReceiver)
+        self.tsRawDaqEventFilter >> self.tsRawDaqEventReceiver
 
-        self.add(ldmx_ts.SqliteFileWriter())
+        # Create a filter for TS Threshold Trigger Events
+        self.tsS30xlThresholdTriggerEventFilter = ldmx_ts.TsS30xlThresholdTriggerEventFilter()
+        self.addInterface(self.tsS30xlThresholdTriggerEventFilter)
+        self.tsTrigEventStream >> self.tsS30xlThresholdTriggerEventFilter
 
-        self.sqliteReceiver = ldmx_ts.TsRawDAQSqliteStreamReceiver(self.SqliteFileWriter)
+        # Generic Threshold event receiver for debug
+        self.tsS30xlThresholdTriggerEventReceiver = ldmx_ts.TsS30xlThresholdTriggerEventReceiver()
+        self.addInterface(self.tsS30xlThresholdTriggerEventReceiver)
+        self.tsS30xlThresholdTriggerEventFilter >> self.tsS30xlThresholdTriggerEventReceiver
 
-        self.tsDaqEventStream >> self.sqliteReceiver
+        # Add the Sqlite Database
+        self.add(ldmx_tdaq.SqliteDatabase())
+
+        # Create and connect SQL Receivers
+        self.tsRawDaqEventSqlReceiver = ldmx_ts.TsRawDaqEventSqlReceiver(database=self.SqliteDatabase)
+        self.addInterface(self.tsRawDaqEventSqlReceiver)
+        self.tsRawDaqEventFilter >> self.tsRawDaqEventSqlReceiver
+
+        self.tsS30xlThresholdTriggerEventSqlReceiver = ldmx_ts.TsS30xlThresholdTriggerEventSqlReceiver(database=self.SqliteDatabase)
+        self.addInterface(self.tsS30xlThresholdTriggerEventSqlReceiver)
+        self.tsS30xlThresholdTriggerEventFilter >> self.tsS30xlThresholdTriggerEventSqlReceiver
+        
+        # Log variable
+        self.sqlLogger = pyrogue.interfaces.SqlLogger(
+            root = self,
+            url = 'sqlite:///test.db')
+
+        self.addInterface(self.sqlLogger)
+

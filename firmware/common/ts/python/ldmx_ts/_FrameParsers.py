@@ -5,28 +5,10 @@ import numpy as np
 from dataclasses import dataclass, field
 from typing import List
 
-@dataclass
-class EventHeader:
-    version: int
-    subsystemId: int 
-    contributorId: int
-    bunchCount: int
-    pulseId: int
-    #data: np.ndarray
+from ldmx_tdaq import EventHeader, DaqEventFilter, SubsystemId
 
-    @classmethod
-    def from_numpy(cls, arr):
-        header = cls(
-            version = int(arr[0]),
-            subsystemId = int(arr[1]),
-            contributorId = int(arr[2]),
-            bunchCount = int(arr[7]),
-            pulseId = int(arr[8:16].view(np.uint64)))
-        return header
+import ldmx_ts
 
-    @classmethod
-    def data(cls, arr):
-        return arr[16:]
 
     
 @dataclass
@@ -50,7 +32,7 @@ class TsData6ChMsg:
         return msg
     
 @dataclass
-class TsDaqRawEvent:
+class TsRawDaqEvent:
     header: EventHeader
     msgs: List[TsData6ChMsg] = field(default_factory=list)
 
@@ -65,20 +47,26 @@ class TsDaqRawEvent:
             msgs = [TsData6ChMsg.from_numpy(msg_raw) for msg_raw in event_data])
         return ret
 
-class TsDaqEventReceiver(rogue.interfaces.stream.Slave):
+class TsRawDaqEventFilter(DaqEventFilter):
+    def __init__(self):
+        super().__init__(
+            subsystemId = SubsystemId.TS_DAQ,
+            contributorId = ldmx_ts.DaqContributorId.RAW_DATA)
+    
+class TsRawDaqEventReceiver(rogue.interfaces.stream.Slave):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         
     def _acceptFrame(self, frame):
         rawNumpy = frame.getNumpy(0, frame.getPayload())
 
-        event = TsDaqRawEvent.from_numpy(rawNumpy)
+        event = TsRawDaqEvent.from_numpy(rawNumpy)
         print(event)
 
 
 
 @dataclass
-class TsThresholdTrigEvent:
+class TsS30xlThresholdTriggerEvent:
     header: EventHeader
     hits: np.uint16    
     amplitudes: List[np.uint32] = field(default_factory=list)
@@ -98,16 +86,21 @@ class TsThresholdTrigEvent:
             hits = hits)
         return ret
     
+class TsS30xlThresholdTriggerEventFilter(DaqEventFilter):
+    def __init__(self):
+        super().__init__(
+            subsystemId = SubsystemId.TS_TRIGGER,
+            contributorId = ldmx_ts.TriggerContributorId.S30XL_THRESHOLD_TRIGGER)
     
 
-class TsThresholdTrigEventReceiver(rogue.interfaces.stream.Slave):
+class TsS30xlThresholdTriggerEventReceiver(rogue.interfaces.stream.Slave):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         
     def _acceptFrame(self, frame):
         rawNumpy = frame.getNumpy(0, frame.getPayload())
 
-        event = TsThresholdTrigEvent.from_numpy(rawNumpy)
+        event = TsS30xlThresholdTriggerEvent.from_numpy(rawNumpy)
         print(event)
         
         

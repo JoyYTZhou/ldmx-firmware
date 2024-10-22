@@ -23,7 +23,7 @@ import json
 
 
 
-class SqliteFileWriter(pr.Device):
+class SqliteDatabase(pr.Device):
 
     SqliteBase = sqlalchemy.ext.declarative.declarative_base()    
 
