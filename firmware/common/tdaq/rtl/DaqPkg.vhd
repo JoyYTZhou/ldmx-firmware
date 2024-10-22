@@ -26,11 +26,14 @@ use surf.AxiStreamPkg.all;
 
 package DaqPkg is
 
-   constant TDAQ_SUBSYSTEM_ID_C    : slv(7 downto 0) := X"01";
-   constant TS_SUBSYSTEM_ID_C      : slv(7 downto 0) := X"02";
-   constant TRACKER_SUBSYSTEM_ID_C : slv(7 downto 0) := X"03";
-   constant ECAL_SUBSYSTEM_ID_C    : slv(7 downto 0) := X"04";
-   constant HCAL_SUBSYSTEM_ID_C    : slv(7 downto 0) := X"05";
+   constant TDAQ_TRIGGER_SUBSYSTEM_ID_C : slv(7 downto 0) := X"01";
+   constant TS_DAQ_SUBSYSTEM_ID_C       : slv(7 downto 0) := X"02";
+   constant TS_TRIGGER_SUBSYSTEM_ID_C   : slv(7 downto 0) := X"03";
+   constant TRACKER_DAQ_SUBSYSTEM_ID_C  : slv(7 downto 0) := X"04";
+   constant ECAL_DAQ_SUBSYSTEM_ID_C     : slv(7 downto 0) := X"05";
+   constant ECAL_TRIGGER_SUBSYSTEM_ID_C : slv(7 downto 0) := X"06";
+   constant HCAL_DAQ_SUBSYSTEM_ID_C     : slv(7 downto 0) := X"07";
+   constant HCAL_TRIGGER_SUBSYSTEM_ID_C : slv(7 downto 0) := X"08";
 
    constant DAQ_EVENT_AXIS_CONFIG_C : AxiStreamConfigType := (
       TSTRB_EN_C    => false,
