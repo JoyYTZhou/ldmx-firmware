@@ -12,10 +12,16 @@ rogue.Version.minVersion('6.0.0')
 
 class ZccmRoot(pr.Root):
     def __init__(self,
-            ip       = None, # ETH Host Name (or IP address)
+            ip       = None, # ETH Host Name (or IP address),
+            zmqSrvEn = False,  # Flag to include the ZMQ server
+            top_level="",     
             **kwargs):
         super().__init__(**kwargs)
 
+        if zmqSrvEn:
+            self.zmqServer = pr.interfaces.ZmqServer(root=self, addr='127.0.0.1', port=0)
+            self.addInterface(self.zmqServer)
+        
         # Check if running local on SoC
         if ip != None:
 
@@ -43,4 +49,5 @@ class ZccmRoot(pr.Root):
             memBase = self.memMap,
             offset  = 0x04_8000_0000,
             expand  = True,
+            top_level=top_level,
         ))
