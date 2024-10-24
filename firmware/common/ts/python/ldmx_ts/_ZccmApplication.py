@@ -10,6 +10,7 @@
 
 import pyrogue as pr
 import csv
+import surf.devices.silabs as silabs
 
 class PCA9536(pr.Device):
     def __init__(self,
@@ -17,7 +18,7 @@ class PCA9536(pr.Device):
                  pollInterval = 1,
             **kwargs):
         super().__init__(description=description, **kwargs)       
-
+        
         self.addRemoteVariables(
             name         = 'INPUT',
             description  = 'value when configured as input; Default: 0xFX',
@@ -80,60 +81,91 @@ class LTC4331(pr.Device):
             pollInterval = pollInterval
         )
 
-class Si5344(pr.Device):
-    def __init__(self,
-                 description = "Container for xxx",
-                 pollInterval = 1,
-            **kwargs):
-        super().__init__(description=description, **kwargs)
+# class Si5344(pr.Device):
+#     def __init__(self,
+#                  description = "Container for xxx",
+#                  pollInterval = 1,
+#                  csv_input_file="",
+#             **kwargs):
+#         super().__init__(description=description, **kwargs)
 
-        n= self.addRemoteVariables(
-            name         = 'PAGE',
-            description  = 'Selects one of 256 possible pages',
-            offset       = 0x1,
-            bitSize      = 8,
-            mode         = 'RW',
-            number       = 1,
-            stride       = 0,
-            pollInterval = pollInterval
-        )
+#         #self.addRemoteVariables(
+#         #    name         = 'PAGE',
+#         #    description  = 'Selects one of 256 possible pages',
+#         #    offset       = 0x1,
+#         #    bitSize      = 8,
+#         #    mode         = 'RW',
+#         #    number       = 1,
+#         #    stride       = 0,
+#         #    pollInterval = pollInterval
+#         #)
 
-        #current_page = n.get() 
-        #print("current_page:",current_page)
+#         self.add(pr.RemoteVariable(
+#             name         = "DataBlock",
+#             description  = "",
+#             offset       = 0,
+#             bitSize      = 32 * 0x100,
+#             bitOffset    = 0,
+#             numValues    = 0x100,
+#             valueBits    = 32,
+#             valueStride  = 32,
+#             updateNotify = True,
+#             bulkOpEn     = False, # FALSE for large variables
+#             overlapEn    = False,
+#             verify       = False, # FALSE due to a mix of RO/WO/RW variables
+#             hidden       = True,
+#             base         = pr.UInt,
+#             mode         = "RW",
+#             groups       = ['NoStream','NoState','NoConfig'], # Not saving config/state to YAML
+#         ))
+
+
+
         
-        with open('ldmx_ts/Si5344/Si5344-RevD-zCCM_gen-Registers.txt') as csvfile:
-            reader = csv.reader(csvfile, delimiter=',', quoting=csv.QUOTE_NONE)
-            # Loop through the rows in the CSV file                                                                                          
-            for row in reader:
-                if(row[0][0] == '#' ): continue
-                if(row[0] == 'Address'): continue
-                address = int(row[0],16)
-                page   = (address&0xFF00)>>8
-                offset = (address&0xFF)
-                data   = int(row[1],16)
+        #current_page = self.nodes['PAGE[0]'].get()
+        #print("current_page:",current_page)
+
+        #print(self.nodes['PAGE[0]'])
+        #self.nodes['PAGE[0]'].set(0x1)
+        
+        # with open(csv_input_file) as csvfile:
+        #     reader = csv.reader(csvfile, delimiter=',', quoting=csv.QUOTE_NONE)
+        #     # Loop through the rows in the CSV file                                                                                          
+        #     for row in reader:
+        #         if(row[0][0] == '#' ): continue
+        #         if(row[0] == 'Address'): continue
+        #         address = int(row[0],16)
+        #         page   = (address&0xFF00)>>8
+        #         offset = (address&0xFF)
+        #         data   = int(row[1],16)
+
+        #         print(" - - - - - - - - - - - - ")
+        #         print("++"+hex(address)+"++")
                 
-                self.addRemoteVariables(
-                    name         = hex(address),
-                    description  = hex(address),
-                    offset       = (offset<<2),
-                    bitSize      = 8,
-                    mode         = 'RW',
-                    number       = 1,
-                    stride       = 0,
-                    pollInterval = pollInterval                    
-                )
+        #         if not (hex(address)+"[0]") in self.nodes :
+        #             print("adding remote variable")
+        #             self.addRemoteVariables(
+        #                 name         = hex(address),
+        #                 description  = hex(address),
+        #                 offset       = (offset<<2),
+        #                 bitSize      = 8,
+        #                 mode         = 'RW',
+        #                 number       = 1,
+        #                 stride       = 0,
+        #                 pollInterval = pollInterval                    
+        #             )
                 
-                print("n = self.getNode({0})".format(hex(address)))
-                #n = self.getNode(hex(address))
-                print("self.PAGE[0].set({0})".format(page))
-                #self.PAGE[0].set(page)
-                print("n.set({0})".format(data))
-                #n.set(value)
+        #         print("n = self.getNode({0})".format(hex(address)))
+        #         #n = self.getNode(hex(address))
+        #         print("self.PAGE[0].set({0})".format(page))
+        #         #self.PAGE[0].set(page)
+        #         print("n.set({0})".format(data))
+        #         #n.set(value)
 
         # self.addRemoteVariables(
         #     name         = 'PN_BASE_LOWER',
         #     description  = 'lower 2 digits of part number',
-        #     offset       = 0x2,
+        #     offset       = (0x2<<2),
         #     bitSize      = 8,
         #     mode         = 'RO',
         #     number       = 1,
@@ -144,7 +176,7 @@ class Si5344(pr.Device):
         # self.addRemoteVariables(
         #     name         = 'PN_BASE_UPPER',
         #     description  = 'upper 2 digits of part number',
-        #     offset       = 0x3,
+        #     offset       = (0x3<<2),
         #     bitSize      = 8,
         #     mode         = 'RO',
         #     number       = 1,
@@ -152,12 +184,12 @@ class Si5344(pr.Device):
         #     pollInterval = pollInterval
         # )
 
-        
-        
 class ZccmApplication(pr.Device):
-    def __init__(self,**kwargs):
+    def __init__(self,
+                 top_level="",
+                 **kwargs):
         super().__init__(**kwargs)
-
+        
         # Backplane (RM0/RM1) GPIO
         self.add(PCA9536(
             name         = 'RM01_GPIO',
@@ -191,19 +223,21 @@ class ZccmApplication(pr.Device):
         ))
 
         # synthesizing clock chip 
-        self.add(Si5344(
-            name         = 'SYNTH_I2C',
-            offset       = 0x3_0000,
-            pollInterval = 0,
-            hidden       = False,
+        self.add(silabs.Si5345Lite(
+            name           = 'SYNTH_I2C',
+            offset         = 0x3_0000,
+            #pollInterval   = 0,
+            #hidden         = False,
+            #csv_input_file = top_level+'firmware/common/ts/python/ldmx_ts/Si5344/Si5344-RevD-zCCM_gen-Registers.txt'
         ))
 
         # jitter cleaner clock chip 
-        self.add(Si5344(
-            name         = 'JITTER_I2C',
-            offset       = 0x4_0000,
-            pollInterval = 0,
-            hidden       = False,
+        self.add(silabs.Si5345Lite(
+            name           = 'JITTER_I2C',
+            offset         = 0x4_0000,
+            #pollInterval   = 0,
+            #hidden         = False,
+            #csv_input_file = top_level+'firmware/common/ts/python/ldmx_ts/Si5344/Si5344-RevD-zCCM_gen-Registers.txt'
         ))
         
         self.add(pr.RemoteVariable(
