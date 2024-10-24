@@ -841,38 +841,38 @@ begin
     --  - add GTH Wrapper and connect to FC Rec.
     -- - - - - - - - - - - - - - - - - - - - - -
 
-  -- U_FcReceiver_1 : entity ldmx_tdaq.FcReceiver
-  --    generic map (
-  --       TPD_G            => TPD_G,
-  --       SIM_SPEEDUP_G    => SIMULATION_G,
-  --       GT_TYPE_G        => "GTH",
-  --       AXIL_CLK_FREQ_G  => AXIL_CLK_FREQ_G,
-  --       AXIL_BASE_ADDR_G =>  MAIN_XBAR_CFG_C(AXIL_FCREC_REG_INDEX_C).baseAddr)
-  --     port map(
-  --       -- Reference clock
-  --       fcRefClk185P =>  MGTREFCLK0_P,
-  --       fcRefClk185N =>  MGTREFCLK0_N,
-  --       -- Output Recovered Clock
-  --       --fcRecClkP    =>  open,
-  --       --fcRecClkN    =>  open,
-  --       -- PGP serial IO
-  --       fcTxP        => fcTxP,
-  --       fcTxN        => fcTxN,
-  --       fcRxP        => fcRxP,
-  --       fcRxN        => fcRxN,
-  --       -- RX FC and PGP interface
-  --       fcClk185     => MCLK185,
-  --       fcRst185     => reset185,
-  --       fcBus        => fcBus,
-  --       fcBunchClk37 => MCLK37,
-  --       fcBunchRst37 => open,
-  --       -- Axil inteface
-  --       axilClk         => axilClk,                                     -- [in] 
-  --       axilRst         => axilRst,                                     -- [in] 
-  --       axilReadMaster  => mainAxilReadMasters(AXIL_FCREC_REG_INDEX_C),   -- [in] 
-  --       axilReadSlave   => mainAxilReadSlaves(AXIL_FCREC_REG_INDEX_C),    -- [out]
-  --       axilWriteMaster => mainAxilWriteMasters(AXIL_FCREC_REG_INDEX_C),  -- [in] 
-  --       axilWriteSlave  => mainAxilWriteSlaves(AXIL_FCREC_REG_INDEX_C)    -- [out]
-  --       );
+  U_FcReceiver_1 : entity ldmx_tdaq.FcReceiver
+     generic map (
+        TPD_G            => TPD_G,
+        SIM_SPEEDUP_G    => SIMULATION_G,
+        GT_TYPE_G        => "GTH",
+        AXIL_CLK_FREQ_G  => AXIL_CLK_FREQ_G,
+        AXIL_BASE_ADDR_G =>  MAIN_XBAR_CFG_C(AXIL_FCREC_REG_INDEX_C).baseAddr)
+      port map(
+        -- Reference clock
+        fcRefClk185P =>  MGTREFCLK0_P,
+        fcRefClk185N =>  MGTREFCLK0_N,
+        -- Output Recovered Clock
+        --fcRecClkP    =>  open,
+        --fcRecClkN    =>  open,
+        -- PGP serial IO
+        fcTxP        => fcTxP,
+        fcTxN        => fcTxN,
+        fcRxP        => fcRxP,
+        fcRxN        => fcRxN,
+        -- RX FC and PGP interface
+        fcClk185     => MCLK185,
+        fcRst185     => reset185,
+        fcBus        => fcBus,
+        fcBunchClk37 => MCLK37,
+        fcBunchRst37 => open,
+        -- Axil inteface
+        axilClk         => axilClk,                                     -- [in] 
+        axilRst         => axilRst,                                     -- [in] 
+        axilReadMaster  => mainAxilReadMasters(AXIL_FCREC_REG_INDEX_C),   -- [in] 
+        axilReadSlave   => mainAxilReadSlaves(AXIL_FCREC_REG_INDEX_C),    -- [out]
+        axilWriteMaster => mainAxilWriteMasters(AXIL_FCREC_REG_INDEX_C),  -- [in] 
+        axilWriteSlave  => mainAxilWriteSlaves(AXIL_FCREC_REG_INDEX_C)    -- [out]
+        );
             
 end mapping;
