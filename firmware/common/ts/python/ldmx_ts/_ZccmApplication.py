@@ -11,6 +11,7 @@
 import pyrogue as pr
 import csv
 import surf.devices.silabs as silabs
+import ldmx_tdaq
 
 class PCA9536(pr.Device):
     def __init__(self,
@@ -81,114 +82,164 @@ class LTC4331(pr.Device):
             pollInterval = pollInterval
         )
 
-# class Si5344(pr.Device):
-#     def __init__(self,
-#                  description = "Container for xxx",
-#                  pollInterval = 1,
-#                  csv_input_file="",
-#             **kwargs):
-#         super().__init__(description=description, **kwargs)
-
-#         #self.addRemoteVariables(
-#         #    name         = 'PAGE',
-#         #    description  = 'Selects one of 256 possible pages',
-#         #    offset       = 0x1,
-#         #    bitSize      = 8,
-#         #    mode         = 'RW',
-#         #    number       = 1,
-#         #    stride       = 0,
-#         #    pollInterval = pollInterval
-#         #)
-
-#         self.add(pr.RemoteVariable(
-#             name         = "DataBlock",
-#             description  = "",
-#             offset       = 0,
-#             bitSize      = 32 * 0x100,
-#             bitOffset    = 0,
-#             numValues    = 0x100,
-#             valueBits    = 32,
-#             valueStride  = 32,
-#             updateNotify = True,
-#             bulkOpEn     = False, # FALSE for large variables
-#             overlapEn    = False,
-#             verify       = False, # FALSE due to a mix of RO/WO/RW variables
-#             hidden       = True,
-#             base         = pr.UInt,
-#             mode         = "RW",
-#             groups       = ['NoStream','NoState','NoConfig'], # Not saving config/state to YAML
-#         ))
-
-
-
+        self.addRemoteVariables(
+            name         = 'status: NLINK',
+            description  = 'The level driven by pin LINK. High impedance is interpreted as 1.',
+            offset       = (0x01<<2),
+            bitSize      = 1,
+            bitOffset    = 0,
+            mode         = 'RO',
+            number       = 1,
+            stride       = 0,
+            pollInterval = pollInterval
+        )
         
-        #current_page = self.nodes['PAGE[0]'].get()
-        #print("current_page:",current_page)
+        self.addRemoteVariables(
+            name         = 'status: NALERT',
+            description  = 'The level driven by the local side pin ALERT. High impedance is interpreted as 1.',
+            offset       = (0x01<<2),
+            bitSize      = 1,
+            bitOffset    = 1,
+            mode         = 'RO',
+            number       = 1,
+            stride       = 0,
+            pollInterval = pollInterval
 
-        #print(self.nodes['PAGE[0]'])
-        #self.nodes['PAGE[0]'].set(0x1)
+        )
+
+        self.addRemoteVariables(
+            name         = 'status: EXT_NALERT',
+            description  = 'The level driven into the remote ALERT pin. Link must be established.',
+            offset       = (0x01<<2),
+            bitSize      = 1,
+            bitOffset    = 2,
+            mode         = 'RO',
+            number       = 1,
+            stride       = 0,
+            pollInterval = pollInterval
+        )
+
+        self.addRemoteVariables(
+            name         = 'status: SPEED_IDX',
+            description  = '<0-8>. Encoded index from values set on SPEED1 and SPEED2. See Table 2 of datasheet.',
+            offset       = (0x01<<2),
+            bitSize      = 4,
+            bitOffset    = 4,
+            mode         = 'RO',
+            number       = 1,
+            stride       = 0,
+            pollInterval = pollInterval
+        )
+
+
+        self.addRemoteVariables(
+            name         = 'EVENT: LINK_GOOD',
+            description  = 'The local and remote I2C networks are connected.',
+            offset       = (0x02<<2),
+            bitSize      = 1,
+            bitOffset    = 0,
+            mode         = 'RO',
+            number       = 1,
+            stride       = 0,
+            pollInterval = pollInterval
+        )
+
+        self.addRemoteVariables(
+            name         = 'EVENT: LINK_LOST',
+            description  = 'The local and remote I2C networks have lost link communication.',
+            offset       = (0x02<<2),
+            bitSize      = 1,
+            bitOffset    = 1,
+            mode         = 'RO',
+            number       = 1,
+            stride       = 0,
+            pollInterval = pollInterval
+        )
+                        
+        self.addRemoteVariables(
+            name         = 'EVENT: FAULT',
+            description  = 'Set if any field in the FAULT register is set by the system. Clearing this bit clears all bits in the FAULT register.',
+            offset       = (0x02<<2),
+            bitSize      = 1,
+            bitOffset    = 2,
+            mode         = 'RO',
+            number       = 1,
+            stride       = 0,
+            pollInterval = pollInterval
+        )
+
+        self.addRemoteVariables(
+            name         = 'FAULT: I2C_WRITE_FAULT',
+            description  = '',
+            offset       = (0x04<<2),
+            bitSize      = 1,
+            bitOffset    = 0,
+            mode         = 'RO',
+            number       = 1,
+            stride       = 0,
+            pollInterval = pollInterval
+        )
+
+        self.addRemoteVariables(
+            name         = 'FAULT: LINK_FAULT',
+            description  = '',
+            offset       = (0x04<<2),
+            bitSize      = 1,
+            bitOffset    = 1,
+            mode         = 'RO',
+            number       = 1,
+            stride       = 0,
+            pollInterval = pollInterval
+        )
         
-        # with open(csv_input_file) as csvfile:
-        #     reader = csv.reader(csvfile, delimiter=',', quoting=csv.QUOTE_NONE)
-        #     # Loop through the rows in the CSV file                                                                                          
-        #     for row in reader:
-        #         if(row[0][0] == '#' ): continue
-        #         if(row[0] == 'Address'): continue
-        #         address = int(row[0],16)
-        #         page   = (address&0xFF00)>>8
-        #         offset = (address&0xFF)
-        #         data   = int(row[1],16)
+        self.addRemoteVariables(
+            name         = 'FAULT: EXT_I2C_FAULT',
+            description  = '',
+            offset       = (0x04<<2),
+            bitSize      = 1,
+            bitOffset    = 2,
+            mode         = 'RO',
+            number       = 1,
+            stride       = 0,
+            pollInterval = pollInterval
+        )
 
-        #         print(" - - - - - - - - - - - - ")
-        #         print("++"+hex(address)+"++")
-                
-        #         if not (hex(address)+"[0]") in self.nodes :
-        #             print("adding remote variable")
-        #             self.addRemoteVariables(
-        #                 name         = hex(address),
-        #                 description  = hex(address),
-        #                 offset       = (offset<<2),
-        #                 bitSize      = 8,
-        #                 mode         = 'RW',
-        #                 number       = 1,
-        #                 stride       = 0,
-        #                 pollInterval = pollInterval                    
-        #             )
-                
-        #         print("n = self.getNode({0})".format(hex(address)))
-        #         #n = self.getNode(hex(address))
-        #         print("self.PAGE[0].set({0})".format(page))
-        #         #self.PAGE[0].set(page)
-        #         print("n.set({0})".format(data))
-        #         #n.set(value)
+        self.addRemoteVariables(
+            name         = 'FAULT: TX_BUF_OVERFLOW',
+            description  = '',
+            offset       = (0x04<<2),
+            bitSize      = 1,
+            bitOffset    = 3,
+            mode         = 'RO',
+            number       = 1,
+            stride       = 0,
+            pollInterval = pollInterval
+        )
 
-        # self.addRemoteVariables(
-        #     name         = 'PN_BASE_LOWER',
-        #     description  = 'lower 2 digits of part number',
-        #     offset       = (0x2<<2),
-        #     bitSize      = 8,
-        #     mode         = 'RO',
-        #     number       = 1,
-        #     stride       = 0,
-        #     pollInterval = pollInterval
-        # )
 
-        # self.addRemoteVariables(
-        #     name         = 'PN_BASE_UPPER',
-        #     description  = 'upper 2 digits of part number',
-        #     offset       = (0x3<<2),
-        #     bitSize      = 8,
-        #     mode         = 'RO',
-        #     number       = 1,
-        #     stride       = 0,
-        #     pollInterval = pollInterval
-        # )
+
 
 class ZccmApplication(pr.Device):
     def __init__(self,
                  top_level="",
                  **kwargs):
         super().__init__(**kwargs)
+
+        # FC Receiver
+        self.add(ldmx_tdaq.FcReceiver(
+            name         = 'FCReceiver',
+            offset       = 0xE_0000,
+            hidden       = False
+        ))
+
+        # Backplane (RM0/RM1) UART
+        self.add(pr.RemoteVariable(
+            name         = 'RM01_UART',
+            offset       = 0x1_C0EC,
+            pollInterval = 0,
+            hidden       = False
+        ))
+
         
         # Backplane (RM0/RM1) GPIO
         self.add(PCA9536(
@@ -242,7 +293,7 @@ class ZccmApplication(pr.Device):
         
         self.add(pr.RemoteVariable(
             name         = 'input_register',
-            offset       = 0xE_0000,
+            offset       = 0xB_0000,
             bitSize      = 32,
             mode         = 'RW',
             pollInterval = 1,
@@ -250,7 +301,7 @@ class ZccmApplication(pr.Device):
 
         self.add(pr.RemoteVariable(
             name         = 'output_registerA',
-            offset       = 0xE_0100,
+            offset       = 0xB_0100,
             bitSize      = 32,
             mode         = 'RW',
             pollInterval = 1,
@@ -259,7 +310,7 @@ class ZccmApplication(pr.Device):
         
         self.add(pr.RemoteVariable(
             name         = 'output_registerB',
-            offset       = 0xE_0104,
+            offset       = 0xB_0104,
             bitSize      = 32,
             mode         = 'RW',
             pollInterval = 1,
