@@ -259,21 +259,21 @@ architecture mapping of zccmApplication is
      --     connectivity                 => X"0001"),
 
       AXIL_OUTPUT_REG_INDEX_C          => (    -- Output Register Interface
-          baseAddr                     => AXIL_BASE_ADDR_G + X"E_0000",
+          baseAddr                     => AXIL_BASE_ADDR_G + X"B_0000",
           addrBits                     => 16,
           connectivity                 => X"0001"),
 
 
      AXIL_SYNCHLED_REG_INDEX_C        => (    -- local axi interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"B_0000",
-         addrBits                     => 16,
-         connectivity                 => X"0001"),
-     AXIL_SYNCHBCR_REG_INDEX_C             => (    -- local axi interface
          baseAddr                     => AXIL_BASE_ADDR_G + X"C_0000",
          addrBits                     => 16,
          connectivity                 => X"0001"),
-     AXIL_FCREC_REG_INDEX_C           => (    -- FC Receiver Register Interface
+     AXIL_SYNCHBCR_REG_INDEX_C             => (    -- local axi interface
          baseAddr                     => AXIL_BASE_ADDR_G + X"D_0000",
+         addrBits                     => 16,
+         connectivity                 => X"0001"),
+     AXIL_FCREC_REG_INDEX_C           => (    -- FC Receiver Register Interface
+         baseAddr                     => AXIL_BASE_ADDR_G + X"E_0000",
          addrBits                     => 16,
          connectivity                 => X"0001")
 
