@@ -6,8 +6,10 @@ import pyrogue as pr
 top_level = os.path.realpath(__file__).split('software')[0]
 
 pr.addLibraryPath(top_level+'firmware/submodules/surf/python')
+pr.addLibraryPath(top_level+'firmware/submodules/lcls-timing-core/python')
 pr.addLibraryPath(top_level+'firmware/submodules/axi-soc-ultra-plus-core/python')
 pr.addLibraryPath(top_level+'firmware/common/ts/python')
+pr.addLibraryPath(top_level+'firmware/common/tdaq/python')
 
 import ldmx_ts
 
