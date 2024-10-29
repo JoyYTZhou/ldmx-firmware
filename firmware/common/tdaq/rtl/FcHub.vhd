@@ -31,7 +31,6 @@ library ldmx_tdaq;
 use ldmx_tdaq.FcPkg.all;
 
 entity FcHub is
-
    generic (
       TPD_G             : time                 := 1 ns;
       SIM_SPEEDUP_G     : boolean              := false;
@@ -44,17 +43,16 @@ entity FcHub is
       ----------------------------------------------------------------------------------------------
       -- LCLS Timing Interface
       ----------------------------------------------------------------------------------------------
-      -- 185/371 MHz Ref Clk for LCLS timing recovery (freq used depends on GT configuration)
-      lclsTimingRefClkP : in  sl;
-      lclsTimingRefClkN : in  sl;
+      lclsTimingStableClk78 : in  sl;   -- Stable 156.25/2 MHz clock needed for LCLS Timing GT
+      lclsTimingStableRst78 : in  sl;   -- StableClk-associated rst
+      -- 185 MHz Ref Clk for LCLS timing recovery
+      lclsTimingRefClkP     : in  sl;
+      lclsTimingRefClkN     : in  sl;
       -- LCLS-II timing interface
-      lclsTimingRxP     : in  sl;
-      lclsTimingRxN     : in  sl;
-      lclsTimingTxP     : out sl;
-      lclsTimingTxN     : out sl;
-      -- Recovered clock via GT dedicated clock pins
-      timingRecClkOutP  : out sl;
-      timingRecClkOutN  : out sl;
+      lclsTimingRxP         : in  sl;
+      lclsTimingRxN         : in  sl;
+      lclsTimingTxP         : out sl;
+      lclsTimingTxN         : out sl;
 
       ----------------------------------------------------------------------------------------------
       -- Global Trigger Interface
@@ -63,7 +61,11 @@ entity FcHub is
       lclsTimingClkOut  : out sl;
       lclsTimingRstOut  : out sl;
       lclsTimingFcTxMsg : out FcMessageType;
+      lclsTimingBus     : out TimingBusType;
       globalTriggerRor  : in  FcTimestampType;
+      -- Debugging port output
+      fcTxMsgValid      : out sl;
+
 
       ----------------------------------------------------------------------------------------------
       -- FC HUB
@@ -117,9 +119,14 @@ architecture rtl of FcHub is
    signal locAxilWriteSlaves  : AxiLiteWriteSlaveArray(AXIL_NUM_C-1 downto 0) := (others => AXI_LITE_WRITE_SLAVE_EMPTY_DECERR_C);
 
    -- Recovered LCLS Timing Clock and Bus
-   signal lclsTimingClk : sl;
-   signal lclsTimingRst : sl;
-   signal lclsTimingBus : TimingBusType;
+   signal lclsTimingClk    : sl;
+   signal lclsTimingRst    : sl;
+   signal lclsTimingBusLoc : TimingBusType;
+
+   -- Stable Clock for FcSenders
+   signal lclsTimingRefClkDiv2 : sl;
+   signal stableClk92          : sl;
+   signal stableRst92          : sl;
 
    -- LDMX Fast Control Message to FC Senders
    signal fcTxMsg : FcMessageType;
@@ -147,11 +154,11 @@ begin
          mAxiReadMasters     => locAxilReadMasters,
          mAxiReadSlaves      => locAxilReadSlaves);
 
-
    -------------------------------------------------------------------------------------------------
    -- LCLS TIMING RX
    -------------------------------------------------------------------------------------------------
    lclsTimingClkOut <= lclsTimingClk;
+   lclsTimingBus    <= lclsTimingBusLoc;
 
    U_Lcls2TimingRx_1 : entity ldmx_tdaq.Lcls2TimingRx
       generic map (
@@ -163,36 +170,38 @@ begin
          AXI_CLK_FREQ_G    => AXIL_CLK_FREQ_G,
          AXIL_BASE_ADDR_G  => AXIL_XBAR_CONFIG_C(AXIL_LCLS_TIMING_C).baseAddr)
       port map (
-         stableClk        => axilClk,   -- [in] -- axilClk from TenGigEth core is not mmcm
-         stableRst        => axilRst,   -- [in]
-         axilClk          => axilClk,   -- [in]
-         axilRst          => axilRst,   -- [in]
-         axilReadMaster   => locAxilReadMasters(AXIL_LCLS_TIMING_C),   -- [in]
-         axilReadSlave    => locAxilReadSlaves(AXIL_LCLS_TIMING_C),    -- [out]
-         axilWriteMaster  => locAxilWriteMasters(AXIL_LCLS_TIMING_C),  -- [in]
-         axilWriteSlave   => locAxilWriteSlaves(AXIL_LCLS_TIMING_C),   -- [out]
-         recTimingClk     => lclsTimingClk,                            -- [out]
-         recTimingRst     => lclsTimingRst,                            -- [out]
-         appTimingBus     => lclsTimingBus,                            -- [out]
-         timingRxP        => lclsTimingRxP,                            -- [in]
-         timingRxN        => lclsTimingRxN,                            -- [in]
-         timingTxP        => lclsTimingTxP,                            -- [out]
-         timingTxN        => lclsTimingTxN,                            -- [out]
-         timingRefClkInP  => lclsTimingRefClkP,                        -- [in]
-         timingRefClkInN  => lclsTimingRefClkN,                        -- [in]
-         timingRecClkOutP => timingRecClkOutP,                         -- [out]
-         timingRecClkOutN => timingRecClkOutN);                        -- [out]
+         stableClk78          => lclsTimingStableClk78,                    -- [in]
+         stableRst78          => lclsTimingStableRst78,                    -- [in]
+         timingRefClkInP      => lclsTimingRefClkP,                        -- [in]
+         timingRefClkInN      => lclsTimingRefClkN,                        -- [in]
+         timingRxP            => lclsTimingRxP,                            -- [in]
+         timingRxN            => lclsTimingRxN,                            -- [in]
+         timingTxP            => lclsTimingTxP,                            -- [out]
+         timingTxN            => lclsTimingTxN,                            -- [out]
+         timingUserRefClkDiv2 => lclsTimingRefClkDiv2,                     -- [out]
+         recTimingClk         => lclsTimingClk,                            -- [out]
+         recTimingRst         => lclsTimingRst,                            -- [out]
+         appTimingBus         => lclsTimingBusLoc,                         -- [out]
+         axilClk              => axilClk,                                  -- [in]
+         axilRst              => axilRst,                                  -- [in]
+         axilReadMaster       => locAxilReadMasters(AXIL_LCLS_TIMING_C),   -- [in]
+         axilReadSlave        => locAxilReadSlaves(AXIL_LCLS_TIMING_C),    -- [out]
+         axilWriteMaster      => locAxilWriteMasters(AXIL_LCLS_TIMING_C),  -- [in]
+         axilWriteSlave       => locAxilWriteSlaves(AXIL_LCLS_TIMING_C));  -- [out]
+
 
    -------------------------------------------------------------------------------------------------
    -- Fast Control Output Word Logic
    -------------------------------------------------------------------------------------------------
+   lclsTimingFcTxMsg <= fcTxMsg;
+
    U_FcTxLogic_1 : entity ldmx_tdaq.FcTxLogic
       generic map (
          TPD_G => TPD_G)
       port map (
          lclsTimingClk    => lclsTimingClk,                         -- [in]
          lclsTimingRst    => lclsTimingRst,                         -- [in]
-         lclsTimingBus    => lclsTimingBus,                         -- [in]
+         lclsTimingBus    => lclsTimingBusLoc,                      -- [in]
          globalTriggerRor => globalTriggerRor,                      -- [in]
          fcMsg            => fcTxMsg,                               -- [out]
          axilClk          => axilClk,                               -- [in]
@@ -201,6 +210,19 @@ begin
          axilReadSlave    => locAxilReadSlaves(AXIL_TX_LOGIC_C),    -- [out]
          axilWriteMaster  => locAxilWriteMasters(AXIL_TX_LOGIC_C),  -- [in]
          axilWriteSlave   => locAxilWriteSlaves(AXIL_TX_LOGIC_C));  -- [out]
+
+   -------------------------------------------------------------------------------------------------
+   -- Stable Clock and Reset from LCLS Timing Reference Clock
+   -------------------------------------------------------------------------------------------------
+   stableClk92 <= lclsTimingRefClkDiv2;
+
+   U_RstSync_1 : entity surf.RstSync
+      generic map (
+         TPD_G => TPD_G)
+      port map (
+         clk      => stableClk92,       -- [in]
+         asyncRst => '0',               -- [in]
+         syncRst  => stableRst92);      -- [out]
 
    -------------------------------------------------------------------------------------------------
    -- Fast Control Fanout to Subsystems
@@ -221,6 +243,8 @@ begin
          fcHubTxN        => fcHubTxN,                              -- [out]
          fcHubRxP        => fcHubRxP,                              -- [in]
          fcHubRxN        => fcHubRxN,                              -- [in]
+         stableClk92     => stableClk92,                           -- [in]
+         stableRst92     => stableRst92,                           -- [in]
          lclsTimingClk   => lclsTimingClk,                         -- [in]
          lclsTimingRst   => lclsTimingRst,                         -- [in]
          fcTxMsg         => fcTxMsg,                               -- [in]
@@ -230,6 +254,18 @@ begin
          axilReadSlave   => locAxilReadSlaves(AXIL_FC_ARRAY_C),    -- [out]
          axilWriteMaster => locAxilWriteMasters(AXIL_FC_ARRAY_C),  -- [in]
          axilWriteSlave  => locAxilWriteSlaves(AXIL_FC_ARRAY_C));  -- [out]
+
+   -------------------------------------------------------------------------------------------------
+   -- Debugging
+   -------------------------------------------------------------------------------------------------
+   U_StretchDbgRorTx : entity surf.SynchronizerOneShot
+      generic map (
+         TPD_G         => TPD_G,
+         PULSE_WIDTH_G => 10)
+      port map (
+         clk     => lclsTimingClk,
+         dataIn  => fcTxMsg.valid,
+         dataOut => fcTxMsgValid);
 
 
 end rtl;

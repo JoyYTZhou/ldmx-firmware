@@ -34,49 +34,40 @@ use unisim.vcomponents.all;
 
 entity Lcls2TimingRx is
    generic (
-      TPD_G             : time    := 1 ns;
-      SIMULATION_G      : boolean := false;
-      TIME_GEN_EXTREF_G : boolean := false;
-      RX_CLK_MMCM_G     : boolean := true;
-      USE_TPGMINI_G     : boolean := true;
+      TPD_G             : time             := 1 ns;
+      SIMULATION_G      : boolean          := false;
+      TIME_GEN_EXTREF_G : boolean          := false;
+      RX_CLK_MMCM_G     : boolean          := true;
+      USE_TPGMINI_G     : boolean          := true;
       AXI_CLK_FREQ_G    : real             := 156.25e6;
       AXIL_BASE_ADDR_G  : slv(31 downto 0) := X"00000000");
    port (
-      stableClk        : in  sl;
-      stableRst        : in  sl;
-      -- AXI-Lite Interface (axilClk domain)
-      axilClk          : in  sl;
-      axilRst          : in  sl;
-      axilReadMaster   : in  AxiLiteReadMasterType;
-      axilReadSlave    : out AxiLiteReadSlaveType;
-      axilWriteMaster  : in  AxiLiteWriteMasterType;
-      axilWriteSlave   : out AxiLiteWriteSlaveType;
-      ----------------------
-      -- Top Level Interface
-      ----------------------
-      -- Timing Interface
-      recTimingClk     : out sl;
-      recTimingRst     : out sl;
---       appTimingClk         : in  sl;
---       appTimingRst         : in  sl;
-      appTimingBus     : out TimingBusType;
---      appTimingPhyClk     : out sl;     -- txusrclk
---      appTimingPhyRst     : out sl;
---      appTimingRefClk     : out sl;
---      appTimingRefClkDiv2 : out sl;
+      -- Stable clock and reset for GT
+      stableClk78          : in  sl;
+      stableRst78          : in  sl;
 
-      ----------------
-      -- Core Ports --
-      ----------------
       -- LCLS Timing Ports
-      timingRxP        : in  sl;
-      timingRxN        : in  sl;
-      timingTxP        : out sl;
-      timingTxN        : out sl;
-      timingRefClkInP  : in  sl;
-      timingRefClkInN  : in  sl;
-      timingRecClkOutP : out sl;
-      timingRecClkOutN : out sl);
+      timingRefClkInP      : in  sl;
+      timingRefClkInN      : in  sl;
+      timingRxP            : in  sl;
+      timingRxN            : in  sl;
+      timingTxP            : out sl;
+      timingTxN            : out sl;
+      timingUserRefClkDiv2 : out sl;    -- 185.71/2 MHz useful for stable clocks elsewhere
+
+      -- Timing Interface
+      recTimingClk : out sl;
+      recTimingRst : out sl;
+      appTimingBus : out TimingBusType;
+
+      -- AXI-Lite Interface (axilClk domain)
+      axilClk         : in  sl;
+      axilRst         : in  sl;
+      axilReadMaster  : in  AxiLiteReadMasterType;
+      axilReadSlave   : out AxiLiteReadSlaveType;
+      axilWriteMaster : in  AxiLiteWriteMasterType;
+      axilWriteSlave  : out AxiLiteWriteSlaveType);
+
 end Lcls2TimingRx;
 
 architecture rtl of Lcls2TimingRx is
@@ -93,7 +84,7 @@ architecture rtl of Lcls2TimingRx is
          connectivity   => x"FFFF"),
       AXIL_GTY_INDEX_C  => (
          baseAddr       => (AXIL_BASE_ADDR_G+x"00040000"),
-         addrBits       => 12,
+         addrBits       => 13,
          connectivity   => x"FFFF"));
 
    signal axilWriteMasters : AxiLiteWriteMasterArray(NUM_AXIL_C-1 downto 0) := (others => AXI_LITE_WRITE_MASTER_INIT_C);
@@ -104,7 +95,7 @@ architecture rtl of Lcls2TimingRx is
    -- Reference clocks
    signal timingRefClk     : sl;
    signal timingRefDiv2    : sl;
-   signal timingRefClkDiv2 : sl;
+   signal timingUserRefClk : sl;
 
    -- Recovered clocks
    signal timingRxOutClkGt : sl;
@@ -113,30 +104,30 @@ architecture rtl of Lcls2TimingRx is
    signal timingRxRecClk   : sl;
 
    -- Rx ports
-   signal rxReset          : sl;
-   signal rxUsrClkActive   : sl;
-   signal rxCdrStable      : sl;
-   signal rxStatus         : TimingPhyStatusType;
-   signal rxControl        : TimingPhyControlType;
-   signal rxData           : slv(15 downto 0);
-   signal rxDataK          : slv(1 downto 0);
-   signal rxDispErr        : slv(1 downto 0);
-   signal rxDecErr         : slv(1 downto 0);
-   signal txUsrClk         : sl;
-   signal txUsrRst         : sl;
-   signal txUsrClkActive   : sl;
-   signal txStatus         : TimingPhyStatusType := TIMING_PHY_STATUS_INIT_C;
-   signal timingPhy        : TimingPhyType;
-   signal coreTimingPhy    : TimingPhyType;
-   signal loopback         : slv(2 downto 0);
-   signal refclksel        : slv(2 downto 0);
-   signal appBus           : TimingBusType;
-   signal appTimingClk     : sl;
-   signal appTimingRst     : sl;
-   signal appTimingMode    : sl;
-   signal timingStrobe     : sl;
-   signal timingValid      : sl;
-   signal rxPmaRstDoneOut  : sl;
+   signal rxReset         : sl;
+   signal rxUsrClkActive  : sl;
+   signal rxCdrStable     : sl;
+   signal rxStatus        : TimingPhyStatusType;
+   signal rxControl       : TimingPhyControlType;
+   signal rxData          : slv(15 downto 0);
+   signal rxDataK         : slv(1 downto 0);
+   signal rxDispErr       : slv(1 downto 0);
+   signal rxDecErr        : slv(1 downto 0);
+   signal txUsrClk        : sl;
+   signal txUsrRst        : sl;
+   signal txUsrClkActive  : sl;
+   signal txStatus        : TimingPhyStatusType := TIMING_PHY_STATUS_INIT_C;
+   signal timingPhy       : TimingPhyType;
+   signal coreTimingPhy   : TimingPhyType;
+   signal loopback        : slv(2 downto 0);
+   signal refclksel       : slv(2 downto 0);
+   signal appBus          : TimingBusType;
+   signal appTimingClk    : sl;
+   signal appTimingRst    : sl;
+   signal appTimingMode   : sl;
+   signal timingStrobe    : sl;
+   signal timingValid     : sl;
+   signal rxPmaRstDoneOut : sl;
 
 
 begin
@@ -194,6 +185,16 @@ begin
          IB    => timingRefClkInN);     -- 1-bit input: Refer to Transceiver User Guide
 
 
+   U_BUFG_GT_USER : BUFG_GT
+      port map (
+         I       => timingRefDiv2,
+         CE      => '1',
+         CEMASK  => '1',
+         CLR     => '0',
+         CLRMASK => '1',
+         DIV     => "000",
+         O       => timingUserRefClk);
+
    U_BUFG_GT_DIV2 : BUFG_GT
       port map (
          I       => timingRefDiv2,
@@ -201,11 +202,12 @@ begin
          CEMASK  => '1',
          CLR     => '0',
          CLRMASK => '1',
-         DIV     => "000",              -- Divide by 2
-         O       => timingRefClkDiv2);
+         DIV     => "001",
+         O       => timingUserRefClkDiv2);
+
 
 --   appTimingRefClk     <= timingRefClk;
---   appTimingRefClkDiv2 <= timingRefClkDiv2;
+--   appTimingRefClkDiv2 <= timingUserRefClk;
 
    -------------------------------------------------------------------------------------------------
    -- GT Timing Receiver
@@ -218,7 +220,6 @@ begin
          AXIL_BASE_ADDR_G  => AXIL_XBAR_CFG_C(AXIL_GTY_INDEX_C).baseAddr,
          EXTREF_G          => TIME_GEN_EXTREF_G,
          DISABLE_TIME_GT_G => false,
-         ADDR_BITS_G       => 12,
          GTY_DRP_OFFSET_G  => x"00001000")
       port map (
          axilClk         => axilClk,
@@ -227,10 +228,10 @@ begin
          axilReadSlave   => axilReadSlaves(AXIL_GTY_INDEX_C),
          axilWriteMaster => axilWriteMasters(AXIL_GTY_INDEX_C),
          axilWriteSlave  => axilWriteSlaves(AXIL_GTY_INDEX_C),
-         stableClk       => stableClk,
-         stableRst       => stableRst,
+         stableClk       => stableClk78,
+         stableRst       => stableRst78,
          gtRefClk        => timingRefClk,
-         gtRefClkDiv2    => timingRefClkDiv2,
+         gtRefClkDiv2    => timingUserRefClk,
          gtRxP           => timingRxP,
          gtRxN           => timingRxN,
          gtTxP           => timingTxP,
@@ -246,7 +247,6 @@ begin
          rxDispErr       => rxDispErr,
          rxDecErr        => rxDecErr,
          rxOutClk        => timingRxOutClkGt,
-         rxRecClk        => timingRxRecClk,  -- Piped directly to GTCLK Pins
          txControl       => timingPhy.control,
          txStatus        => txStatus,
          txUsrClk        => txUsrClk,
@@ -269,14 +269,14 @@ begin
             RST_IN_POLARITY_G  => '0',
             NUM_CLOCKS_G       => 1,
             -- MMCM attributes
-            BANDWIDTH_G        => "OPTIMIZED",
+            BANDWIDTH_G        => "HIGH",
             CLKIN_PERIOD_G     => 5.384,
             DIVCLK_DIVIDE_G    => 1,
-            CLKFBOUT_MULT_F_G  => 6.500,
-            CLKOUT0_DIVIDE_F_G => 6.500)
+            CLKFBOUT_MULT_F_G  => 8.500,
+            CLKOUT0_DIVIDE_F_G => 8.500)
          port map(
             clkIn     => timingRxOutClkGt,
-            rstIn     => rxPmaRstDoneOut, -- reset polarity low -> active-low reset
+            rstIn     => rxPmaRstDoneOut,  -- reset polarity low -> active-low reset
             clkOut(0) => timingRxOutClk,
 --            rstOut(0) => open,
             locked    => rxUsrClkActive);
@@ -287,18 +287,6 @@ begin
       timingRxOutClk <= timingRxOutClkGt;
       rxUsrClkActive <= '1';
    end generate NO_RX_CLK_MMCM_GEN;
-
-   -- Output recovered clock from GT to GTREFCLK pins for jitter cleaning
-   U_mgtRecClk : OBUFDS_GTE4
-      generic map (
-         REFCLK_EN_TX_PATH => '1',
-         REFCLK_ICNTL_TX   => "00000")
-      port map (
-         O   => timingRecClkOutP,
-         OB  => timingRecClkOutN,
-         CEB => '0',
-         I   => timingRxRecClk);
-
 
    ------------------------------------------------------------------------------------------------
    -- Timing Core

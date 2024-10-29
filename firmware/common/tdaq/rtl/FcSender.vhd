@@ -1,5 +1,5 @@
 -------------------------------------------------------------------------------
--- Title      : 
+-- Title      :
 -------------------------------------------------------------------------------
 -- Author     : Benjamin Reese  <bareese@slac.stanford.edu>
 -------------------------------------------------------------------------------
@@ -29,12 +29,12 @@ use ldmx_tdaq.FcPkg.all;
 
 
 entity FcSender is
-
    generic (
       TPD_G            : time             := 1 ns;
       SIM_SPEEDUP_G    : boolean          := false;
       AXIL_CLK_FREQ_G  : real             := 125.0e6;
-      AXIL_BASE_ADDR_G : slv(31 downto 0) := (others => '0'));
+      AXIL_BASE_ADDR_G : slv(31 downto 0) := (others => '0');
+      RX_CLK_MMCM_G    : boolean          := false);
    port (
       -- Reference clock
       fcHubRefClk       : in  sl;
@@ -43,6 +43,9 @@ entity FcSender is
       fcHubTxN          : out sl;
       fcHubRxP          : in  sl;
       fcHubRxN          : in  sl;
+      -- Stable 185.71/2 MHz clock
+      stableClk92       : in  sl;
+      stableRst92       : in  sl;
       -- Interface to Global Trigger and LCLS Timing
       lclsTimingUserClk : in  sl;
       lclsTimingUserRst : in  sl;
@@ -88,15 +91,16 @@ begin
          TX_ENABLE_G      => true,
          RX_ENABLE_G      => true,
          NUM_VC_EN_G      => 0,
-         RX_CLK_MMCM_G    => false)
+         RX_CLK_MMCM_G    => RX_CLK_MMCM_G)
       port map (
          pgpTxP          => fcHubTxP,                              -- [out]
          pgpTxN          => fcHubTxN,                              -- [out]
          pgpRxP          => fcHubRxP,                              -- [in]
          pgpRxN          => fcHubRxN,                              -- [in]
-         pgpRefClk       => fcHubRefClk,                    -- [in]
+         pgpRefClk       => fcHubRefClk,                           -- [in]
          pgpUserRefClk   => lclsTimingUserClk,                     -- [in]
-         pgpRxRecClk     => open,                                  -- [out]
+         pgpStableClk92  => stableClk92,                           -- [in]
+         pgpStableRst92  => stableRst92,                           -- [in]
          pgpRxRstOut     => fcRxRst185,                            -- [out]
          pgpRxOutClk     => fcRxClk185,                            -- [out]
          pgpRxIn         => pgpRxIn,                               -- [in]

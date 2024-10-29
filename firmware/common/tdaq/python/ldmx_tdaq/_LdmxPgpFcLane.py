@@ -11,14 +11,13 @@ class LdmxPgpFcLane(pr.Device):
 
         self.add(surf.protocols.pgp.Pgp2fcAxi(
             name   = "Pgp2Fc",
-            statusCountBits = 12,
-            errorCountBits  = 18,
+            statusCountBits = 32,
+            errorCountBits  = 32,
             offset = 0x4000))
 
         self.add(ldmx_tdaq.Pgp2fcGtyCoreWrapper(
             name   = "GTY",
             offset = 0x0000))
-        
 
         if numVc > 0:
             self.add(surf.axi.AxiStreamMonAxiL(
@@ -34,6 +33,3 @@ class LdmxPgpFcLane(pr.Device):
                 numberLanes = numVc,
                 hideConfig = False,
                 chName = None))
-
-
-        

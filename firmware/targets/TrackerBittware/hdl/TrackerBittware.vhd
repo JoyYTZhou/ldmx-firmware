@@ -39,12 +39,12 @@ use unisim.vcomponents.all;
 entity TrackerBittware is
    generic (
       TPD_G                : time                        := 1 ns;
-      SIM_SPEEDUP_G        : boolean                     := true;
+      SIM_SPEEDUP_G        : boolean                     := false;
       ROGUE_SIM_EN_G       : boolean                     := false;
       ROGUE_SIM_PORT_NUM_G : natural range 1024 to 49151 := 11000;
       DMA_BURST_BYTES_G    : integer range 256 to 4096   := 4096;
       DMA_BYTE_WIDTH_G     : integer range 8 to 64       := 8;
-      PGP_QUADS_G          : integer                     := 2;
+      PGP_QUADS_G          : integer                     := 1;
       BUILD_INFO_G         : BuildInfoType);
    port (
       ---------------------
@@ -53,8 +53,6 @@ entity TrackerBittware is
       -- QSFP-DD Ports
       qsfpRefClkP    : in  slv(7 downto 0);
       qsfpRefClkN    : in  slv(7 downto 0);
-      qsfpRecClkP    : out slv(7 downto 0);
-      qsfpRecClkN    : out slv(7 downto 0);
       qsfpRxP        : in  slv(31 downto 0);
       qsfpRxN        : in  slv(31 downto 0);
       qsfpTxP        : out slv(31 downto 0);
@@ -70,6 +68,7 @@ entity TrackerBittware is
       -- System Ports
       userClkP       : in  sl;
       userClkN       : in  sl;
+      ledL           : out slv(3 downto 0);
       -- PCIe Ports
       pciRstL        : in  sl;
       pciRefClkP     : in  sl;
@@ -87,8 +86,6 @@ architecture rtl of TrackerBittware is
    -----------------------------------------
    signal fcRefClk185P    : sl;
    signal fcRefClk185N    : sl;
-   signal fcRecClkP       : sl;
-   signal fcRecClkN       : sl;
    signal fcTxP           : sl;
    signal fcTxN           : sl;
    signal fcRxP           : sl;
@@ -162,6 +159,11 @@ architecture rtl of TrackerBittware is
    signal dmaObSlaves     : AxiStreamSlaveArray(PGP_QUADS_G-1 downto 0);
    signal dmaIbMasters    : AxiStreamMasterArray(PGP_QUADS_G-1 downto 0);
    signal dmaIbSlaves     : AxiStreamSlaveArray(PGP_QUADS_G-1 downto 0);
+
+   ------------
+   -- Misc
+   ------------
+   signal fcRxMsgValid    : sl;
 
 begin
 
@@ -283,8 +285,6 @@ begin
       port map (
          fcRefClk185P    => fcRefClk185P,                    -- [in]
          fcRefClk185N    => fcRefClk185N,                    -- [in]
-         fcRecClkP       => fcRecClkP,                       -- [out]
-         fcRecClkN       => fcRecClkN,                       -- [out]
          fcTxP           => fcTxP,                           -- [out]
          fcTxN           => fcTxN,                           -- [out]
          fcRxP           => fcRxP,                           -- [in]
@@ -295,6 +295,7 @@ begin
 --         fcFb            => FC_FB_INIT_C,                    -- [in]
          fcBunchClk37    => open,                            -- [out]
          fcBunchRst37    => open,                            -- [out]
+         fcRxMsgValid    => fcRxMsgValid,                    -- [out]
          axilClk         => axilClk,                         -- [in]
          axilRst         => axilRst,                         -- [in]
          axilReadMaster  => axilReadMasters(FC_RX_AXIL_C),   -- [in]
@@ -344,13 +345,15 @@ begin
    -- FC RX is quad 0
    fcRefClk185P   <= qsfpRefClkP(0);
    fcRefClk185N   <= qsfpRefClkN(0);
-   qsfpRecClkP(0) <= fcRecClkP;
-   qsfpRecClkN(0) <= fcRecClkN;
    qsfpTxP(0)     <= fcTxP;
    qsfpTxN(0)     <= fcTxN;
    fcRxP          <= qsfpRxP(0);
    fcRxN          <= qsfpRxN(0);
 
+   -- Debugging Outputs
+   GEN_DBG: for i in 3 downto 0 generate
+      ledL(i) <= fcRxMsgValid;
+   end generate GEN_DBG;
 
    -- FEB PGP is QUADS 4 and 5 (banks 124 and 125) since they share the recRefClk with 0
    GEN_FEB_REFCLK : for i in PGP_QUADS_G-1 downto 0 generate
@@ -382,10 +385,10 @@ begin
    U_Gtye4ChannelDummy_1 : entity surf.Gtye4ChannelDummy
       generic map (
          TPD_G        => TPD_G,
-         SIMULATION_G => SIM_SPEEDUP_G,
+         SIMULATION_G => true,
          WIDTH_G      => 3)
       port map (
-         refClk   => axilCLk,                    -- [in]
+         refClk   => axilClk,                    -- [in]
          rxoutClk => dummyRxOutClk(3 downto 1),  -- [out]
          gtRxP    => qsfpRxP(3 downto 1),        -- [in]
          gtRxN    => qsfpRxN(3 downto 1),        -- [in]
@@ -395,10 +398,10 @@ begin
    U_Gtye4ChannelDummy_2 : entity surf.Gtye4ChannelDummy
       generic map (
          TPD_G        => TPD_G,
-         SIMULATION_G => SIM_SPEEDUP_G,
+         SIMULATION_G => true,
          WIDTH_G      => 12)
       port map (
-         refClk   => axilCLk,                     -- [in]
+         refClk   => axilClk,                     -- [in]
          rxoutClk => dummyRxOutClk(15 downto 4),  -- [out]
          gtRxP    => qsfpRxP(15 downto 4),        -- [in]
          gtRxN    => qsfpRxN(15 downto 4),        -- [in]
@@ -408,28 +411,14 @@ begin
    U_Gtye4ChannelDummy_3 : entity surf.Gtye4ChannelDummy
       generic map (
          TPD_G        => TPD_G,
-         SIMULATION_G => SIM_SPEEDUP_G,
-         WIDTH_G      => 8)
+         SIMULATION_G => true,
+         WIDTH_G      => 32-(PGP_QUADS_G*4+16))
       port map (
-         refClk   => axilCLk,                      -- [in]
-         rxoutClk => dummyRxOutClk(31 downto 24),  -- [out]
-         gtRxP    => qsfpRxP(31 downto 24),        -- [in]
-         gtRxN    => qsfpRxN(31 downto 24),        -- [in]
-         gtTxP    => qsfpTxP(31 downto 24),        -- [out]
-         gtTxN    => qsfpTxN(31 downto 24));       -- [out]
-
-   GEN_DUMMY_RECCLK_BUF : for i in 7 downto 1 generate
-      U_mgtRecClk : OBUFDS_GTE4
-         generic map (
-            REFCLK_EN_TX_PATH => '1',
-            REFCLK_ICNTL_TX   => "00000")
-         port map (
-            O   => qsfpRecClkP(i),
-            OB  => qsfpRecClkN(i),
-            CEB => '0',
-            I   => dummyRxOutClk(i*4));  -- using rxRecClk from Channel=0
-
-   end generate GEN_DUMMY_RECCLK_BUF;
-
+         refClk   => axilClk,                      -- [in]
+         rxoutClk => dummyRxOutClk(31 downto PGP_QUADS_G*4+16),  -- [out]
+         gtRxP    => qsfpRxP(31 downto PGP_QUADS_G*4+16),        -- [in]
+         gtRxN    => qsfpRxN(31 downto PGP_QUADS_G*4+16),        -- [in]
+         gtTxP    => qsfpTxP(31 downto PGP_QUADS_G*4+16),        -- [out]
+         gtTxN    => qsfpTxN(31 downto PGP_QUADS_G*4+16));       -- [out]
 
 end rtl;

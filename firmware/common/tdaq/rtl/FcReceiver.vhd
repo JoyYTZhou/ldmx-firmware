@@ -30,7 +30,6 @@ use ldmx_tdaq.FcPkg.all;
 
 
 entity FcReceiver is
-
    generic (
       TPD_G            : time                 := 1 ns;
       SIM_SPEEDUP_G    : boolean              := false;
@@ -38,16 +37,14 @@ entity FcReceiver is
       NUM_VC_EN_G      : integer range 0 to 4 := 0;
       GEN_FC_EMU_G     : boolean              := true;
       AXIL_CLK_FREQ_G  : real                 := 156.25e6;
-      AXIL_BASE_ADDR_G : slv(31 downto 0)     := (others => '0'));
+      AXIL_BASE_ADDR_G : slv(31 downto 0)     := (others => '0');
+      RX_CLK_MMCM_G    : boolean              := true);
    port (
       -- Reference clock
       fcRefClk185P : in  sl;
       fcRefClk185N : in  sl;
       fcRefClk185G : out sl;
       fcRefRst185  : out sl;
-      -- Output Recovered Clock
-      fcRecClkP    : out sl;
-      fcRecClkN    : out sl;
       -- PGP serial IO
       fcTxP        : out sl;
       fcTxN        : out sl;
@@ -64,6 +61,8 @@ entity FcReceiver is
       pgpRxOut     : out Pgp2fcRxOutType;
       pgpRxMasters : out AxiStreamMasterArray(3 downto 0) := (others => AXI_STREAM_MASTER_INIT_C);
       pgpRxCtrl    : in  AxiStreamCtrlArray(3 downto 0)   := (others => AXI_STREAM_CTRL_UNUSED_C);
+      -- Debugging interface
+      fcRxMsgValid : out sl;
 
       -- TX FC and PGP interface
       txClk185     : out sl;
@@ -112,11 +111,12 @@ architecture rtl of FcReceiver is
    signal locAxilReadSlaves   : AxiLiteReadSlaveArray(NUM_AXIL_MASTERS_C-1 downto 0)  := (others => AXI_LITE_READ_SLAVE_EMPTY_DECERR_C);
 
    -- Clocks and resets
-   signal pgpRefClk          : sl;      -- Refclk after buffering   
+   signal pgpRefClk          : sl;      -- Refclk after buffering
    signal pgpUserRefClkOdiv2 : sl;      -- Refclk ODIV2
    signal pgpUserRefClk      : sl;      -- ODIV2+BUFG_GT - Used to clock TX
-   signal pgpUserRefRst      : sl;
-   signal pgpRxRecClk        : sl;      -- Recovered RX clock for refclk output
+   signal pgpStableClk92     : sl;      -- true div2 of gtRefClk; for GTY/GTH stableClk pin
+   signal pgpStableRst92     : sl;
+   signal pgpUserRefRst      : sl := '0';
    signal fcClk185Loc        : sl;      -- Recovered RX clock for local use
    signal fcRst185Loc        : sl;
 
@@ -196,17 +196,15 @@ begin
          DIV     => "000",
          O       => pgpUserRefClk);
 
-   -- Output recovered clock on gt clock pins
-   -- Might need generic around this
-   U_mgtRecClk : OBUFDS_GTE4
-      generic map (
-         REFCLK_EN_TX_PATH => '1',
-         REFCLK_ICNTL_TX   => "00000")
+   U_mgtUserRefClkDiv2 : BUFG_GT
       port map (
-         O   => fcRecClkP,
-         OB  => fcRecClkN,
-         CEB => '0',
-         I   => pgpRxRecClk);           -- using rxRecClk from Channel=0
+         I       => pgpUserRefClkOdiv2,
+         CE      => '1',
+         CEMASK  => '1',
+         CLR     => '0',
+         CLRMASK => '1',
+         DIV     => "001",
+         O       => pgpStableClk92);
 
    -------------------------------------------------------------------------------------------------
    -- Create a reset for pgpUserRefClk
@@ -228,9 +226,9 @@ begin
          OUT_POLARITY_G  => '1',
          RELEASE_DELAY_G => 5)
       port map (
-         clk      => pgpUserRefClk,
+         clk      => pgpStableClk92,
          asyncRst => '0',
-         syncRst  => pgpUserRefRst);
+         syncRst  => pgpStableRst92);
 
 
    -------------------------------------------------------------------------------------------------
@@ -246,7 +244,7 @@ begin
          TX_ENABLE_G      => true,
          RX_ENABLE_G      => true,
          NUM_VC_EN_G      => NUM_VC_EN_G,
-         RX_CLK_MMCM_G    => true)
+         RX_CLK_MMCM_G    => RX_CLK_MMCM_G)
       port map (
          pgpTxP          => fcTxP,                                    -- [out]
          pgpTxN          => fcTxN,                                    -- [out]
@@ -254,7 +252,8 @@ begin
          pgpRxN          => fcRxN,                                    -- [in]
          pgpRefClk       => pgpRefClk,                                -- [in]
          pgpUserRefClk   => pgpUserRefClk,                            -- [in]
-         pgpRxRecClk     => pgpRxRecClk,                              -- [out]
+         pgpStableClk92  => pgpStableClk92,                           -- [in]
+         pgpStableRst92  => pgpStableRst92,                           -- [in]
          pgpRxRstOut     => fcRst185Loc,                              -- [out]
          pgpRxOutClk     => fcClk185Loc,                              -- [out]
          pgpRxIn         => pgpRxInLoc,                               -- [in]
@@ -306,8 +305,6 @@ begin
    -- Activated when PGP GT placed in loopback mode
    -------------------------------------------------------------------------------------------------
    GEN_FC_EMU : if (GEN_FC_EMU_G) generate
-
-
       U_FcEmu_1 : entity ldmx_tdaq.FcEmu
          generic map (
             TPD_G                => TPD_G,
@@ -359,6 +356,16 @@ begin
 
 --   pgpTxIn.locData(0) <= fcFb.busy;
 
-
+   -------------------------------------------------------------------------------------------------
+   -- Debugging
+   -------------------------------------------------------------------------------------------------
+   U_StretchDbgRorTx : entity surf.SynchronizerOneShot
+      generic map (
+         TPD_G         => TPD_G,
+         PULSE_WIDTH_G => 10)
+      port map (
+         clk     => fcClk185Loc,
+         dataIn  => fcValid,
+         dataOut => fcRxMsgValid);
 
 end architecture rtl;

@@ -27,6 +27,7 @@ use surf.AxiStreamPkg.all;
 
 library ldmx_tdaq;
 use ldmx_tdaq.FcPkg.all;
+use ldmx_tdaq.TriggerPkg.all;
 
 library ldmx_ts;
 use ldmx_ts.TsPkg.all;
@@ -67,9 +68,9 @@ entity S30xlAppCore is
       axilWriteSlave  : out AxiLiteWriteSlaveType;
 
       -- GT Stream
-      fcClk185Out  : out sl;
-      fcRst185Out  : out sl;
-      tsTrigGtData : out TriggerDataType;
+      fcClk185Out          : out sl;
+      fcRst185Out          : out sl;
+      thresholdTriggerData : out TriggerDataType;
 
       -- DAQ Stream
       axisClk             : in  sl;
@@ -123,8 +124,10 @@ architecture rtl of S30xlAppCore is
    ----------
    -- TS Raw Data
    ----------
-   signal fcTsRxMsgs : TsData6ChMsgArray(TS_LANES_G-1 downto 0);
-   signal fcMsgTime  : FcTimestampType;
+   signal fcTsRxMsgs     : TsData6ChMsgArray(TS_LANES_G-1 downto 0);
+   signal fcMsgTimestamp : FcTimestampType;
+
+   signal tsTrigDaqData : TsS30xlThresholdTriggerDaqType;
 
    ------------------------
    -- Trigger logic outputs
@@ -170,8 +173,6 @@ begin
       port map (
          fcRefClk185P    => appFcRefClkP,                       -- [in]
          fcRefClk185N    => appFcRefClkN,                       -- [in]
-         fcRecClkP       => open,                               -- [out]
-         fcRecClkN       => open,                               -- [out]
          fcTxP           => appFcTxP,                           -- [out]
          fcTxN           => appFcTxN,                           -- [out]
          fcRxP           => appFcRxP,                           -- [in]
@@ -213,7 +214,7 @@ begin
          fcRst185        => fcRst185,                           -- [in]
          fcBus           => fcBus,                              -- [in]
          fcTsRxMsgs      => fcTsRxMsgs,                         -- [out]
-         fcMsgTime       => fcMsgTime,                          -- [out]
+         fcMsgTimestamp  => fcMsgTimestamp,                     -- [out]
          axilClk         => axilClk,                            -- [in]
          axilRst         => axilRst,                            -- [in]
          axilReadMaster  => locAxilReadMasters(AXIL_TS_RX_C),   -- [in]
@@ -234,11 +235,11 @@ begin
          fcRst185        => fcRst185,            -- [in]
          fcBus           => fcBus,               -- [in]
          fcTsRxMsgs      => fcTsRxMsgs,          -- [in]
-         fcMsgTime       => fcMsgTime,           -- [in]
+         fcMsgTimestamp  => fcMsgTimestamp,      -- [in]
          axisClk         => axisClk,             -- [in]
          axisRst         => axisRst,             -- [in]
-         tsDaqAxisMaster => tsDaqRawAxisMaster,  -- [out]
-         tsDaqAxisSlave  => tsDaqRawAxisSlave);  -- [in]
+         eventAxisMaster => tsDaqRawAxisMaster,  -- [out]
+         eventAxisSlave  => tsDaqRawAxisSlave);  -- [in]
 
    -------------------------------------------------------------------------------------------------
    -- Trigger algorithm block
@@ -247,12 +248,12 @@ begin
       generic map (
          TPD_G => TPD_G)
       port map (
-         fcClk185  => fcClk185,         -- [in]
-         fcRst185  => fcRst185,         -- [in]
-         fcTsMsg   => fcTsRxMsgs,       -- [in]
-         fcMsgTime => fcMsgTime,        -- [in]
-         daqData   => tsTrigDaqData,    -- [out]
-         gtData    => tsTrigGtData);    -- [out]
+         fcClk185       => fcClk185,               -- [in]
+         fcRst185       => fcRst185,               -- [in]
+         fcTsMsg        => fcTsRxMsgs,             -- [in]
+         fcMsgTimestamp => fcMsgTimestamp,         -- [in]
+         daqData        => tsTrigDaqData,          -- [out]
+         gtData         => thresholdTriggerData);  -- [out]
 
    -------------------------------------------------------------------------------------------------
    -- Trigger DAQ block
@@ -262,14 +263,14 @@ begin
          TPD_G      => TPD_G,
          TS_LANES_G => TS_LANES_G)
       port map (
-         fcClk185         => fcClk185,             -- [in]
-         fcRst185         => fcRst185,             -- [in]
-         fcBus            => fcBus,                -- [in]
-         tsTrigData       => tsTrigData,           -- [in]
-         axisClk          => axisClk,              -- [in]
-         axisRst          => axisRst,              -- [in]
-         tsTrigAxisMaster => tsDaqTrigAxisMaster,  -- [out]
-         tsTrigAxisSlave  => tsDaqTrigAxisSlave);  -- [in]
+         fcClk185        => fcClk185,             -- [in]
+         fcRst185        => fcRst185,             -- [in]
+         fcBus           => fcBus,                -- [in]
+         tsTrigDaqData   => tsTrigDaqData,        -- [in]
+         axisClk         => axisClk,              -- [in]
+         axisRst         => axisRst,              -- [in]
+         eventAxisMaster => tsDaqTrigAxisMaster,  -- [out]
+         eventAxisSlave  => tsDaqTrigAxisSlave);  -- [in]
 
 
    -------------------------------------------------------------------------------------------------
@@ -278,7 +279,7 @@ begin
    -------------------------------------------------------------------------------------------------
    fcClk185Out <= fcClk185;
    fcRst185Out <= fcRst185;
-   
+
 
 end architecture rtl;
 

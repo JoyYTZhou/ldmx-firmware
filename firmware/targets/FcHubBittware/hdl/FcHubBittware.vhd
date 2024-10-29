@@ -37,7 +37,7 @@ use unisim.vcomponents.all;
 entity FcHubBittware is
    generic (
       TPD_G                    : time                        := 1 ns;
-      SIM_SPEEDUP_G            : boolean                     := true;
+      SIM_SPEEDUP_G            : boolean                     := false;
       ROGUE_SIM_EN_G           : boolean                     := false;
       ROGUE_SIM_PORT_NUM_G     : natural range 1024 to 49151 := 11000;
       DMA_BURST_BYTES_G        : integer range 256 to 4096   := 4096;
@@ -53,8 +53,6 @@ entity FcHubBittware is
       -- QSFP-DD Ports
       qsfpRefClkP    : in  slv(7 downto 0);
       qsfpRefClkN    : in  slv(7 downto 0);
-      qsfpRecClkP    : out slv(0 downto 0);
-      qsfpRecClkN    : out slv(0 downto 0);
       qsfpRxP        : in  slv(31 downto 0);
       qsfpRxN        : in  slv(31 downto 0);
       qsfpTxP        : out slv(31 downto 0);
@@ -70,6 +68,7 @@ entity FcHubBittware is
       -- System Ports
       userClkP       : in  sl;
       userClkN       : in  sl;
+      ledL           : out slv(3 downto 0);
       -- PCIe Ports
       pciRstL        : in  sl;
       pciRefClkP     : in  sl;
@@ -87,8 +86,6 @@ architecture rtl of FcHubBittware is
    ---------------------------
    signal lclsTimingRefClkP : sl;
    signal lclsTimingRefClkN : sl;
-   signal timingRecClkOutP  : sl;
-   signal timingRecClkOutN  : sl;
    signal lclsTimingTxP     : sl;
    signal lclsTimingTxN     : sl;
    signal lclsTimingRxP     : sl;
@@ -111,12 +108,12 @@ architecture rtl of FcHubBittware is
    -------
    signal dummyGlobalTriggerRor : FcTimestampType := FC_TIMESTAMP_INIT_C;
    signal dummyRxOutClk         : slv(31 downto 1);
+   signal fcTxMsgValid          : sl;
 
    --------------
    -- User Clocks
    --------------
    signal userClk100 : sl;
-   signal userRst100 : sl;
 
    -----------
    -- AXI Lite
@@ -137,6 +134,8 @@ architecture rtl of FcHubBittware is
 
    signal axilClk          : sl;
    signal axilRst          : sl;
+   signal stableClk        : sl;
+   signal stableRst        : sl;
    signal axilReadMaster   : AxiLiteReadMasterType;
    signal axilReadSlave    : AxiLiteReadSlaveType;
    signal axilWriteMaster  : AxiLiteWriteMasterType;
@@ -162,38 +161,32 @@ architecture rtl of FcHubBittware is
 begin
 
    -------------------------------------------------------------------------------------------------
-   -- Convert 100 MHz user clock to 125 MHz for AXI-Lite clock
+   -- Convert 100 MHz userClk to 125 MHz for AXI-Lite clock and 78.125 MHz for Timing GT stableClk
    -------------------------------------------------------------------------------------------------
-   U_PwrUpRst : entity surf.PwrUpRst
-      generic map (
-         TPD_G      => TPD_G,
-         DURATION_G => 500)
-      port map (
-         arst   => '0',                 -- [in]
-         clk    => userClk100,          -- [in]
-         rstOut => userRst100);         -- [out]
-
-   U_axilClk : entity surf.ClockManagerUltraScale
+   U_AxiClkStableClk : entity surf.ClockManagerUltraScale
       generic map(
          TPD_G             => TPD_G,
-         TYPE_G            => "PLL",
+         TYPE_G            => "MMCM",
          INPUT_BUFG_G      => false,
          FB_BUFG_G         => true,
          RST_IN_POLARITY_G => '1',
-         NUM_CLOCKS_G      => 1,
+         NUM_CLOCKS_G      => 2,
          -- MMCM attributes
          BANDWIDTH_G       => "OPTIMIZED",
          CLKIN_PERIOD_G    => 10.0,     -- 100 MHz
-         CLKFBOUT_MULT_G   => 10,       -- 100x10 = 1000 MHz
-         CLKOUT0_DIVIDE_G  => 8)        -- 1000/8 = 125  MHz
+         CLKFBOUT_MULT_F_G => 12.5,     -- 100x12.5 = 1250   MHz
+         CLKOUT0_DIVIDE_G  => 10,       -- 1250/10  = 125    MHz
+         CLKOUT1_DIVIDE_G  => 16)       -- 1250/16  = 78.125 MHz
       port map(
          -- Clock Input
          clkIn     => userClk100,
          rstIn     => dmaRst,
          -- Clock Outputs
          clkOut(0) => axilClk,
+         clkOut(1) => stableClk,
          -- Reset Outputs
-         rstOut(0) => axilRst);
+         rstOut(0) => axilRst,
+         rstOut(1) => stableRst);
 
    -----------------------
    -- axi-pcie-core module
@@ -279,29 +272,30 @@ begin
          AXIL_CLK_FREQ_G   => AXIL_CLK_FREQ_C,
          AXIL_BASE_ADDR_G  => AXIL_XBAR_CFG_C(AXIL_FC_HUB_C).baseAddr)
       port map (
-         lclsTimingRefClkP => lclsTimingRefClkP,                   -- [in]
-         lclsTimingRefClkN => lclsTimingRefClkN,                   -- [in]
-         lclsTimingRxP     => lclsTimingRxP,                       -- [in]
-         lclsTimingRxN     => lclsTimingRxN,                       -- [in]
-         lclsTimingTxP     => lclsTimingTxP,                       -- [out]
-         lclsTimingTxN     => lclsTimingTxN,                       -- [out]
-         timingRecClkOutP  => timingRecClkOutP,                    -- [out]
-         timingRecClkOutN  => timingRecClkOutN,                    -- [out]
-         lclsTimingClkOut  => lclsTimingClk,                       -- [out]
-         lclsTimingRstOut  => lclsTimingRst,                       -- [out]
-         globalTriggerRor  => dummyGlobalTriggerRor,               -- [in]
-         fcHubRefClkP      => fcHubRefClkP,                        -- [in]
-         fcHubRefClkN      => fcHubRefClkN,                        -- [in]
-         fcHubTxP          => fcHubTxP,                            -- [out]
-         fcHubTxN          => fcHubTxN,                            -- [out]
-         fcHubRxP          => fcHubRxP,                            -- [in]
-         fcHubRxN          => fcHubRxN,                            -- [in]
-         axilClk           => axilClk,                             -- [in]
-         axilRst           => axilRst,                             -- [in]
-         axilReadMaster    => axilReadMasters(AXIL_FC_HUB_C),      -- [in]
-         axilReadSlave     => axilReadSlaves(AXIL_FC_HUB_C),       -- [out]
-         axilWriteMaster   => axilWriteMasters(AXIL_FC_HUB_C),     -- [in]
-         axilWriteSlave    => axilWriteSlaves(AXIL_FC_HUB_C));     -- [out]
+         lclsTimingStableClk78 => stableClk,                           -- [in]
+         lclsTimingStableRst78 => stableRst,                           -- [in]
+         lclsTimingRefClkP     => lclsTimingRefClkP,                   -- [in]
+         lclsTimingRefClkN     => lclsTimingRefClkN,                   -- [in]
+         lclsTimingRxP         => lclsTimingRxP,                       -- [in]
+         lclsTimingRxN         => lclsTimingRxN,                       -- [in]
+         lclsTimingTxP         => lclsTimingTxP,                       -- [out]
+         lclsTimingTxN         => lclsTimingTxN,                       -- [out]
+         lclsTimingClkOut      => lclsTimingClk,                       -- [out]
+         lclsTimingRstOut      => lclsTimingRst,                       -- [out]
+         globalTriggerRor      => dummyGlobalTriggerRor,               -- [in]
+         fcTxMsgValid          => fcTxMsgValid,                        -- [out]
+         fcHubRefClkP          => fcHubRefClkP,                        -- [in]
+         fcHubRefClkN          => fcHubRefClkN,                        -- [in]
+         fcHubTxP              => fcHubTxP,                            -- [out]
+         fcHubTxN              => fcHubTxN,                            -- [out]
+         fcHubRxP              => fcHubRxP,                            -- [in]
+         fcHubRxN              => fcHubRxN,                            -- [in]
+         axilClk               => axilClk,                             -- [in]
+         axilRst               => axilRst,                             -- [in]
+         axilReadMaster        => axilReadMasters(AXIL_FC_HUB_C),      -- [in]
+         axilReadSlave         => axilReadSlaves(AXIL_FC_HUB_C),       -- [out]
+         axilWriteMaster       => axilWriteMasters(AXIL_FC_HUB_C),     -- [in]
+         axilWriteSlave        => axilWriteSlaves(AXIL_FC_HUB_C));     -- [out]
 
    -------------------------------------------------------------------------------------------------
    -- Map DD-QSFP ports
@@ -309,12 +303,15 @@ begin
    -- LCLS-II Timing RX is quad 0
    lclsTimingRefClkP <= qsfpRefClkP(0);
    lclsTimingRefClkN <= qsfpRefClkN(0);
-   qsfpRecClkP(0)    <= timingRecClkOutP;
-   qsfpRecClkN(0)    <= timingRecClkOutN;
    qsfpTxP(0)        <= lclsTimingTxP;
    qsfpTxN(0)        <= lclsTimingTxN;
    lclsTimingRxP     <= qsfpRxP(0);
    lclsTimingRxN     <= qsfpRxN(0);
+
+   -- Debugging Outputs
+   GEN_DBG: for i in 3 downto 0 generate
+      ledL(i) <= fcTxMsgValid;
+   end generate GEN_DBG;
 
    -- FC Hub PGP is QUADS 4 and 5 (banks 124 and 125) since they share the recRefClk with 0
    GEN_FEB_REFCLK : for i in FC_HUB_QUADS_G-1 downto 0 generate
@@ -345,10 +342,10 @@ begin
    U_Gtye4ChannelDummy_1 : entity surf.Gtye4ChannelDummy
       generic map (
          TPD_G        => TPD_G,
-         SIMULATION_G => SIM_SPEEDUP_G,
+         SIMULATION_G => true,
          WIDTH_G      => 3)
       port map (
-         refClk   => axilCLk,                    -- [in]
+         refClk   => axilClk,                    -- [in]
          rxoutClk => dummyRxOutClk(3 downto 1),  -- [out]
          gtRxP    => qsfpRxP(3 downto 1),        -- [in]
          gtRxN    => qsfpRxN(3 downto 1),        -- [in]
@@ -358,10 +355,10 @@ begin
    U_Gtye4ChannelDummy_2 : entity surf.Gtye4ChannelDummy
       generic map (
          TPD_G        => TPD_G,
-         SIMULATION_G => SIM_SPEEDUP_G,
+         SIMULATION_G => true,
          WIDTH_G      => 12)
       port map (
-         refClk   => axilCLk,                     -- [in]
+         refClk   => axilClk,                     -- [in]
          rxoutClk => dummyRxOutClk(15 downto 4),  -- [out]
          gtRxP    => qsfpRxP(15 downto 4),        -- [in]
          gtRxN    => qsfpRxN(15 downto 4),        -- [in]
@@ -371,28 +368,14 @@ begin
    U_Gtye4ChannelDummy_3 : entity surf.Gtye4ChannelDummy
       generic map (
          TPD_G        => TPD_G,
-         SIMULATION_G => SIM_SPEEDUP_G,
+         SIMULATION_G => true,
          WIDTH_G      => 32-(FC_HUB_QUADS_G*4+16))
       port map (
-         refClk   => axilCLk,                      -- [in]
+         refClk   => axilClk,                      -- [in]
          rxoutClk => dummyRxOutClk(31 downto FC_HUB_QUADS_G*4+16),  -- [out]
          gtRxP    => qsfpRxP(31 downto FC_HUB_QUADS_G*4+16),        -- [in]
          gtRxN    => qsfpRxN(31 downto FC_HUB_QUADS_G*4+16),        -- [in]
          gtTxP    => qsfpTxP(31 downto FC_HUB_QUADS_G*4+16),        -- [out]
          gtTxN    => qsfpTxN(31 downto FC_HUB_QUADS_G*4+16));       -- [out]
-
-   --GEN_DUMMY_RECCLK_BUF : for i in 7 downto 1 generate
-   --   U_mgtRecClk : OBUFDS_GTE4
-   --      generic map (
-   --         REFCLK_EN_TX_PATH => '1',
-   --         REFCLK_ICNTL_TX   => "00000")
-   --      port map (
-   --         O   => qsfpRecClkP(i),
-   --         OB  => qsfpRecClkN(i),
-   --         CEB => '0',
-   --         I   => dummyRxOutClk(i*4));  -- using rxRecClk from Channel=0
-
-   --end generate GEN_DUMMY_RECCLK_BUF;
-
 
 end rtl;

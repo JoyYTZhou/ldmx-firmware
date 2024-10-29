@@ -1,9 +1,9 @@
 -------------------------------------------------------------------------------
--- Title      : 
+-- Title      :
 -------------------------------------------------------------------------------
 -- Author     : Benjamin Reese  <bareese@slac.stanford.edu>
 -------------------------------------------------------------------------------
--- Description: 
+-- Description:
 -------------------------------------------------------------------------------
 -- Copyright (c) 2013 SLAC National Accelerator Laboratory
 -------------------------------------------------------------------------------
@@ -45,6 +45,9 @@ entity FcSenderArray is
       fcHubTxN        : out slv(QUADS_G*4-1 downto 0);
       fcHubRxP        : in  slv(QUADS_G*4-1 downto 0);
       fcHubRxN        : in  slv(QUADS_G*4-1 downto 0);
+      -- Stable 185.71/2 MHz clock
+      stableClk92     : in  sl;
+      stableRst92     : in  sl;
       -- Interface to Global Trigger and LCLS Timing
       lclsTimingClk   : in  sl;
       lclsTimingRst   : in  sl;
@@ -72,7 +75,9 @@ architecture rtl of FcSenderArray is
    signal locAxilReadSlaves   : AxiLiteReadSlaveArray(NUM_AXIL_MASTERS_C-1 downto 0)  := (others => AXI_LITE_READ_SLAVE_EMPTY_DECERR_C);
 
 --   signal lclsTimingRecClkOdiv2 :    slv(REFCLKS_G-1 downto 0);
-   signal fcHubRefClk : slv(REFCLKS_G-1 downto 0);
+   signal fcHubRefClk     : slv(REFCLKS_G-1 downto 0);
+   signal mgtRefClkOdiv2  : slv(REFCLKS_G-1 downto 0);
+   signal fcHubDiv2RefClk : slv(REFCLKS_G-1 downto 0);
 --   signal lclsTimingRecUserClk  : in slv(REFCLKS_G-1 downto 0);
 
 begin
@@ -90,10 +95,20 @@ begin
             I     => fcHubRefClkP(i),
             IB    => fcHubRefClkN(i),
             CEB   => '0',
-            ODIV2 => open,
+            ODIV2 => mgtRefClkOdiv2(i),
             O     => fcHubRefClk(i));
+
+      U_mgtUserDiv2RefClk : BUFG_GT
+         port map (
+            I       => mgtRefClkOdiv2(i),
+            CE      => '1',
+            CEMASK  => '1',
+            CLR     => '0',
+            CLRMASK => '1',
+            DIV     => "001",
+            O       => fcHubDiv2RefClk(i));
    end generate;
-   
+
    U_XBAR : entity surf.AxiLiteCrossbar
       generic map (
          TPD_G              => TPD_G,
@@ -111,7 +126,7 @@ begin
          mAxiWriteSlaves     => locAxilWriteSlaves,
          mAxiReadMasters     => locAxilReadMasters,
          mAxiReadSlaves      => locAxilReadSlaves);
-   
+
    -------------------------------------------------------------------------------------------------
    -- FC Senders
    -------------------------------------------------------------------------------------------------
@@ -129,6 +144,8 @@ begin
                fcHubTxN          => fcHubTxN(quad*4+ch),                   -- [out]
                fcHubRxP          => fcHubRxP(quad*4+ch),                   -- [in]
                fcHubRxN          => fcHubRxN(quad*4+ch),                   -- [in]
+               stableClk92       => stableClk92,                           -- [in]
+               stableRst92       => stableRst92,                           -- [in]
                lclsTimingUserClk => lclsTimingClk,                         -- [in]
                lclsTimingUserRst => lclsTimingRst,                         -- [in]
                fcTxMsg           => fcTxMsg,                               -- [in]

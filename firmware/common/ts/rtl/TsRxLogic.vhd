@@ -64,7 +64,7 @@ architecture rtl of TsRxLogic is
 
    type StateType is (
       INIT_S,
-      WAIT_RESETDONE_LOW_S,
+--      WAIT_RESETDONE_LOW_S,
       WAIT_RESETDONE_HIGH_S,
       WAIT_COMMA_S,
       WORD_1_S,
@@ -76,7 +76,11 @@ architecture rtl of TsRxLogic is
    type RegType is record
       state           : StateType;
       rxFrameCount    : slv(63 downto 0);
+      bc0Count        : slv(31 downto 0);
       rxErrorCount    : slv(31 downto 0);
+      initCount       : slv(31 downto 0);
+      reset           : sl;
+      waitCounter     : slv(31 downto 0);
       countReset      : sl;
       tsRxPhyInit     : sl;
       tsRxPhyLoopback : slv(2 downto 0);
@@ -86,15 +90,19 @@ architecture rtl of TsRxLogic is
    end record RegType;
 
    constant REG_INIT_C : RegType := (
-      state           => WAIT_COMMA_S,
+      state           => WAIT_RESETDONE_HIGH_S,
       rxFrameCount    => (others => '0'),
       rxErrorCount    => (others => '0'),
+      bc0Count        => (others => '0'),
+      initCount       => (others => '0'),
+      reset           => '0',
+      waitCounter     => (others => '0'),
       countReset      => '0',
       tsRxPhyInit     => '0',
       tsRxPhyLoopback => "010",
       tsRxMsg         => TS_DATA_6CH_MSG_INIT_C,
       axilReadSlave   => AXI_LITE_READ_SLAVE_INIT_C,
-      axilWriteSlave   => AXI_LITE_WRITE_SLAVE_INIT_C);
+      axilWriteSlave  => AXI_LITE_WRITE_SLAVE_INIT_C);
 
    signal r   : RegType := REG_INIT_C;
    signal rin : RegType;
@@ -110,7 +118,7 @@ begin
 
    U_AxiLiteAsync_1 : entity surf.AxiLiteAsync
       generic map (
-         TPD_G            => TPD_G)
+         TPD_G => TPD_G)
       port map (
          sAxiClk         => axilClk,              -- [in]
          sAxiClkRst      => axilRst,              -- [in]
@@ -136,9 +144,10 @@ begin
          risingEdge  => resetDoneRise,     -- [out]
          fallingEdge => open);             -- [out]
 
+
    comb : process (r, syncAxilReadMaster, syncAxilWriteMaster, tsRst250, tsRxData, tsRxDataK,
                    tsRxDecErr, tsRxDispErr, tsRxPhyResetDone) is
-      variable v : RegType := REG_INIT_C;
+      variable v      : RegType := REG_INIT_C;
       variable axilEp : AxiLiteEndpointType;
    begin
       v := r;
@@ -155,20 +164,34 @@ begin
       end if;
 
       case r.state is
-         when INIT_S =>
-            v.tsRxPhyInit := '1';
-            v.state       := WAIT_RESETDONE_LOW_S;
-         when WAIT_RESETDONE_LOW_S =>
-            if (tsRxPhyResetDone = '0') then
-               v.state := WAIT_RESETDONE_HIGH_S;
-            end if;
          when WAIT_RESETDONE_HIGH_S =>
             if (tsRxPhyResetDone = '1') then
                v.state := WAIT_COMMA_S;
             end if;
 
+            v.waitCounter := r.waitCounter+1;
+            if (r.waitCounter = 260000000) then
+               v.waitCounter := (others => '0');
+               v.state       := INIT_S;
+            end if;
+
+         when INIT_S =>
+            v.tsRxPhyInit := '1';
+            v.waitCounter := (others => '0');
+            v.initCount   := r.initCount + 1;
+            if (r.initCount = X"FFFFFFFF") then
+               v.initCount := r.initCount;
+            end if;
+            v.state := WAIT_RESETDONE_HIGH_S;
+
+--          when WAIT_RESETDONE_LOW_S =>
+--             if (tsRxPhyResetDone = '0') then
+--                v.state := WAIT_RESETDONE_HIGH_S;
+--             end if;
+
          when WAIT_COMMA_S =>
-            if (tsRxDataK(0) = '1' and tsRxData(7 downto 0) = K28_5_C) then
+            -- Should only ever receive comma or idle here
+            if (tsRxDataK = "01" and tsRxData(7 downto 0) = K28_5_C) then
                v.tsRxMsg.bc0                := tsRxData(8);
                v.tsRxMsg.ce                 := tsRxData(9);
                v.tsRxMsg.capId              := tsRxData(11 downto 10);
@@ -203,8 +226,15 @@ begin
             v.state                      := WAIT_COMMA_S;
       end case;
 
+      if (r.tsRxMsg.strobe = '1' and r.tsRxMsg.bc0 = '1') then
+         v.bc0Count := r.bc0Count + 1;
+      end if;
 
-      if (r.state = WAIT_COMMA_S and (tsRxDispErr /= "00" or tsRxDecErr /= "00")) then
+      if (tsRxPhyResetDone = '1' and (tsRxDispErr /= "00" or tsRxDecErr /= "00")) then
+         v.state := INIT_S;
+      end if;
+
+      if (r.reset = '1') then
          v.state := INIT_S;
       end if;
 
@@ -215,7 +245,11 @@ begin
       if (r.countReset = '1') then
          v.rxFrameCount := (others => '0');
          v.rxErrorCount := (others => '0');
+         v.bc0Count     := (others => '0');
+         v.initCount    := (others => '0');
       end if;
+
+      v.reset := '0';
 
       axiSlaveWaitTxn(axilEp, syncAxilWriteMaster, syncAxilReadMaster, v.axilWriteSlave, v.axilReadSlave);
 
@@ -224,14 +258,30 @@ begin
       axiSlaveRegister(axilEp, X"04", 0, v.tsRxPhyLoopback);
       axiSlaveRegisterR(axilEp, X"08", 0, r.rxFrameCount);
       axiSlaveRegisterR(axilEp, X"10", 0, r.rxErrorCount);
+      axiSlaveRegisterR(axilEp, X"14", 0, ite(r.state = INIT_S, "0000",
+--                                              ite(r.state = WAIT_RESETDONE_LOW_S, "0001",
+                                              ite(r.state = WAIT_RESETDONE_HIGH_S, "0010",
+                                                  ite(r.state = WAIT_COMMA_S, "1000",
+                                                      ite(r.state = WORD_1_S, "1001",
+                                                          ite(r.state = WORD_2_S, "1010",
+                                                              ite(r.state = WORD_3_S, "1011",
+                                                                  ite(r.state = WORD_4_S, "1100",
+                                                                      ite(r.state = WORD_5_S, "1101", "1111")))))))));
+      axiSlaveRegister(axilEp, X"18", 0, v.reset);
+      axiSlaveRegisterR(axilEp, X"20", 0, tsRxData);
+      axiSlaveRegisterR(axilEp, X"20", 16, tsRxDataK);
+      axiSlaveRegisterR(axilEp, X"24", 0, r.initCount);
+      axiSlaveRegisterR(axilEp, X"28", 0, r.bc0Count);
 
       axiSlaveDefault(axilEp, v.axilWriteSlave, v.axilReadSlave, AXI_RESP_DECERR_C);
 
       -- Reset
       if (tsRst250 = '1') then
-         v := REG_INIT_C;
+         v              := REG_INIT_C;
          v.rxFrameCount := r.rxFrameCount;
          v.rxErrorCount := r.rxErrorCount;
+         v.initCount    := r.initCount;
+         v.bc0Count     := r.bc0Count;
       end if;
 
       -- Outputs

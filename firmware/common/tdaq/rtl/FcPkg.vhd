@@ -73,19 +73,17 @@ package FcPkg is
    -- Readout Request Fields
    -------------------------------------------------------------------------------------------------
    type FcTimestampType is record
-      strobe     : sl;
       valid      : sl;
       bunchCount : slv(5 downto 0);
       pulseId    : slv(63 downto 0);
    end record FcTimestampType;
 
    constant FC_TIMESTAMP_INIT_C : FcTimestampType := (
-      strobe     => '0',
       valid      => '0',
       bunchCount => (others => '0'),
       pulseId    => (others => '0'));
 
-   constant FC_TIMESTAMP_SIZE_C : integer := 70;
+   constant FC_TIMESTAMP_SIZE_C : integer := 72;
 
    function toSlv (
       fcTimestamp : FcTimestampType)
@@ -114,7 +112,6 @@ package FcPkg is
       bunchStrobe     : sl;             -- Pulsed on cycle that bunchCount increments
       bunchCount      : slv(5 downto 0);
       subCount        : slv(2 downto 0);
-      bunchClkAligned : sl;
       bc0             : sl;
 
       -- 185 MHz counter from T0
@@ -124,7 +121,7 @@ package FcPkg is
       readoutRequest : FcTimestampType;
 
       -- All FC messages placed on this bus as they are received
-      -- Might not be useful
+      -- Usefull for propagating raw messages (as on tracker)
       fcMsg : FcMessageType;
    end record FcBusType;
 
@@ -138,7 +135,6 @@ package FcPkg is
       bunchStrobe     => '0',
       bunchCount      => (others => '0'),
       subCount        => (others => '0'),
-      bunchClkAligned => '0',
       bc0             => '0',
       runTime         => (others => '0'),
       readoutRequest  => FC_TIMESTAMP_INIT_C,
@@ -209,9 +205,10 @@ package body FcPkg is
    function toSlv (
       fcTimestamp : FcTimestampType)
       return slv is
-      variable ret : slv(69 downto 0);
+      variable ret : slv(FC_TIMESTAMP_SIZE_C-1 downto 0);
    begin
-      ret(69 downto 6) := fcTimestamp.pulseId;
+      ret := (others => '0');
+      ret(71 downto 8) := fcTimestamp.pulseId;
       ret(5 downto 0)  := fcTimestamp.bunchCount;
       return ret;
    end function toSlv;
@@ -223,7 +220,7 @@ package body FcPkg is
       variable ret : FcTimestampType;
    begin
       ret.valid      := valid;
-      ret.pulseId    := vector(69 downto 6);
+      ret.pulseId    := vector(71 downto 8);
       ret.bunchCount := vector(5 downto 0);
       return ret;
    end function toFcTimestamp;
