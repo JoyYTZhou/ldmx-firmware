@@ -12,4 +12,5 @@ class TimingGtCoreWrapper(pr.Device):
 
         self.add(surf.xilinx.Gtye4Channel(
             name   = "Gtye4Channel",
+            enabled = False,
             offset = 0x1000))
