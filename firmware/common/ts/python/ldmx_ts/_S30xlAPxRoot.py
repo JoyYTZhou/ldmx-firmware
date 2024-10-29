@@ -85,9 +85,9 @@ class S30xlAPxRoot(pr.Root):
         self.tsS30xlThresholdTriggerEventFilter >> self.tsS30xlThresholdTriggerEventSqlReceiver
         
         # Log variable
-        self.sqlLogger = pyrogue.interfaces.SqlLogger(
-            root = self,
-            url = 'sqlite:///test.db')
+#         self.sqlLogger = pyrogue.interfaces.SqlLogger(
+#             root = self,
+#             url = 'sqlite:///test.db')
 
         self.addInterface(self.sqlLogger)
 

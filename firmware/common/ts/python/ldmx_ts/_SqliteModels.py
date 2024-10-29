@@ -2,6 +2,7 @@ import enum
 
 from sqlalchemy import Column, Integer, BigInteger, SmallInteger, CheckConstraint
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.exc import SQLAlchemyError
 
 import rogue
 
@@ -145,14 +146,17 @@ class TsS30xlThresholdTriggerEventSqlReceiver(rogue.interfaces.stream.Slave):
         event = ldmx_ts.TsS30xlThresholdTriggerEvent.from_numpy(rawNumpy)
 
         # Write the parsed data to the database
-        with self.database.SessionFactory() as session:
-            for i, msg in enumerate(event.msgs):
-                sqlEvent = TsS30xlThresholdTriggerEventSql(
-                    pulse_id = event.header.pulseId,
-                    bunch_count = event.header.bunchCount,
-                    hits = event.hits,
-                    amplitude = event.amplitudes)
+        try:
+            with self.database.SessionFactory() as session:
+                for i, msg in enumerate(event.msgs):
+                    sqlEvent = TsS30xlThresholdTriggerEventSql(
+                        pulse_id = event.header.pulseId,
+                        bunch_count = event.header.bunchCount,
+                        hits = event.hits,
+                        amplitude = event.amplitudes)
 
-                session.add(sqlEvent)
+                    session.add(sqlEvent)
 
-            session.commit()
+                session.commit()
+        except SQLAlchemyError as e:
+            print('Error writing to database', e)
