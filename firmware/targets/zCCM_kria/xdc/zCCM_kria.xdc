@@ -182,6 +182,8 @@ create_generated_clock -name dmaClk [get_pins U_Core/REAL_CPU.U_CPU/U_Pll/PllGen
 create_generated_clock -name axilClk [get_pins U_Core/REAL_CPU.U_CPU/U_Pll/PllGen.U_Pll/CLKOUT1]
 
 create_clock -period 5.384 -name appFcRefClk [get_ports CLKGEN_MGTCLK_AC_P]
+create_generated_clock -name appFcStableClk92 [get_pins U_App/U_FcReceiver_1/U_mgtUserRefClkDiv2/O]
+
 
 create_clock -name appFcRxOutClk -period 5.384 [get_pins -hier * -filter {name=~*/U_FcReceiver_1/*/RXOUTCLK}]
 create_generated_clock -name appFcRxOutClkMmcm [get_pins  U_App/U_FcReceiver_1/U_LdmxPgpFcLane_1/RX_CLK_MMCM_GEN.U_ClockManager/MmcmGen.U_Mmcm/CLKOUT0 ]
@@ -192,7 +194,11 @@ create_generated_clock -name appFcTxOutClk [get_pins -hier * -filter {name=~*/U_
 
 set_clock_groups -asynchronous -group [get_clocks dmaClk] -group [get_clocks axilClk]
 
-set_clock_groups -asynchronous -group [get_clocks appFcRxOutClkMmcm] -group [get_clocks appFcRefClk -include_generated_clocks] -group [get_clocks axilClk]
+set_clock_groups -asynchronous \
+    -group [get_clocks appFcRxOutClkMmcm] \
+    -group [get_clocks appFcRefClk -include_generated_clocks] \
+    -group [get_clocks axilClk] \
+    -group [get_clocks appFcStableClk92]
 
 create_debug_core u_ila_0 ila
 set_property ALL_PROBE_SAME_MU true [get_debug_cores u_ila_0]
