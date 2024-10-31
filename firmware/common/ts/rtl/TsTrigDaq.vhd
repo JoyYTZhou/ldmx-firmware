@@ -286,7 +286,7 @@ begin
    U_DaqEventFormatter_1 : entity ldmx_tdaq.DaqEventFormatter
       generic map (
          TPD_G                     => TPD_G,
-         SUBSYSTEM_ID_G            => TS_SUBSYSTEM_ID_C,
+         SUBSYSTEM_ID_G            => TS_TRIGGER_SUBSYSTEM_ID_C,
          CONTRIBUTOR_ID_G          => TS_S30XL_THRESHOLD_TRIG_DAQ_ID_C,
          RAW_AXIS_CFG_G            => AXIS_CFG_C,
          EVENT_FIFO_PAUSE_THRESH_G => 2**7-16,
