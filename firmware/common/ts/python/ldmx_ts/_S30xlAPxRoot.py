@@ -89,5 +89,5 @@ class S30xlAPxRoot(pr.Root):
 #             root = self,
 #             url = 'sqlite:///test.db')
 
-        self.addInterface(self.sqlLogger)
+#        self.addInterface(self.sqlLogger)
 
