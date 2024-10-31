@@ -19,4 +19,8 @@ class TsDataRxLane(pr.Device):
         self.add(surf.xilinx.GtRxAlignCheck(
             offset = 0x0000))
 
+        self.add(surf.axi.AxiLiteRingBuffer(
+            offset = 0x3000,
+            datawidth=18))
+
         

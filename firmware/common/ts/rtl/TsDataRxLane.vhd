@@ -64,10 +64,11 @@ end entity TsDataRxLane;
 
 architecture rtl of TsDataRxLane is
 
-   constant NUM_AXIL_C   : natural := 3;
-   constant AXIL_GTY_C   : natural := 0;
-   constant AXIL_TS_RX_C : natural := 1;
-   constant AXIL_TS_TX_C : natural := 2;
+   constant NUM_AXIL_C      : natural := 4;
+   constant AXIL_GTY_C      : natural := 0;
+   constant AXIL_TS_RX_C    : natural := 1;
+   constant AXIL_TS_TX_C    : natural := 2;
+   constant AXIL_RING_BUF_C : natural := 3;
 
    constant AXIL_XBAR_CFG_C : AxiLiteCrossbarMasterConfigArray(NUM_AXIL_C-1 downto 0) := (
       AXIL_GTY_C      => (
@@ -81,6 +82,10 @@ architecture rtl of TsDataRxLane is
       AXIL_TS_TX_C    => (
          baseAddr     => AXIL_BASE_ADDR_G + X"2100",
          addrBits     => 8,
+         connectivity => X"FFFF"),
+      AXIL_RING_BUF_C => (
+         baseAddr     => AXIL_BASE_ADDR_G + X"3000",
+         addrBits     => 12,
          connectivity => X"FFFF"));
 
 
@@ -287,5 +292,28 @@ begin
          axilReadSlave    => locAxilReadSlaves(AXIL_TS_TX_C),    -- [out]
          axilWriteMaster  => locAxilWriteMasters(AXIL_TS_TX_C),  -- [in]
          axilWriteSlave   => locAxilWriteSlaves(AXIL_TS_TX_C));  -- [out]
+
+   -------------------------------------------------------------------------------------------------
+   -- Rx Ring buffer
+   -------------------------------------------------------------------------------------------------
+   U_AxiLiteRingBuffer_1 : entity surf.AxiLiteRingBuffer
+      generic map (
+         TPD_G            => TPD_G,
+         REG_EN_G         => true,
+         DATA_WIDTH_G     => 18,
+         RAM_ADDR_WIDTH_G => 10)
+      port map (
+         dataClk         => tsRecClkMmcm,                          -- [in]
+         dataRst         => tsRecClkRst,                           -- [in]
+         dataValid       => tsRxPhyResetDone,                      -- [in]
+         dataValue       => tsRxDataK & tsRxData,                  -- [in]
+--          bufferEnable    => bufferEnable,     -- [in]
+--          bufferClear     => bufferClear,      -- [in]
+         axilClk         => axilClk,                               -- [in]
+         axilRst         => axilRst,                               -- [in]
+         axilReadMaster  => locAxilReadMasters(AXIL_RING_BUF_C),   -- [in]
+         axilReadSlave   => locAxilReadSlaves(AXIL_RING_BUF_C),    -- [out]
+         axilWriteMaster => locAxilWriteMasters(AXIL_RING_BUF_C),  -- [in]
+         axilWriteSlave  => locAxilWriteSlaves(AXIL_RING_BUF_C));  -- [out]
 
 end architecture rtl;
