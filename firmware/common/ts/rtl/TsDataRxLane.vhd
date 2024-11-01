@@ -119,6 +119,8 @@ architecture rtl of TsDataRxLane is
    signal rxReset    : sl;
    signal txReset    : sl;
 
+   signal ringDataValue : slv(17 downto 0);
+
 begin
 
    -------------------------------------------------------------------------------------------------
@@ -296,6 +298,7 @@ begin
    -------------------------------------------------------------------------------------------------
    -- Rx Ring buffer
    -------------------------------------------------------------------------------------------------
+   ringDataValue <= tsRxDataK & tsRxData;
    U_AxiLiteRingBuffer_1 : entity surf.AxiLiteRingBuffer
       generic map (
          TPD_G            => TPD_G,
@@ -306,7 +309,7 @@ begin
          dataClk         => tsRecClkMmcm,                          -- [in]
          dataRst         => tsRecClkRst,                           -- [in]
          dataValid       => tsRxPhyResetDone,                      -- [in]
-         dataValue       => tsRxDataK & tsRxData,                  -- [in]
+         dataValue       => ringDataValue,                         -- [in]
 --          bufferEnable    => bufferEnable,     -- [in]
 --          bufferClear     => bufferClear,      -- [in]
          axilClk         => axilClk,                               -- [in]
