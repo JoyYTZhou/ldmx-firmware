@@ -152,6 +152,10 @@ begin
          end if;
       end if;
 
+      if (r.enableRor = '0') then
+         v.rOrPeriodCount := (others => '0')
+      end if;
+
 
       -- General Outputs
       triggerData        <= r.triggerData;
