@@ -162,11 +162,13 @@ begin
       -- Format into TS Messages
       -- Place message into a FIFO
 
-      v.tsMsg := TS_DATA_6CH_MSG_INIT_C;
-      v.tsMsg := toTsData6ChMsg128(ramDout);
+      v.tsMsg       := TS_DATA_6CH_MSG_INIT_C;
+      v.tsMsg       := toTsData6ChMsg128(ramDout);
+      v.tsMsg.capId := r.tsMsg.capId;
 
       if (fcBus.bunchStrobe = '1') then
          v.ramAddr      := r.ramAddr + 1;
+         v.tsMsg.capId  := r.tsMsg.capId + 1;
          v.tsMsg.strobe := '1';
       end if;
 
