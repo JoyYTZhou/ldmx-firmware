@@ -91,12 +91,13 @@ class TsRawDaqEventSqlReceiver(rogue.interfaces.stream.Slave):
         rawNumpy = frame.getNumpy(0, frame.getPayload())
 
         # Parse the numpy array
-        event = ldmx_ts.TsDaqRawEvent.from_numpy(rawNumpy)
+        event = ldmx_ts.TsRawDaqEvent.from_numpy(rawNumpy)
 
         # Write the parsed data to the database
         with self.database.SessionFactory() as session:
             for i, msg in enumerate(event.msgs):
-                sqlEvent = TsRawDaqEvent(
+                print(f'Writing msg into database - {msg}')
+                sqlEvent = TsRawDaqEventSql(
                     pulse_id = event.header.pulseId,
                     bunch_count = event.header.bunchCount,
                     channel_count = 6,
@@ -118,16 +119,25 @@ class TsS30xlThresholdTriggerEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
     pulse_id = Column(BigInteger, nullable=False) # uint64 -> BigInteger
     bunch_count = Column(SmallInteger, nullable=False) # uint8 -> SmallInteger
     hits = Column(Integer, nullable=False)
-     # Dynamically add amplitude columns
-    for i in range(12):
-        locals()[f'amplitude{i}'] = Column(Integer, nullable=False)
+    amplitude0 = Column(Integer, nullable=False)
+    amplitude1 = Column(Integer, nullable=False)
+    amplitude2 = Column(Integer, nullable=False)
+    amplitude3 = Column(Integer, nullable=False)
+    amplitude4 = Column(Integer, nullable=False)
+    amplitude5 = Column(Integer, nullable=False)
+    amplitude6 = Column(Integer, nullable=False)
+    amplitude7 = Column(Integer, nullable=False)
+    amplitude8 = Column(Integer, nullable=False)
+    amplitude9 = Column(Integer, nullable=False)
+    amplitude10 = Column(Integer, nullable=False)
+    amplitude11 = Column(Integer, nullable=False)    
 
     @hybrid_property
     def amplitudes(self):
         return [getattr(self, f'amplitude{i}') for i in range(12)]
 
     @amplitudes.setter
-    def adc(self, values):
+    def amplitudes(self, values):
         for i in range(12):
             setattr(self, f'amplitude{i}', values[i])
 
@@ -148,14 +158,13 @@ class TsS30xlThresholdTriggerEventSqlReceiver(rogue.interfaces.stream.Slave):
         # Write the parsed data to the database
         try:
             with self.database.SessionFactory() as session:
-                for i, msg in enumerate(event.msgs):
-                    sqlEvent = TsS30xlThresholdTriggerEventSql(
-                        pulse_id = event.header.pulseId,
-                        bunch_count = event.header.bunchCount,
-                        hits = event.hits,
-                        amplitude = event.amplitudes)
+                sqlEvent = TsS30xlThresholdTriggerEventSql(
+                    pulse_id = event.header.pulseId,
+                    bunch_count = event.header.bunchCount,
+                    hits = event.hits,
+                    amplitudes = event.amplitudes)
 
-                    session.add(sqlEvent)
+                session.add(sqlEvent)
 
                 session.commit()
         except SQLAlchemyError as e:

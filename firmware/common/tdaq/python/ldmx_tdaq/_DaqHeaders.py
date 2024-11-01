@@ -24,10 +24,10 @@ class EventHeader:
 
     def fill_from_numpy(self, arr):
         """ Fill an EventHeader object from a frame numpy array """
-        self.version = int(arr[0]),
-        self.subsystemId = int(arr[1]),
-        self.contributorId = int(arr[2]),
-        self.bunchCount = int(arr[7]),
+        self.version = int(arr[0])
+        self.subsystemId = int(arr[1])
+        self.contributorId = int(arr[2])
+        self.bunchCount = int(arr[7])
         self.pulseId = int(arr[8:16].view(np.uint64))
         
 

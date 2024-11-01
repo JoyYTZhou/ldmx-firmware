@@ -15,11 +15,13 @@
 
 import pyrogue as pr
 import sqlalchemy
+from sqlalchemy.sql import Insert
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
 import threading
 import queue
 import json
+from collections import defaultdict
 
 
 
@@ -27,7 +29,7 @@ class SqliteDatabase(pr.Device):
 
     SqliteBase = sqlalchemy.ext.declarative.declarative_base()    
 
-    def __init__(self, *, url='sqlite:///test.db'):
+    def __init__(self, *, url='sqlite:////u1/bareese/test.db'):
         super().__init__()
         
         self._log = pr.logInit(cls=self, name="SqliteFileWriter", path=None)
@@ -55,7 +57,7 @@ class SqliteDatabase(pr.Device):
         table_names = inspector.get_table_names()
 
         self.lock = threading.Lock()
-        self.table_insert_counts = {}
+        self.table_insert_counts = defaultdict(int)
 
         for table in table_names:
             self.table_insert_counts[table] = 0;
@@ -75,8 +77,8 @@ class SqliteDatabase(pr.Device):
 
     def count_writes(self, conn, clauseelement, multiparams, params):
         print('Called count_writes')
-        if clauseelement.startswith('INSERT INTO'):
-            table_name = clauseelement.split()[2]
+        if isinstance(clauseelement, Insert):
+            table_name = clauseelement.table.name
             with self.lock:
                 self._insert_count += 1
                 self.table_insert_counts[table_name] = self.table_insert_counts[table_name] + 1

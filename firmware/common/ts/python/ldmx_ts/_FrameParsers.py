@@ -38,7 +38,7 @@ class TsRawDaqEvent:
 
     @classmethod
     def from_numpy(cls, arr):
-        header = EventHeader.from_numpy(arr)
+        header = EventHeader.create_from_numpy(arr)
         event_data = EventHeader.data(arr).reshape(-1, 16)
         num_messages = len(event_data)
 
@@ -50,8 +50,8 @@ class TsRawDaqEvent:
 class TsRawDaqEventFilter(DaqEventFilter):
     def __init__(self):
         super().__init__(
-            subsystemId = SubsystemId.TS_DAQ,
-            contributorId = ldmx_ts.DaqContributorId.RAW_DATA)
+            subsystemId = SubsystemId.TS_DAQ.value,
+            contributorId = ldmx_ts.DaqContributorId.RAW_DATA.value)
     
 class TsRawDaqEventReceiver(rogue.interfaces.stream.Slave):
     def __init__(self, **kwargs):
@@ -74,7 +74,7 @@ class TsS30xlThresholdTriggerEvent:
 
     @classmethod
     def from_numpy(cls, arr):
-        header = EventHeader.from_numpy(arr)
+        header = EventHeader.create_from_numpy(arr)
         event_data = EventHeader.data(arr).reshape(-1, 4)
         
         amplitudes = [int.from_bytes(ch[:3], byteorder='little') for ch in event_data]
@@ -89,8 +89,8 @@ class TsS30xlThresholdTriggerEvent:
 class TsS30xlThresholdTriggerEventFilter(DaqEventFilter):
     def __init__(self):
         super().__init__(
-            subsystemId = SubsystemId.TS_TRIGGER,
-            contributorId = ldmx_ts.TriggerContributorId.S30XL_THRESHOLD_TRIGGER)
+            subsystemId = SubsystemId.TS_TRIGGER.value,
+            contributorId = ldmx_ts.TriggerContributorId.S30XL_THRESHOLD_TRIGGER.value)
     
 
 class TsS30xlThresholdTriggerEventReceiver(rogue.interfaces.stream.Slave):
