@@ -153,7 +153,7 @@ begin
       end if;
 
       if (r.enableRor = '0') then
-         v.rOrPeriodCount := (others => '0')
+         v.rOrPeriodCount := (others => '0');
       end if;
 
 
