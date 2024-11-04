@@ -1,13 +1,41 @@
 import enum
+import time
 
 from sqlalchemy import Column, Integer, BigInteger, SmallInteger, CheckConstraint
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, OperationalError
 
 import rogue
 
 import ldmx_tdaq
 import ldmx_ts
+
+def with_retry(session_factory, func, *args, retries=3, delay=1):
+    """
+    Attempts to run the provided function with the given arguments,
+    retrying on OperationalError (database is locked) up to 'retries' times.
+
+    Parameters:
+    - session_factory: SQLAlchemy session factory to create new sessions.
+    - func: The function to execute within the session.
+    - *args: Arguments for the function.
+    - retries: Number of retries if a lock error occurs.
+    - delay: Delay between retries in seconds.
+    """
+    for attempt in range(retries):
+        try:
+            with session_factory() as session:
+                func(session, *args)
+            break  # Exit loop if function runs successfully
+        except OperationalError as e:
+            if "database is locked" in str(e):
+                print(f'{args}')
+                print(f"Attempt {attempt + 1} failed: database is locked. Retrying in {delay} seconds...")
+                time.sleep(delay)
+            else:
+                raise  # Raise other OperationalErrors that aren?t lock-related
+    else:
+        print("All retry attempts failed.")
 
 
 class MsgType(enum.Enum):
@@ -86,6 +114,25 @@ class TsRawDaqEventSqlReceiver(rogue.interfaces.stream.Slave):
 
         self.database = database
 
+    def _write_event(self, session, event):
+        for i, msg in enumerate(event.msgs):
+            #print(f'Writing msg into database - {msg}')
+            sqlEvent = TsRawDaqEventSql(
+                pulse_id = event.header.pulseId,
+                bunch_count = event.header.bunchCount,
+                channel_count = 6,
+                lane = msg.lane,
+                capId = msg.capId,
+                ce = msg.ce,
+                bc0 = msg.bc0,
+                adc = msg.adc,
+                tdc = msg.tdc)
+
+            session.add(sqlEvent)
+
+        session.commit()
+        
+
     def _acceptFrame(self, frame):
         # Read the frame into numpy array
         rawNumpy = frame.getNumpy(0, frame.getPayload())
@@ -93,24 +140,7 @@ class TsRawDaqEventSqlReceiver(rogue.interfaces.stream.Slave):
         # Parse the numpy array
         event = ldmx_ts.TsRawDaqEvent.from_numpy(rawNumpy)
 
-        # Write the parsed data to the database
-        with self.database.SessionFactory() as session:
-            for i, msg in enumerate(event.msgs):
-                print(f'Writing msg into database - {msg}')
-                sqlEvent = TsRawDaqEventSql(
-                    pulse_id = event.header.pulseId,
-                    bunch_count = event.header.bunchCount,
-                    channel_count = 6,
-                    lane = msg.lane,
-                    capId = msg.capId,
-                    ce = msg.ce,
-                    bc0 = msg.bc0,
-                    adc = msg.adc,
-                    tdc = msg.tdc)
-
-                session.add(sqlEvent)
-
-            session.commit()
+        with_retry(self.database.SessionFactory, self._write_event, event, retries=5, delay=2)
 
 class TsS30xlThresholdTriggerEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
     __tablename__ = 'ts_s30xl_threshold_trigger_event'
@@ -148,6 +178,18 @@ class TsS30xlThresholdTriggerEventSqlReceiver(rogue.interfaces.stream.Slave):
 
         self.database = database
 
+    def _write_event(self, session, event):
+        sqlEvent = TsS30xlThresholdTriggerEventSql(
+            pulse_id = event.header.pulseId,
+            bunch_count = event.header.bunchCount,
+            hits = event.hits,
+            amplitudes = event.amplitudes)
+
+        session.add(sqlEvent)
+        
+        session.commit()
+        
+
     def _acceptFrame(self, frame):
         # Read the frame into numpy array
         rawNumpy = frame.getNumpy(0, frame.getPayload())
@@ -156,16 +198,4 @@ class TsS30xlThresholdTriggerEventSqlReceiver(rogue.interfaces.stream.Slave):
         event = ldmx_ts.TsS30xlThresholdTriggerEvent.from_numpy(rawNumpy)
 
         # Write the parsed data to the database
-        try:
-            with self.database.SessionFactory() as session:
-                sqlEvent = TsS30xlThresholdTriggerEventSql(
-                    pulse_id = event.header.pulseId,
-                    bunch_count = event.header.bunchCount,
-                    hits = event.hits,
-                    amplitudes = event.amplitudes)
-
-                session.add(sqlEvent)
-
-                session.commit()
-        except SQLAlchemyError as e:
-            print('Error writing to database', e)
+        with_retry(self.database.SessionFactory, self._write_event, event, retries=5, delay=2)
