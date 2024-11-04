@@ -162,6 +162,17 @@ begin
       fcMsg               := toFcMessage(fcWord, fcValid);
       v.fcBus.fcMsg.valid := fcValid;
 
+      v.clkCounter := r.clkCounter + 1;
+      if (r.clkCounter = 199) then
+         v.clkCounter         := (others => '0');
+         v.fcBus.pulseStrobe  := '1';
+         v.fcBus.pulseId      := r.fcBus.pulseId + 1;
+         v.fcBus.bunchCount   := (others => '0');
+         v.fcBus.runState     := r.fcBus.runState;
+         v.fcBus.stateChanged := '0';
+         v.fcBus.subCount     := (others => '0');
+      end if;
+
       -- Process FC Messages
       if (fcMsg.valid = '1') then
 
@@ -179,6 +190,7 @@ begin
                v.fcBus.runState     := fcMsg.runState;
                v.fcBus.stateChanged := fcMsg.stateChanged;
                v.fcBus.subCount     := (others => '0');
+               v.clkCounter         := (others => '0');
 
                -- State specific actions
                if (fcMsg.stateChanged = '1') then

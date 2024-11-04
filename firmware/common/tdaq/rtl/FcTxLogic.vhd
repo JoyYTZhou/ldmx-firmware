@@ -108,7 +108,7 @@ begin
 
       -- Currently Timing Messages take priority
       -- Not sure if this is correct
-      if (lclsTimingBus.strobe = '1' and lclsTimingBus.valid = '1') then
+      if (lclsTimingBus.strobe = '1' and lclsTimingBus.valid = '1' and (r.stateChanged = '1' or r.runState /= RUN_STATE_RUNNING_C)) then
          v.fcMsg.valid        := '1';
          v.fcMsg.msgType      := MSG_TYPE_TIMING_C;
          v.fcMsg.pulseId      := lclsTimingBus.message.pulseId;
