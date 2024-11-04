@@ -51,6 +51,8 @@ architecture rtl of DaqEventFormatter is
    type RegType is record
       state            : StateType;
       rorFifoRdEn      : sl;
+      burn             : sl;
+      burnCount        : slv(7 downto 0);
       rawFifoAxisSlave : AxiStreamSlaveType;
       eventAxisMaster  : AxiStreamMasterType;
    end record RegType;
@@ -58,6 +60,8 @@ architecture rtl of DaqEventFormatter is
    constant REG_INIT_C : RegType := (
       state            => WAIT_ROR_S,
       rorFifoRdEn      => '0',
+      burn             => '0',
+      burnCount        => (others => '0'),
       rawFifoAxisSlave => AXI_STREAM_SLAVE_INIT_C,
       eventAxisMaster  => axiStreamMasterInit(DAQ_EVENT_AXIS_CONFIG_C));
 
@@ -68,7 +72,21 @@ architecture rtl of DaqEventFormatter is
    signal rorFifoTimestamp  : FcTimestampType;
    signal eventAxisCtrl     : AxiStreamCtrlType;
 
+   signal fifoRst     : sl;
+   signal fifoRstSync : sl;
+
 begin
+
+   fifoRst <= toSl(fcBus.runState = RUN_STATE_RESET_C);
+
+   U_Synchronizer_1 : entity surf.Synchronizer
+      generic map (
+         TPD_G => TPD_G)
+      port map (
+         clk     => axisClk,            -- [in]
+         rst     => axisRst,            -- [in]
+         dataIn  => fifoRst,            -- [in]
+         dataOut => fifoRstSync);       -- [out]
 
    -------------------------------------------------------------------------------------------------
    -- Reformat stream to standard DAQ data width
@@ -82,8 +100,8 @@ begin
 --          VALID_BURST_MODE_G     => VALID_BURST_MODE_G,
          GEN_SYNC_FIFO_G     => true,
          FIFO_FIXED_THRESH_G => true,
-         FIFO_PAUSE_THRESH_G => 2**5-2,
-         FIFO_ADDR_WIDTH_G   => 5,
+         FIFO_PAUSE_THRESH_G => 2**7-2,
+         FIFO_ADDR_WIDTH_G   => 7,
          SYNTH_MODE_G        => "inferred",
          MEMORY_TYPE_G       => "distributed",
          SLAVE_AXI_CONFIG_G  => RAW_AXIS_CFG_G,
@@ -95,7 +113,7 @@ begin
          sAxisSlave  => open,                   -- [out]
          sAxisCtrl   => rawAxisCtrl,            -- [out]
          mAxisClk    => axisClk,                -- [in]
-         mAxisRst    => axisRst,                -- [in]
+         mAxisRst    => fifoRstSync,            -- [in]
          mAxisMaster => rawFifoAxisMaster,      -- [out]
          mAxisSlave  => rin.rawFifoAxisSlave);  -- [in]
 
@@ -105,9 +123,9 @@ begin
          GEN_SYNC_FIFO_G => false,
          SYNTH_MODE_G    => "inferred",
          MEMORY_TYPE_G   => "distributed",
-         ADDR_WIDTH_G    => 5)
+         ADDR_WIDTH_G    => 7)
       port map (
-         rst         => fcRst185,              -- [in]
+         rst         => fifoRst,               -- [in]
          wrClk       => fcClk185,              -- [in]
          wrFull      => open,                  -- [out]
          wrTimestamp => fcBus.readoutRequest,  -- [in]
@@ -127,16 +145,24 @@ begin
       case r.state is
          when WAIT_ROR_S =>
             -- Got a ROR, write the header
-            if (rorFifoTimestamp.valid = '1' and eventAxisCtrl.pause = '0') then
+            if (rorFifoTimestamp.valid = '1') then
+               v.burn := eventAxisCtrl.pause;
+
                v.rorFifoRdEn                          := '1';
-               v.eventAxisMaster.tValid               := '1';
+               v.eventAxisMaster.tValid               := not eventAxisCtrl.pause;
                v.eventAxisMaster.tData                := (others => '0');
-               v.eventAxisMaster.tData(7 downto 0)    := X"01";  -- Version
+               v.eventAxisMaster.tData(7 downto 0)    := r.burnCount;
                v.eventAxisMaster.tData(15 downto 8)   := SUBSYSTEM_ID_G;
                v.eventAxisMaster.tData(23 downto 16)  := CONTRIBUTOR_ID_G;
                v.eventAxisMaster.tData(63 downto 56)  := "00" & rorFifoTimestamp.bunchCount;
                v.eventAxisMaster.tData(127 downto 64) := rorFifoTimestamp.pulseID;
 
+               if (eventAxisCtrl.pause = '1' and r.burnCount /= X"FF") then
+                  v.burnCount := r.burnCount + 1;
+               end if;
+               if (eventAxisCtrl.pause = '0') then
+                  v.burnCount := (others => '0');
+               end if;
                v.state := DO_DATA_S;
             end if;
 
@@ -144,11 +170,18 @@ begin
             -- Write Data after header until tLast
             v.rawFifoAxisSlave.tReady := rawFifoAxisMaster.tValid;
             v.eventAxisMaster         := rawFifoAxisMaster;
+            if (v.eventAxisMaster.tValid = '1' and r.burn = '1') then
+               v.eventAxisMaster.tValid := '0';
+            end if;
             if (rawFifoAxisMaster.tValid = '1' and rawFifoAxisMaster.tLast = '1') then
                v.state := WAIT_ROR_S;
             end if;
 
       end case;
+
+      if (fifoRstSync = '1') then
+         v.burnCount := (others => '0');
+      end if;
 
       -- Reset
       if (axisRst = '1') then
@@ -173,7 +206,7 @@ begin
          TPD_G               => TPD_G,
          PIPE_STAGES_G       => 0,
          SLAVE_READY_EN_G    => false,
---          VALID_THOLD_G          => VALID_THOLD_G,
+         VALID_THOLD_G       => 0,
 --          VALID_BURST_MODE_G     => VALID_BURST_MODE_G,
          GEN_SYNC_FIFO_G     => true,
 --         FIFO_FIXED_THRESH_G => true,
