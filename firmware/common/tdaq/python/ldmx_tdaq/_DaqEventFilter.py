@@ -22,19 +22,14 @@ class DaqEventFilter(ris.Slave, ris.Master):
         rawNumpy = frame.getNumpy(0, frame.getPayload())
         self.header.fill_from_numpy(rawNumpy)
 
-        print(f'{self.__class__.__name__} got frame {self.header}')
-
         forward = True
         if (self.subsytemId is not None and self.header.subsytemId != self.subsytemId):
-            print(f'{self.header.subsytemId=} != {self.subsytemId=}')
             forward = False
 
         if (self.contributorId is not None and self.header.contributorId != self.contributorId):
-            print(f'{self.header.contributorId=} != {self.contributorId=}')            
             forward = False
 
         if forward is True:
-            print('Forwarding')
             self._sendFrame(frame)
 
         

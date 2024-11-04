@@ -76,7 +76,7 @@ class SqliteDatabase(pr.Device):
             
 
     def count_writes(self, conn, clauseelement, multiparams, params):
-        print('Called count_writes')
+        #print('Called count_writes')
         if isinstance(clauseelement, Insert):
             table_name = clauseelement.table.name
             with self.lock:

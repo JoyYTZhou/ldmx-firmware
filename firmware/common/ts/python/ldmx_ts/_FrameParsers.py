@@ -61,7 +61,7 @@ class TsRawDaqEventReceiver(rogue.interfaces.stream.Slave):
         rawNumpy = frame.getNumpy(0, frame.getPayload())
 
         event = TsRawDaqEvent.from_numpy(rawNumpy)
-        print(event)
+        #print(event)
 
 
 
@@ -101,6 +101,6 @@ class TsS30xlThresholdTriggerEventReceiver(rogue.interfaces.stream.Slave):
         rawNumpy = frame.getNumpy(0, frame.getPayload())
 
         event = TsS30xlThresholdTriggerEvent.from_numpy(rawNumpy)
-        print(event)
+        #print(event)
         
         
