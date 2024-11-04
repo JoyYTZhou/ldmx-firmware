@@ -63,25 +63,26 @@ class S30xlAPxRoot(pr.Root):
         #self.tsTrigEventStream >> trigDebug
 
         # Create a filter for TS RAW DAQ Events and send the TS DAQ data through it
-        self.tsRawDaqEventFilter = ldmx_ts.TsRawDaqEventFilter()
-        self.addInterface(self.tsRawDaqEventFilter)
-        self.tsRawDaqEventFilter << self.tsDaqEventStream 
+#         self.tsRawDaqEventFilter = ldmx_ts.TsRawDaqEventFilter()
+#         self.addInterface(self.tsRawDaqEventFilter)
+#         self.tsRawDaqEventFilter << self.tsDaqEventStream 
 
         # Generic TS Raw event receiver for debug
-        self.tsRawDaqEventReceiver = ldmx_ts.TsRawDaqEventReceiver()
-        self.addInterface(self.tsRawDaqEventReceiver)
-        self.tsRawDaqEventReceiver << self.tsRawDaqEventFilter 
-        #self.tsDaqEventStream >> self.tsRawDaqEventReceiver
+#        self.tsRawDaqEventReceiver = ldmx_ts.TsRawDaqEventReceiver()
+#        self.addInterface(self.tsRawDaqEventReceiver)
+        #self.tsRawDaqEventReceiver << self.tsRawDaqEventFilter 
+#        self.tsDaqEventStream >> self.tsRawDaqEventReceiver
 
         # Create a filter for TS Threshold Trigger Events
-        self.tsS30xlThresholdTriggerEventFilter = ldmx_ts.TsS30xlThresholdTriggerEventFilter()
-        self.addInterface(self.tsS30xlThresholdTriggerEventFilter)
-        self.tsS30xlThresholdTriggerEventFilter << self.tsTrigEventStream
+#         self.tsS30xlThresholdTriggerEventFilter = ldmx_ts.TsS30xlThresholdTriggerEventFilter()
+#         self.addInterface(self.tsS30xlThresholdTriggerEventFilter)
+#         self.tsS30xlThresholdTriggerEventFilter << self.tsTrigEventStream
 
         # Generic Threshold event receiver for debug
-        self.tsS30xlThresholdTriggerEventReceiver = ldmx_ts.TsS30xlThresholdTriggerEventReceiver()
-        self.addInterface(self.tsS30xlThresholdTriggerEventReceiver)
-        self.tsS30xlThresholdTriggerEventReceiver <<  self.tsS30xlThresholdTriggerEventFilter 
+#        self.tsS30xlThresholdTriggerEventReceiver = ldmx_ts.TsS30xlThresholdTriggerEventReceiver()
+#        self.addInterface(self.tsS30xlThresholdTriggerEventReceiver)
+#        self.tsS30xlThresholdTriggerEventReceiver <<  self.tsS30xlThresholdTriggerEventFilter
+#        self.tsTrigEventStream >> tsS30xlThresholdTriggerEventReceiver
 
         # Add the Sqlite Database
         self.add(ldmx_tdaq.SqliteDatabase())
@@ -89,11 +90,13 @@ class S30xlAPxRoot(pr.Root):
         # Create and connect SQL Receivers
         self.tsRawDaqEventSqlReceiver = ldmx_ts.TsRawDaqEventSqlReceiver(database=self.SqliteDatabase)
         self.addInterface(self.tsRawDaqEventSqlReceiver)
-        self.tsRawDaqEventSqlReceiver << self.tsRawDaqEventFilter
+#        self.tsRawDaqEventSqlReceiver << self.tsRawDaqEventFilter
+        self.tsRawDaqEventSqlReceiver << self.tsDaqEventStream
 
         self.tsS30xlThresholdTriggerEventSqlReceiver = ldmx_ts.TsS30xlThresholdTriggerEventSqlReceiver(database=self.SqliteDatabase)
         self.addInterface(self.tsS30xlThresholdTriggerEventSqlReceiver)
-        self.tsS30xlThresholdTriggerEventSqlReceiver << self.tsS30xlThresholdTriggerEventFilter
+        #self.tsS30xlThresholdTriggerEventSqlReceiver << self.tsS30xlThresholdTriggerEventFilter
+        self.tsS30xlThresholdTriggerEventSqlReceiver << self.tsTrigEventStream
         
         # Log variable
 #         self.sqlLogger = pyrogue.interfaces.SqlLogger(
