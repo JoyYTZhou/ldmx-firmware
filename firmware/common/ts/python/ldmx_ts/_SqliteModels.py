@@ -1,5 +1,7 @@
 import enum
 import time
+import threading
+import queue
 
 from sqlalchemy import Column, Integer, BigInteger, SmallInteger, CheckConstraint
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -108,13 +110,71 @@ class TsRawDaqEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
             self.tdc6, self.tdc7 = None, None  # Set to None for 6-channel events
             
 
-class TsRawDaqEventSqlReceiver(rogue.interfaces.stream.Slave):
+class SqlEventReceiver(rogue.interfaces.stream.Slave):
     def __init__(self, database, **kwargs):
         super().__init__(**kwargs)
 
         self.database = database
+        self._queue = queue.Queue()
+        self._thread = threading.Thread(target=self._worker)
+        self._thread.start()
 
-    def _write_event(self, session, event):
+    def _acceptFrame(self, frame):
+        # Read the frame into numpy array
+        rawNumpy = frame.getNumpy(0, frame.getPayload())
+
+        # Parse the numpy array
+        event = self.parseEvent(rawNumpy)
+
+        self._queue.put(event)
+
+    def _stop(self):
+        if not self._queue.empty():
+            print('Waiting for SQL Receiver to finish')
+        self._queue.put(None)
+        self._thread.join()
+        print('SQL Receiver finished')   
+        
+
+    def _worker(self):
+        while True:
+            # Block and wait for a queue entry to arrive
+            event = self._queue.get()
+
+            # Exit thread if a None entry is received
+            if event is None:
+                return
+
+            # Continue only if the database connection is present
+            if not self.database._engine:
+                continue
+
+            try:
+                with self.database.SessionFactory() as session:
+                    while event is not None:
+                        # Insert the event into the database
+                        self.insertEvent(session, event)
+
+                        # If the queue is empty, commit the transaction and break
+                        if self._queue.empty():
+                            session.commit()
+                            break
+
+                        # Get the next event from the queue
+                        event = self._queue.get()
+
+            except Exception as e:
+                print(e)
+                # Handle database disconnection
+                #self.database._engine = None
+                #pr.logException(self._log, e)
+                #self._log.error(f"Lost database connection to {self._url}")
+
+    
+            
+class TsRawDaqEventSqlReceiver(SqlEventReceiver):
+
+    def insertEvent(self, session, event):
         for i, msg in enumerate(event.msgs):
             #print(f'Writing msg into database - {msg}')
             sqlEvent = TsRawDaqEventSql(
@@ -130,17 +190,10 @@ class TsRawDaqEventSqlReceiver(rogue.interfaces.stream.Slave):
 
             session.add(sqlEvent)
 
-        session.commit()
+
+    def parseEvent(self, rawNumpy):
+        return ldmx_ts.TsRawDaqEvent.from_numpy(rawNumpy)
         
-
-    def _acceptFrame(self, frame):
-        # Read the frame into numpy array
-        rawNumpy = frame.getNumpy(0, frame.getPayload())
-
-        # Parse the numpy array
-        event = ldmx_ts.TsRawDaqEvent.from_numpy(rawNumpy)
-
-        with_retry(self.database.SessionFactory, self._write_event, event, retries=5, delay=2)
 
 class TsS30xlThresholdTriggerEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
     __tablename__ = 'ts_s30xl_threshold_trigger_event'
@@ -172,13 +225,9 @@ class TsS30xlThresholdTriggerEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
             setattr(self, f'amplitude{i}', values[i])
 
 
-class TsS30xlThresholdTriggerEventSqlReceiver(rogue.interfaces.stream.Slave):
-    def __init__(self, database, **kwargs):
-        super().__init__(**kwargs)
+class TsS30xlThresholdTriggerEventSqlReceiver(SqlEventReceiver):
 
-        self.database = database
-
-    def _write_event(self, session, event):
+    def insertEvent(self, session, event):
         sqlEvent = TsS30xlThresholdTriggerEventSql(
             pulse_id = event.header.pulseId,
             bunch_count = event.header.bunchCount,
@@ -187,15 +236,8 @@ class TsS30xlThresholdTriggerEventSqlReceiver(rogue.interfaces.stream.Slave):
 
         session.add(sqlEvent)
         
-        session.commit()
-        
 
-    def _acceptFrame(self, frame):
-        # Read the frame into numpy array
-        rawNumpy = frame.getNumpy(0, frame.getPayload())
-
+    def parseEvent(self, rawNumpy):
         # Parse the numpy array
-        event = ldmx_ts.TsS30xlThresholdTriggerEvent.from_numpy(rawNumpy)
+        return ldmx_ts.TsS30xlThresholdTriggerEvent.from_numpy(rawNumpy)
 
-        # Write the parsed data to the database
-        with_retry(self.database.SessionFactory, self._write_event, event, retries=5, delay=2)
