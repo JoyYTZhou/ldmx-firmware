@@ -35,9 +35,15 @@ class SyntheticTrigger(pr.Device):
 
 
         self.add(pr.RemoteVariable(
-            name         = 'RoRperiod',
+            name         = 'RoRPeriodRaw',
             description  = 'Read-Out-Req period (in units of BunchCntPeriod period',
             offset       = 0x08,
             bitSize      = 32,
             mode         = 'RW',
         ))
+
+        self.add(pr.LinkVariable(
+            name = 'RoRFrequency',
+            dependencies = [self.RoRPeriodRaw],
+            linkedGet = lambda read: 37.1428572e6 /  (1+self.RoRPeriodRaw.get(read=read)),
+            units = 'Hz'))
