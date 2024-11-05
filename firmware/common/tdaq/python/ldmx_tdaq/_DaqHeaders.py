@@ -20,6 +20,7 @@ class EventHeader:
             contributorId = int(arr[2]),
             bunchCount = int(arr[7]),
             pulseId = int(arr[8:16].view(np.uint64)))
+        #if header.burnCount !=0:
         print(header)
         return header
 
@@ -30,8 +31,8 @@ class EventHeader:
         self.contributorId = int(arr[2])
         self.bunchCount = int(arr[7])
         self.pulseId = int(arr[8:16].view(np.uint64))
+        #if header.burnCount !=0:
         print(self)
-        
 
     @classmethod
     def data(cls, arr):
