@@ -1,6 +1,7 @@
 import pyrogue as pr
 import ldmx_tdaq
 import ldmx_ts
+import surf.protocols.batcher
 
 class S30xlAppCore(pr.Device):
     def __init__(self, **kwargs):
@@ -12,4 +13,12 @@ class S30xlAppCore(pr.Device):
         self.add(ldmx_ts.TsDataRx(
             offset = 0x2000_0000))
 
+        self.add(surf.protocols.batcher.AxiStreamBatcherAxil(
+            name = 'RawBatcher',
+            offset = 0x100000))
+
+        self.add(surf.protocols.batcher.AxiStreamBatcherAxil(
+            name = 'TrigBatcher',
+            offset = 0x100100))
+        
 

@@ -45,7 +45,15 @@ entity TsTrigDaq is
       fcRst185      : in sl;
       fcBus         : in FcBusType;
       tsTrigDaqData : in TsS30xlThresholdTriggerDaqType;
-
+      
+      -- AXI-Lite Interface (axilClk domain)
+      axilClk         : in  sl;
+      axilRst         : in  sl;
+      axilReadMaster  : in  AxiLiteReadMasterType;
+      axilReadSlave   : out AxiLiteReadSlaveType;
+      axilWriteMaster : in  AxiLiteWriteMasterType;
+      axilWriteSlave  : out AxiLiteWriteSlaveType;
+      
       -- Streaming interface to ETH
       axisClk         : in  sl;
       axisRst         : in  sl;
@@ -297,6 +305,12 @@ begin
          fcClk185        => fcClk185,         -- [in]
          fcRst185        => fcRst185,         -- [in]
          fcBus           => fcBus,            -- [in]
+         axilClk         => axilClk,          -- [in]
+         axilRst         => axilRst,          -- [in]
+         axilReadMaster  => axilReadMaster,   -- [in]
+         axilReadSlave   => axilReadSlave,    -- [out]
+         axilWriteMaster => axilWriteMaster,  -- [in]
+         axilWriteSlave  => axilWriteSlave,   -- [out]
          axisClk         => axisClk,          -- [in]
          axisRst         => axisRst,          -- [in]
          rawAxisMaster   => r.axisMaster,     -- [in]

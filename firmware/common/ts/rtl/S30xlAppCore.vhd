@@ -231,15 +231,21 @@ begin
          TPD_G      => TPD_G,
          TS_LANES_G => TS_LANES_G)
       port map (
-         fcClk185        => fcClk185,            -- [in]
-         fcRst185        => fcRst185,            -- [in]
-         fcBus           => fcBus,               -- [in]
-         fcTsRxMsgs      => fcTsRxMsgs,          -- [in]
-         fcMsgTimestamp  => fcMsgTimestamp,      -- [in]
-         axisClk         => axisClk,             -- [in]
-         axisRst         => axisRst,             -- [in]
-         eventAxisMaster => tsDaqRawAxisMaster,  -- [out]
-         eventAxisSlave  => tsDaqRawAxisSlave);  -- [in]
+         fcClk185        => fcClk185,                            -- [in]
+         fcRst185        => fcRst185,                            -- [in]
+         fcBus           => fcBus,                               -- [in]
+         fcTsRxMsgs      => fcTsRxMsgs,                          -- [in]
+         fcMsgTimestamp  => fcMsgTimestamp,                      -- [in]
+         axilClk         => axilClk,                             -- [in]
+         axilRst         => axilRst,                             -- [in]
+         axilReadMaster  => locAxilReadMasters(AXIL_TS_DAQ_C),   -- [in]
+         axilReadSlave   => locAxilReadSlaves(AXIL_TS_DAQ_C),    -- [out]
+         axilWriteMaster => locAxilWriteMasters(AXIL_TS_DAQ_C),  -- [in]
+         axilWriteSlave  => locAxilWriteSlaves(AXIL_TS_DAQ_C),   -- [out]         
+         axisClk         => axisClk,                             -- [in]
+         axisRst         => axisRst,                             -- [in]
+         eventAxisMaster => tsDaqRawAxisMaster,                  -- [out]
+         eventAxisSlave  => tsDaqRawAxisSlave);                  -- [in]
 
    -------------------------------------------------------------------------------------------------
    -- Trigger algorithm block
@@ -263,14 +269,20 @@ begin
          TPD_G      => TPD_G,
          TS_LANES_G => TS_LANES_G)
       port map (
-         fcClk185        => fcClk185,             -- [in]
-         fcRst185        => fcRst185,             -- [in]
-         fcBus           => fcBus,                -- [in]
-         tsTrigDaqData   => tsTrigDaqData,        -- [in]
-         axisClk         => axisClk,              -- [in]
-         axisRst         => axisRst,              -- [in]
-         eventAxisMaster => tsDaqTrigAxisMaster,  -- [out]
-         eventAxisSlave  => tsDaqTrigAxisSlave);  -- [in]
+         fcClk185        => fcClk185,                             -- [in]
+         fcRst185        => fcRst185,                             -- [in]
+         fcBus           => fcBus,                                -- [in]
+         tsTrigDaqData   => tsTrigDaqData,                        -- [in]
+         axilClk         => axilClk,                              -- [in]
+         axilRst         => axilRst,                              -- [in]
+         axilReadMaster  => locAxilReadMasters(AXIL_TS_TRIG_C),   -- [in]
+         axilReadSlave   => locAxilReadSlaves(AXIL_TS_TRIG_C),    -- [out]
+         axilWriteMaster => locAxilWriteMasters(AXIL_TS_TRIG_C),  -- [in]
+         axilWriteSlave  => locAxilWriteSlaves(AXIL_TS_TRIG_C),   -- [out]
+         axisClk         => axisClk,                              -- [in]
+         axisRst         => axisRst,                              -- [in]
+         eventAxisMaster => tsDaqTrigAxisMaster,                  -- [out]
+         eventAxisSlave  => tsDaqTrigAxisSlave);                  -- [in]
 
 
    -------------------------------------------------------------------------------------------------
