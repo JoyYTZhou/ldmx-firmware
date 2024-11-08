@@ -33,8 +33,6 @@ use ldmx_tdaq.FcPkg.all;
 library ldmx_ts;
 use ldmx_ts.zCCM_Pkg.ALL;
 
-library ldmx_tracker;
-
 ----------------------------------------------------------------------------------------------------
 
 entity zCCMfullTb is
