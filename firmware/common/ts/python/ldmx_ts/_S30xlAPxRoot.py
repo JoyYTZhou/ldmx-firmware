@@ -2,8 +2,6 @@ import pyrogue as pr
 import pyrogue.interfaces.simulation
 import pyrogue.protocols
 
-import axipcie
-
 import rogue
 
 import ldmx_tdaq
@@ -19,7 +17,7 @@ class S30xlAPxRoot(pr.Root):
 
         self.srp = rogue.protocols.srp.SrpV3()
         self.addInterface(self.srp)
-        
+
         if sim is True:
             SIM_SRP_PORT = 10000
             SIM_DAQ_EVENT_PORT = 11000
@@ -36,14 +34,14 @@ class S30xlAPxRoot(pr.Root):
             self.trigDataUdp = pyrogue.protocols.UdpRssiPack(host=host, port=8194, packVer=2, name='TsTrigEventRssi')
 
             self.addInterface(self.srpUdp, self.tsDaqUdp, self.trigDataUdp)
-            
+
             self.srpStream = self.srpUdp.application(dest=0)
             self.tsDaqEventStream = self.tsDaqUdp.application(dest=0)
             self.tsTrigEventStream = self.trigDataUdp.application(dest=0)
 
         # Add stream interfaces for clean exit
         self.addInterface(self.srpStream, self.tsDaqEventStream, self.tsTrigEventStream)
-            
+
         # Connect srp stream to srp protocol
         self.srp == self.srpStream
 
@@ -83,7 +81,7 @@ class S30xlAPxRoot(pr.Root):
         self.tsS30xlThresholdTriggerEventSqlReceiver = ldmx_ts.TsS30xlThresholdTriggerEventSqlReceiver(database=self.SqliteDatabase)
         self.addInterface(self.tsS30xlThresholdTriggerEventSqlReceiver)
         self.tsS30xlThresholdTriggerEventFilter >> self.tsS30xlThresholdTriggerEventSqlReceiver
-        
+
         # Log variable
 #         self.sqlLogger = pyrogue.interfaces.SqlLogger(
 #             root = self,
