@@ -20,8 +20,8 @@ class EventHeader:
             contributorId = int(arr[2]),
             bunchCount = int(arr[7]),
             pulseId = int(arr[8:16].view(np.uint64)))
-        #if header.burnCount !=0:
-        print(header)
+        if header.burnCount !=0:
+            print(header)
         return header
 
     def fill_from_numpy(self, arr):
@@ -31,10 +31,18 @@ class EventHeader:
         self.contributorId = int(arr[2])
         self.bunchCount = int(arr[7])
         self.pulseId = int(arr[8:16].view(np.uint64))
-        #if header.burnCount !=0:
-        print(self)
+        if header.burnCount !=0:
+            print(self)
 
     @classmethod
     def data(cls, arr):
         return arr[16:]
 
+EventHeaderDType = np.dtype([
+    ('burnCount', np.uint8),
+    ('subsystemId', np.uint8),
+    ('contributorId', np.uint8),
+    ('bunchCount', np.uint8),
+    ('empty', np.uint32),
+    ('pulseId', np.uint64),
+])

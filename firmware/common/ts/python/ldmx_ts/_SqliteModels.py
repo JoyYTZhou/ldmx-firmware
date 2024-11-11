@@ -12,6 +12,8 @@ import rogue
 import ldmx_tdaq
 import ldmx_ts
 
+import pyrogue as pr
+
 def with_retry(session_factory, func, *args, retries=3, delay=1):
     """
     Attempts to run the provided function with the given arguments,
@@ -110,85 +112,157 @@ class TsRawDaqEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
             self.tdc6, self.tdc7 = None, None  # Set to None for 6-channel events
             
 
-class SqlEventReceiver(rogue.interfaces.stream.Slave):
-    def __init__(self, database, **kwargs):
+class SqlEventReceiver(pr.DataReceiver):
+    def __init__(self, dataclass, database, **kwargs):
         super().__init__(**kwargs)
 
         self.database = database
-        self._queue = queue.Queue()
-        self._thread = threading.Thread(target=self._worker)
-        self._thread.start()
+        self.dataclass = dataclass
 
-    def _acceptFrame(self, frame):
+        self.database.add_handler(self.dataclass, self.insertEvent)
+        
+    def process(self, frame):
         # Read the frame into numpy array
         rawNumpy = frame.getNumpy(0, frame.getPayload())
 
         # Parse the numpy array
         event = self.parseEvent(rawNumpy)
 
-        self._queue.put(event)
+        #print(f'Put {event} in queue')
 
-    def _stop(self):
-        if not self._queue.empty():
-            print('Waiting for SQL Receiver to finish')
-        self._queue.put(None)
-        self._thread.join()
-        print('SQL Receiver finished')   
+        self.database.queue.put(event)
+
         
-
-    def _worker(self):
-        while True:
-            # Block and wait for a queue entry to arrive
-            event = self._queue.get()
-
-            # Exit thread if a None entry is received
-            if event is None:
-                return
-
-            # Continue only if the database connection is present
-            if not self.database._engine:
-                continue
-
-            try:
-                with self.database.SessionFactory() as session:
-                    while event is not None:
-                        # Insert the event into the database
-                        self.insertEvent(session, event)
-
-                        # If the queue is empty, commit the transaction and break
-                        if self._queue.empty():
-                            session.commit()
-                            break
-
-                        # Get the next event from the queue
-                        event = self._queue.get()
-
-            except Exception as e:
-                print(e)
-                # Handle database disconnection
-                #self.database._engine = None
-                #pr.logException(self._log, e)
-                #self._log.error(f"Lost database connection to {self._url}")
-
-    
             
 class TsRawDaqEventSqlReceiver(SqlEventReceiver):
 
-    def insertEvent(self, session, event):
-        for i, msg in enumerate(event.msgs):
-            #print(f'Writing msg into database - {msg}')
-            sqlEvent = TsRawDaqEventSql(
-                pulse_id = event.header.pulseId,
-                bunch_count = event.header.bunchCount,
-                channel_count = 6,
-                lane = msg.lane,
-                capId = msg.capId,
-                ce = msg.ce,
-                bc0 = msg.bc0,
-                adc = msg.adc,
-                tdc = msg.tdc)
+    def __init__(self, database, **kwargs):
+        super().__init__(dataclass = ldmx_ts.TsRawDaqEvent, database = database, **kwargs)
+        
+        self.ts_raw_daq_event_table = TsRawDaqEventSql.__table__
 
-            session.add(sqlEvent)
+#         sqlalchemy.Table(
+#             'ts_raw_daq_event', sqlalchemy.MetaData(),
+#             Column('id', Integer, primary_key=True, autoincrement=True),
+#             # Column('event_id', Integer, ForeignKey('events.id'), nullable=False),  # Uncomment if using a foreign key
+#             Column('pulse_id', BigInteger, nullable=False),
+#             Column('bunch_count', SmallInteger, nullable=False),
+#             Column('channel_count', SmallInteger, nullable=False),
+#             Column('lane', SmallInteger, nullable=False),
+#             Column('capId', SmallInteger, nullable=False),
+#             Column('ce', SmallInteger, nullable=False),
+#             Column('bc0', SmallInteger, nullable=False),
+#             Column('adc0', SmallInteger, nullable=False),
+#             Column('adc1', SmallInteger, nullable=False),
+#             Column('adc2', SmallInteger, nullable=False),
+#             Column('adc3', SmallInteger, nullable=False),
+#             Column('adc4', SmallInteger, nullable=False),
+#             Column('adc5', SmallInteger, nullable=False),
+#             Column('adc6', SmallInteger, nullable=True),
+#             Column('adc7', SmallInteger, nullable=True),
+#             Column('tdc0', SmallInteger, nullable=False),
+#             Column('tdc1', SmallInteger, nullable=False),
+#             Column('tdc2', SmallInteger, nullable=False),
+#             Column('tdc3', SmallInteger, nullable=False),
+#             Column('tdc4', SmallInteger, nullable=False),
+#             Column('tdc5', SmallInteger, nullable=False),
+#             Column('tdc6', SmallInteger, nullable=True),
+#             Column('tdc7', SmallInteger, nullable=True),
+#             CheckConstraint('channel_count IN (6, 8)', name='check_channel_count')
+#         )
+
+        self.msg_dict = {
+            'pulse_id': 0,
+            'bunch_count': 0,
+            'channel_count': 6,
+            'lane': 0,
+            'capId': 0,
+            'ce': 0,
+            'bc0': 0,
+            'adc0': 0,
+            'adc1': 0,
+            'adc2': 0,
+            'adc3': 0,
+            'adc4': 0,
+            'adc5': 0,
+            'tdc0': 0,
+            'tdc1': 0,
+            'tdc2': 0,
+            'tdc3': 0,
+            'tdc4': 0,
+            'tdc5': 0           
+        }
+
+    def insertEvent(self, connection, event):
+        # Prepare a list to hold all dictionaries for bulk insert
+        batch_data = []
+    
+        # Collect all rows for the batch insert
+        for msg in event.msgs:
+            msg_data = {
+                'pulse_id': event.header.pulseId,
+                'bunch_count': event.header.bunchCount,
+                'channel_count': 6,
+                'lane': msg.lane,
+                'capId': msg.capId,
+                'ce': msg.ce,
+                'bc0': msg.bc0,
+                'adc0': msg.adc[0],
+                'adc1': msg.adc[1],
+                'adc2': msg.adc[2],
+                'adc3': msg.adc[3],
+                'adc4': msg.adc[4],
+                'adc5': msg.adc[5],
+                'tdc0': msg.tdc[0],
+                'tdc1': msg.tdc[1],
+                'tdc2': msg.tdc[2],
+                'tdc3': msg.tdc[3],
+                'tdc4': msg.tdc[4],
+                'tdc5': msg.tdc[5]
+            }
+            batch_data.append(msg_data)
+
+            # Execute a bulk insert with all collected rows
+            if batch_data:
+                connection.execute(self.ts_raw_daq_event_table.insert(), batch_data)
+        
+#         for i, msg in enumerate(event.msgs):
+#             self.msg_dict['pulse_id']  = event.header.pulseId
+#             self.msg_dict['bunch_count'] = event.header.bunchCount
+#             self.msg_dict['lane'] = msg.lane
+#             self.msg_dict['capId']= msg.capId
+#             self.msg_dict['ce'] =msg.ce
+#             self.msg_dict['bc0']=msg.bc0
+#             self.msg_dict['adc0'] =msg.adc[0]
+#             self.msg_dict['adc1'] =msg.adc[1]
+#             self.msg_dict['adc2'] =msg.adc[2]
+#             self.msg_dict['adc3'] =msg.adc[3]
+#             self.msg_dict['adc4'] =msg.adc[4]
+#             self.msg_dict['adc5'] =msg.adc[5]
+#             self.msg_dict['tdc0'] =msg.tdc[0]
+#             self.msg_dict['tdc1'] =msg.tdc[1]
+#             self.msg_dict['tdc2'] =msg.tdc[2]
+#             self.msg_dict['tdc3'] =msg.tdc[3]
+#             self.msg_dict['tdc4'] =msg.tdc[4]
+#             self.msg_dict['tdc5'] =msg.tdc[5]
+
+#             connection.execute(self.ts_raw_daq_event_table.insert(), [self.msg_dict])
+
+                    
+            
+            #print(f'Writing msg into database - {msg}')
+#             sqlEvent = TsRawDaqEventSql(
+#                 pulse_id = event.header.pulseId,
+#                 bunch_count = event.header.bunchCount,
+#                 channel_count = 6,
+#                 lane = msg.lane,
+#                 capId = msg.capId,
+#                 ce = msg.ce,
+#                 bc0 = msg.bc0,
+#                 adc = msg.adc,
+#                 tdc = msg.tdc)
+
+#             session.add(sqlEvent)
 
 
     def parseEvent(self, rawNumpy):
@@ -227,14 +301,72 @@ class TsS30xlThresholdTriggerEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
 
 class TsS30xlThresholdTriggerEventSqlReceiver(SqlEventReceiver):
 
-    def insertEvent(self, session, event):
-        sqlEvent = TsS30xlThresholdTriggerEventSql(
-            pulse_id = event.header.pulseId,
-            bunch_count = event.header.bunchCount,
-            hits = event.hits,
-            amplitudes = event.amplitudes)
+    def __init__(self, database, **kwargs):
+        super().__init__(dataclass = ldmx_ts.TsS30xlThresholdTriggerEvent, database = database, **kwargs)
 
-        session.add(sqlEvent)
+        self.table = TsS30xlThresholdTriggerEventSql.__table__
+
+#         sqlalchemy.Table(
+#             'ts_s30xl_threshold_trigger_event', sqlalchemy.MetaData(),
+#             Column('id', Integer, primary_key=True, autoincrement=True)
+#             Column('pulse_id', BigInteger, nullable=False) # uint64 -> BigInteger
+#             Column('bunch_count', SmallInteger, nullable=False) # uint8 -> SmallInteger
+#             Column('hits', Integer, nullable=False)
+#             Column('amplitude0', Integer, nullable=False)
+#             Column('amplitude1', Integer, nullable=False)
+#             Column('amplitude2', Integer, nullable=False)
+#             Column('amplitude3', Integer, nullable=False)
+#             Column('amplitude4', Integer, nullable=False)
+#             Column('amplitude5', Integer, nullable=False)
+#             Column('amplitude6', Integer, nullable=False)
+#             Column('amplitude7', Integer, nullable=False)
+#             Column('amplitude8', Integer, nullable=False)
+#             Column('amplitude9', Integer, nullable=False)
+#             Column('amplitude10', Integer, nullable=False)
+#             Column('amplitude11', Integer, nullable=False))
+
+        self.table_dict = {
+            'pulse_id': 0,
+            'bunch_count': 0,
+            'hits': 0,
+            'amplitude0': 0,
+            'amplitude1': 0,
+            'amplitude2': 0,
+            'amplitude3': 0,
+            'amplitude4': 0,
+            'amplitude5': 0,
+            'amplitude6': 0,
+            'amplitude7': 0,
+            'amplitude8': 0,
+            'amplitude9': 0,
+            'amplitude10': 0,
+            'amplitude11': 0}
+
+    def insertEvent(self, connection, event):
+        self.table_dict['pulse_id'] = event.header.pulseId
+        self.table_dict['bunch_count'] = event.header.bunchCount
+        self.table_dict['hits'] = event.hits
+        self.table_dict['amplitude0'] = event.amplitudes[0]
+        self.table_dict['amplitude1'] =  event.amplitudes[1]
+        self.table_dict['amplitude2'] =  event.amplitudes[2]
+        self.table_dict['amplitude3'] =  event.amplitudes[3]
+        self.table_dict['amplitude4'] =  event.amplitudes[4]
+        self.table_dict['amplitude5'] =  event.amplitudes[5]
+        self.table_dict['amplitude6'] =  event.amplitudes[6]
+        self.table_dict['amplitude7'] =  event.amplitudes[7]
+        self.table_dict['amplitude8'] =  event.amplitudes[8]
+        self.table_dict['amplitude9'] =  event.amplitudes[9]
+        self.table_dict['amplitude10'] = event.amplitudes[10]
+        self.table_dict['amplitude11'] = event.amplitudes[11]
+
+        connection.execute(self.table.insert(), [self.table_dict])
+#         sqlEvent = TsS30xlThresholdTriggerEventSql(
+#             pulse_id = event.header.pulseId,
+#             bunch_count = event.header.bunchCount,
+#             hits = event.hits,
+#             amplitudes = event.amplitudes)
+
+#         session.add(sqlEvent)
         
 
     def parseEvent(self, rawNumpy):

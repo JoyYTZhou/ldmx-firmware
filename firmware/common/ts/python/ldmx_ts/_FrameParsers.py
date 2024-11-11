@@ -30,6 +30,15 @@ class TsData6ChMsg:
             ce = int(data[14]>>2 & 0x1),
             bc0 = int(data[14]>>3 & 0x1))
         return msg
+
+TsData6ChMsgDtype = ts_data_msg_dtype = np.dtype([
+    ('lane', np.uint8),
+    ('capId', np.uint8),
+    ('ce', np.uint8),
+    ('bc0', np.uint8),
+    ('adc', np.uint8, (6,)),  # Fixed-size array for 6 ADC values
+    ('tdc', np.uint8, (6,))   # Fixed-size array for 6 TDC values
+])
     
 @dataclass
 class TsRawDaqEvent:

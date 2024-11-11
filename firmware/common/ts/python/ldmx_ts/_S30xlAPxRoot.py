@@ -84,26 +84,34 @@ class S30xlAPxRoot(pr.Root):
 #        self.tsS30xlThresholdTriggerEventReceiver <<  self.tsS30xlThresholdTriggerEventFilter
 #        self.tsTrigEventStream >> tsS30xlThresholdTriggerEventReceiver
 
+        fifo1 = rogue.interfaces.stream.Fifo(0, 0, True)
+        fifo2 = rogue.interfaces.stream.Fifo(0, 0, True)
+
+        self.addInterface(fifo1, fifo2)
+
         # Unbatch the streams
         self.tsDaqEventStreamUnbatcher = rogue.protocols.batcher.SplitterV1()
-        self.tsDaqEventStreamUnbatcher << self.tsDaqEventStream
+        self.tsDaqEventStreamUnbatcher << fifo1 << self.tsDaqEventStream
         self.addInterface(self.tsDaqEventStreamUnbatcher)
 
         self.tsTrigEventStreamUnbatcher = rogue.protocols.batcher.SplitterV1()
-        self.tsTrigEventStreamUnbatcher << self.tsTrigEventStream
+        self.tsTrigEventStreamUnbatcher << fifo2 << self.tsTrigEventStream
         self.addInterface(self.tsTrigEventStreamUnbatcher)
         
 
         # Add the Sqlite Database
         self.add(ldmx_tdaq.SqliteDatabase())
+        self.addInterface(self.SqliteDatabase)
 
         # Create and connect SQL Receivers
         self.tsRawDaqEventSqlReceiver = ldmx_ts.TsRawDaqEventSqlReceiver(database=self.SqliteDatabase)
+        self.add(self.tsRawDaqEventSqlReceiver)
         self.addInterface(self.tsRawDaqEventSqlReceiver)
 #        self.tsRawDaqEventSqlReceiver << self.tsRawDaqEventFilter
         self.tsRawDaqEventSqlReceiver << self.tsDaqEventStreamUnbatcher
 
         self.tsS30xlThresholdTriggerEventSqlReceiver = ldmx_ts.TsS30xlThresholdTriggerEventSqlReceiver(database=self.SqliteDatabase)
+        self.add(self.tsS30xlThresholdTriggerEventSqlReceiver)
         self.addInterface(self.tsS30xlThresholdTriggerEventSqlReceiver)
         #self.tsS30xlThresholdTriggerEventSqlReceiver << self.tsS30xlThresholdTriggerEventFilter
         self.tsS30xlThresholdTriggerEventSqlReceiver << self.tsTrigEventStreamUnbatcher
