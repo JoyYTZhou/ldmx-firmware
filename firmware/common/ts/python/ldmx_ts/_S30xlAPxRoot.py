@@ -86,8 +86,10 @@ class S30xlAPxRoot(pr.Root):
 
         fifo1 = rogue.interfaces.stream.Fifo(0, 0, True)
         fifo2 = rogue.interfaces.stream.Fifo(0, 0, True)
+        fifo3 = rogue.interfaces.stream.Fifo(0, 0, True)
+        fifo4 = rogue.interfaces.stream.Fifo(0, 0, True)
 
-        self.addInterface(fifo1, fifo2)
+        self.addInterface(fifo1, fifo2, fifo3, fifo4)
 
         # Unbatch the streams
         self.tsDaqEventStreamUnbatcher = rogue.protocols.batcher.SplitterV1()
@@ -108,13 +110,13 @@ class S30xlAPxRoot(pr.Root):
         self.add(self.tsRawDaqEventSqlReceiver)
         self.addInterface(self.tsRawDaqEventSqlReceiver)
 #        self.tsRawDaqEventSqlReceiver << self.tsRawDaqEventFilter
-        self.tsRawDaqEventSqlReceiver << self.tsDaqEventStreamUnbatcher
+        self.tsRawDaqEventSqlReceiver << fifo3 << self.tsDaqEventStreamUnbatcher
 
         self.tsS30xlThresholdTriggerEventSqlReceiver = ldmx_ts.TsS30xlThresholdTriggerEventSqlReceiver(database=self.SqliteDatabase)
         self.add(self.tsS30xlThresholdTriggerEventSqlReceiver)
         self.addInterface(self.tsS30xlThresholdTriggerEventSqlReceiver)
         #self.tsS30xlThresholdTriggerEventSqlReceiver << self.tsS30xlThresholdTriggerEventFilter
-        self.tsS30xlThresholdTriggerEventSqlReceiver << self.tsTrigEventStreamUnbatcher
+        self.tsS30xlThresholdTriggerEventSqlReceiver << fifo4 << self.tsTrigEventStreamUnbatcher
         
         # Log variable
 #         self.sqlLogger = pyrogue.interfaces.SqlLogger(

@@ -3,7 +3,7 @@ import time
 import threading
 import queue
 
-from sqlalchemy import Column, Integer, BigInteger, SmallInteger, CheckConstraint, Computed
+from sqlalchemy import Column, Integer, BigInteger, SmallInteger, CheckConstraint, Computed, BLOB
 from sqlalchemy.orm import mapped_column, Mapped
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.exc import SQLAlchemyError, OperationalError
@@ -15,59 +15,25 @@ import ldmx_ts
 
 import pyrogue as pr
 
-def with_retry(session_factory, func, *args, retries=3, delay=1):
-    """
-    Attempts to run the provided function with the given arguments,
-    retrying on OperationalError (database is locked) up to 'retries' times.
-
-    Parameters:
-    - session_factory: SQLAlchemy session factory to create new sessions.
-    - func: The function to execute within the session.
-    - *args: Arguments for the function.
-    - retries: Number of retries if a lock error occurs.
-    - delay: Delay between retries in seconds.
-    """
-    for attempt in range(retries):
-        try:
-            with session_factory() as session:
-                func(session, *args)
-            break  # Exit loop if function runs successfully
-        except OperationalError as e:
-            if "database is locked" in str(e):
-                print(f'{args}')
-                print(f"Attempt {attempt + 1} failed: database is locked. Retrying in {delay} seconds...")
-                time.sleep(delay)
-            else:
-                raise  # Raise other OperationalErrors that aren?t lock-related
-    else:
-        print("All retry attempts failed.")
-
-
-class MsgType(enum.Enum):
-    six_channel = '6_channel'
-    eight_channel = '8_channel'
-
 class RawEventDataSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
     __tablename__ = 'raw_event_data'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    data: = Column(LargeBinary, nullable=False)
+    data = Column(BLOB, nullable=False)
 
 # Define the 'ts_raw_daq_events' table
 class TsRawDaqEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
     __tablename__ = 'ts_raw_daq_event'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    # Uncomment this if a foreign key relationship is required
-    # event_id: Mapped[int] = mapped_column(Integer, ForeignKey('events.id'), nullable=False)
     pulse_id: Mapped[int] = mapped_column(BigInteger, nullable=False)  # uint64 -> BigInteger
     bunch_count: Mapped[int] = mapped_column(SmallInteger, nullable=False)  # uint8 -> SmallInteger
     channel_count: Mapped[int] = mapped_column(SmallInteger, nullable=False)    
     lane: Mapped[int] = mapped_column(SmallInteger, nullable=False)  # uint8 -> SmallInteger
     flags: Mapped[int] = mapped_column(SmallInteger, nullable=False)
-#     capId: Mapped[int] = mapped_column(SmallInteger, Computed('flags & 0x3'))
-#     ce: Mapped[int] = mapped_column(SmallInteger, Computed('(flags >> 2) & 0x1'))
-#     bc0: Mapped[int] = mapped_column(SmallInteger, Computed('(flags >> 3) & 0x1'))
+    capId: Mapped[int] = mapped_column(SmallInteger, Computed('flags & 0x3'))
+    ce: Mapped[int] = mapped_column(SmallInteger, Computed('(flags / 4) & 0x1'))
+    bc0: Mapped[int] = mapped_column(SmallInteger, Computed('(flags / 8) & 0x1'))
     adc0: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     adc1: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     adc2: Mapped[int] = mapped_column(SmallInteger, nullable=False)
@@ -122,95 +88,68 @@ class TsRawDaqEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
             
 
 class SqlEventReceiver(pr.DataReceiver):
-    def __init__(self, dataclass, database, **kwargs):
+    def __init__(self, table, database, **kwargs):
         super().__init__(**kwargs)
 
         self.database = database
-        self.dataclass = dataclass
+        self.table = table
 
-        self.database.add_handler(self.dataclass, self.insertEvent)
+        self.database.add_parser(self.table, self.parser)
+
+    def parser(self, data):
+        # Default parser 
+        return [{'data': data}]
         
     def process(self, frame):
         # Read the frame into numpy array
-        rawNumpy = frame.getNumpy(0, frame.getPayload())
+        ba = frame.getBa()
 
-        # Parse the numpy array
-        event = self.parseEvent(rawNumpy)
-
-        #print(f'Put {event} in queue')
-
-        self.database.put(self.dataclass, event)
+        self.database.put(self.table, ba)
 
         
             
 class TsRawDaqEventSqlReceiver(SqlEventReceiver):
 
     def __init__(self, database, **kwargs):
-        super().__init__(dataclass = 'RawDaqEvent', database = database, **kwargs)
+        super().__init__(table = TsRawDaqEventSql.__table__ , database = database, **kwargs)
         
-        self.ts_raw_daq_event_table = TsRawDaqEventSql.__table__
-
-        self.msg_dict = {
-            'pulse_id': 0,
-            'bunch_count': 0,
-            'channel_count': 6,
-            'lane': 0,
-            'capId': 0,
-            'ce': 0,
-            'bc0': 0,
-            'adc0': 0,
-            'adc1': 0,
-            'adc2': 0,
-            'adc3': 0,
-            'adc4': 0,
-            'adc5': 0,
-            'tdc0': 0,
-            'tdc1': 0,
-            'tdc2': 0,
-            'tdc3': 0,
-            'tdc4': 0,
-            'tdc5': 0           
-        }
-
-    def insertEvent(self, connection, event):
+    def parser(self, data):
         # Prepare a list to hold all dictionaries for bulk insert
         batch_data = []
 
-        event_view = event.view(ldmx_ts.TsS30xlRawDaqEventDType)
+        event_view = data.view(ldmx_ts.TsS30xlRawDaqEventDType)
         # Collect all rows for the batch insert
         for i in range(2):
             msg = event_view['msgs'][0][i]
             msg_data = {
-                'pulse_id': event_view['header']['pulseId'][0],
-                'bunch_count': event_view['header']['bunchCount'][0],
+                'pulse_id': int(event_view['header']['pulseId'][0]),
+                'bunch_count': int(event_view['header']['bunchCount'][0]),
                 'channel_count': 6,
-                'lane': msg['lane'],
-                'flags': msg['flags'],
-                'adc0': msg['adc'][0],
-                'adc1': msg['adc'][1],
-                'adc2': msg['adc'][2],
-                'adc3': msg['adc'][3],
-                'adc4': msg['adc'][4],
-                'adc5': msg['adc'][5],
-                'tdc0': msg['tdc'][0],
-                'tdc1': msg['tdc'][1],
-                'tdc2': msg['tdc'][2],
-                'tdc3': msg['tdc'][3],
-                'tdc4': msg['tdc'][4],
-                'tdc5': msg['tdc'][5]
+                'lane': int(msg['lane']),
+                'flags': int(msg['flags']),
+                'adc0': int(msg['adc'][0]),
+                'adc1': int(msg['adc'][1]),
+                'adc2': int(msg['adc'][2]),
+                'adc3': int(msg['adc'][3]),
+                'adc4': int(msg['adc'][4]),
+                'adc5': int(msg['adc'][5]),
+                'tdc0': int(msg['tdc'][0]),
+                'tdc1': int(msg['tdc'][1]),
+                'tdc2': int(msg['tdc'][2]),
+                'tdc3': int(msg['tdc'][3]),
+                'tdc4': int(msg['tdc'][4]),
+                'tdc5': int(msg['tdc'][5])
             }
             #print(msg_data)
             batch_data.append(msg_data)
 
-        return (self.ts_raw_daq_event_table, batch_data)
-        # Execute a bulk insert with all collected rows
-        if batch_data:
-            connection.execute(self.ts_raw_daq_event_table.insert(), batch_data)
-        
-    def parseEvent(self, rawNumpy):
+        return batch_data
+
+    def process(self, frame):
+        self.database.put(self.table, frame.getNumpy())
         #return rawNumpy.view(ldmx_ts.TsS30xlRawDaqEventDType)
         #return ldmx_ts.TsRawDaqEvent.from_numpy(rawNumpy)
-        return rawNumpy
+        #return rawNumpy
         
 
 class TsS30xlThresholdTriggerEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
@@ -246,50 +185,30 @@ class TsS30xlThresholdTriggerEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
 class TsS30xlThresholdTriggerEventSqlReceiver(SqlEventReceiver):
 
     def __init__(self, database, **kwargs):
-        super().__init__(dataclass = ldmx_ts.TsS30xlThresholdTriggerEvent, database = database, **kwargs)
+        super().__init__(table = TsS30xlThresholdTriggerEventSql.__table__, database = database, **kwargs)
 
-        self.table = TsS30xlThresholdTriggerEventSql.__table__
+    def parser(self, data):
+        event = ldmx_ts.TsS30xlThresholdTriggerEvent.from_numpy(data)
+        table_dict = {
+            'pulse_id': event.header.pulseId,
+            'bunch_count': event.header.bunchCount,
+            'hits': event.hits,
+            'amplitude0': event.amplitudes[0],
+            'amplitude1':  event.amplitudes[1],
+            'amplitude2':  event.amplitudes[2],
+            'amplitude3':  event.amplitudes[3],
+            'amplitude4':  event.amplitudes[4],
+            'amplitude5':  event.amplitudes[5],
+            'amplitude6':  event.amplitudes[6],
+            'amplitude7':  event.amplitudes[7],
+            'amplitude8':  event.amplitudes[8],
+            'amplitude9':  event.amplitudes[9],
+            'amplitude10': event.amplitudes[10],
+            'amplitude11': event.amplitudes[11]}
 
-        self.table_dict = {
-            'pulse_id': 0,
-            'bunch_count': 0,
-            'hits': 0,
-            'amplitude0': 0,
-            'amplitude1': 0,
-            'amplitude2': 0,
-            'amplitude3': 0,
-            'amplitude4': 0,
-            'amplitude5': 0,
-            'amplitude6': 0,
-            'amplitude7': 0,
-            'amplitude8': 0,
-            'amplitude9': 0,
-            'amplitude10': 0,
-            'amplitude11': 0}
+        return [table_dict]
 
-    def insertEvent(self, connection, event):
-        self.table_dict['pulse_id'] = event.header.pulseId
-        self.table_dict['bunch_count'] = event.header.bunchCount
-        self.table_dict['hits'] = event.hits
-        self.table_dict['amplitude0'] = event.amplitudes[0]
-        self.table_dict['amplitude1'] =  event.amplitudes[1]
-        self.table_dict['amplitude2'] =  event.amplitudes[2]
-        self.table_dict['amplitude3'] =  event.amplitudes[3]
-        self.table_dict['amplitude4'] =  event.amplitudes[4]
-        self.table_dict['amplitude5'] =  event.amplitudes[5]
-        self.table_dict['amplitude6'] =  event.amplitudes[6]
-        self.table_dict['amplitude7'] =  event.amplitudes[7]
-        self.table_dict['amplitude8'] =  event.amplitudes[8]
-        self.table_dict['amplitude9'] =  event.amplitudes[9]
-        self.table_dict['amplitude10'] = event.amplitudes[10]
-        self.table_dict['amplitude11'] = event.amplitudes[11]
 
-        return (self.table, [self.table_dict])
-
-        connection.execute(self.table.insert(), [self.table_dict])
-        
-
-    def parseEvent(self, rawNumpy):
-        # Parse the numpy array
-        return ldmx_ts.TsS30xlThresholdTriggerEvent.from_numpy(rawNumpy)
+    def process(self, frame):
+        self.database.put(self.table, frame.getNumpy())
 

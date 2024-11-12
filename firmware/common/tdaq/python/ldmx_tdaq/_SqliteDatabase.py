@@ -37,11 +37,10 @@ class SqliteDatabase(pr.Device):
         self._url = url
         self._engine = sqlalchemy.create_engine(url, connect_args={"check_same_thread": False})
         
-        self._handlers = {}
-        self._queues = {}
-        self._queues_lock = threading.Lock()
+        self.queue = queue.Queue()
         self._thread = threading.Thread(target=self._worker)
         self._thread.start()
+        self._parsers = {}
         
         self.SqliteBase.metadata.create_all(self._engine)
 
@@ -70,7 +69,7 @@ class SqliteDatabase(pr.Device):
                 name = f'{table}_inserts',
                 mode = 'RO',
                 pollInterval = 1,
-                localGet = lambda: self.table_insert_counts[table]))
+                localGet = lambda t=table: self.table_insert_counts[t]))
 
         @self.command()
         def ResetWriteCounts():
@@ -81,92 +80,81 @@ class SqliteDatabase(pr.Device):
             
 
     def count_writes(self, conn, clauseelement, multiparams, params):
-        #print('Called count_writes')
+        # Check if this operation is an insert
         if isinstance(clauseelement, Insert):
             table_name = clauseelement.table.name
-            row_count = len(multiparams[0]) if multiparams else 1  # Use 1 as fallback for single inserts
+
+            # Calculate the row count based on the structure of multiparams
+            row_count = len(multiparams) if multiparams else 1  # `len(multiparams)` gives the correct number of rows for bulk inserts
+
+            # Update the counts with thread-safety
             with self.lock:
                 self._insert_count += row_count
-                self.table_insert_counts[table_name] = self.table_insert_counts[table_name] + row_count
+                self.table_insert_counts[table_name] = self.table_insert_counts.get(table_name, 0) + row_count
+                
 
-    def add_handler(self, dataclass, handler):
-        self._handlers[dataclass] = handler
-        self._queues[dataclass] = queue.Queue()
+    def add_parser(self, table, parser):
+        self._parsers[table] = parser
 
-    def put(self, typ, event):
-        self._queues[typ].put(event)
+    def put(self, table, data):
+        self.queue.put((table, data))
 
     def _stop(self):
-        with self._queues_lock:
-#             # Check if queues have any events to process
-#             if self._queues and any(not q.empty() for q in self._queues.values()):
-#                 # Wait until all queues are empty
-#                 while any(not q.empty() for q in self._queues.values()):
-#                     for q in self._queues.values():
-#                         print(f'q.empty= {q.empty()}')
-#                     print('Waiting for SQL Receiver to finish processing queues')
-#                     time.sleep(0.1)  # Short sleep to avoid busy-waiting
-
-            # Insert a `None` into each remaining queue to signal the worker to stop
-            for q in self._queues.values():
-                print('Stop with None')
-                q.put(None)
-
-        # Wait for the worker thread to finish
+        self.queue.put(None)
         self._thread.join()
-        print('SQL Receiver finished')
+        print('SQL Receiver finished')   
+        
 
     def _worker(self):
         while True:
-            # Acquire lock to safely check and access self._queues
-            with self._queues_lock:
+            insert_dict = defaultdict(list)
+            count = 0
+            start_time = time.time()
+            loop_start_time = start_time
 
-                # Process each queue directly from active_queues
-                for event_type, q in self._queues.items():
-                    if q.empty():
-                        continue
-                    else:
-                        event = q.get()
+            # Process events until the queue is empty or None is encountered
+            while True:
+                event = self.queue.get()
 
-                    # If a None event is received return so the thread can terminate
-                    if event is None:
-                        print('Got None Event')
-                        return
+                # Check for None event to signal exit
+                if event is None:
+                    # If None is encountered, break to process the current batch and then exit
+                    break
 
-                    # Only proceed if the database engine is available
-                    if not self._engine:
-                        continue
+                # Continue only if the database connection is present
+                if not self._engine:
+                    continue
 
-                    try:
-                        # Start a new transaction for the current event type's queue
-                        print('Got Event, opening connection')
-                        with self._engine.begin() as connection:
-                            count = 0
-                            start_time = time.time()
-                            batch_data = []
-                            handler = self._handlers.get(event_type)                            
+                # Process the event using its parser and add the result to the insert_dict
+                parser = self._parsers[event[0]]
+                insert_dict[event[0]].extend(parser(event[1]))
+                count += 1
 
-                            # Process all events for this specific event type
-                            while event is not None:
-                                table, bd = handler(connection, event)  # Handle the event (e.g., insert into the table)
-                                count += 1
+                # If the queue is empty, break to process the batch and continue
+                if self.queue.empty():
+                    break
 
-                                batch_data.extend(bd)
+            #duration = time.time() - start_time
+            #print(f'Processed {count} queue entries in {duration:.4f} seconds = {count/duration:.4f} events/second')
+            #start_time = time.time()
+            # Insert all entries accumulated in insert_dict into the database
+            try:
+                with self._engine.begin() as connection:
+                    for table, batch_data in insert_dict.items():
+                        #print(table, batch_data)
+                        connection.execute(table.insert(), batch_data)
 
-                                if q.empty():
-                                    event = None
-                                else:
-                                    event = q.get()
+                end_time = time.time()
+                #duration = end_time-start_time
+                full_duration = end_time-loop_start_time
+                #print(f'Added {count} events to the database in {duration:.4f} seconds = {count/duration:.4f} events/second')
+                print(f'Total {count} events done in {full_duration:.4f} seconds = {count/duration:.4f} events/second')
 
-                            connection.execute(table.insert(), batch_data)
+            except Exception as e:
+                print(f"Error inserting into database: {e}")
+                raise e
 
-                        # Log the transaction results
-                        duration = time.time() - start_time
-                        print(f'Committed {count} events of type {event_type} in {duration:.4f} seconds = {count/duration:.4f} events/second')
-
-                    except Exception as e:
-                        print(f"Error processing queue for event type {event_type}: {e}")
-                        raise e
-
-            # Short sleep to reduce CPU usage if no events are available
-            time.sleep(0.01)
+            # Exit the loop if None was received, indicating the end of processing
+            if event is None:
+                print("Exiting worker due to None event.")
+                break   

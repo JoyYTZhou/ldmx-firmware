@@ -95,6 +95,7 @@ class TsS30xlThresholdTriggerEvent:
             amplitudes = amplitudes,
             hits = hits)
         return ret
+
     
 class TsS30xlThresholdTriggerEventFilter(DaqEventFilter):
     def __init__(self):
