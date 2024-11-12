@@ -148,7 +148,7 @@ class SqliteDatabase(pr.Device):
                 #duration = end_time-start_time
                 full_duration = end_time-loop_start_time
                 #print(f'Added {count} events to the database in {duration:.4f} seconds = {count/duration:.4f} events/second')
-                print(f'Total {count} events done in {full_duration:.4f} seconds = {count/duration:.4f} events/second')
+                print(f'Total {count} events done in {full_duration:.4f} seconds = {count/full_duration:.4f} events/second')
 
             except Exception as e:
                 print(f"Error inserting into database: {e}")
