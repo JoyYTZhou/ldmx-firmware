@@ -198,6 +198,10 @@ begin
                v.tsRxMsg.tdc(0)(3 downto 0) := tsRxData(15 downto 12);
                v.state                      := WORD_1_S;
             end if;
+            v.waitCounter := r.waitCounter + 1;
+            if (r.waitCounter = 1000) then
+               v.state := INIT_S;
+            end if;
          when WORD_1_S =>
             v.tsRxMsg.adc(0) := tsRxData(7 downto 0);
             v.tsRxMsg.adc(1) := tsRxData(15 downto 8);

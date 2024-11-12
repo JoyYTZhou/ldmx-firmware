@@ -151,7 +151,7 @@ begin
    U_SynchronizerOneShot_1 : entity surf.SynchronizerOneShot
       generic map (
          TPD_G         => TPD_G,
-         PULSE_WIDTH_G => 10)
+         PULSE_WIDTH_G => 1000)
       port map (
          clk     => tsUserClk125,       -- [in]
          dataIn  => tsRxPhyInit,        -- [in]
@@ -160,7 +160,7 @@ begin
    U_SynchronizerOneShot_2 : entity surf.SynchronizerOneShot
       generic map (
          TPD_G         => TPD_G,
-         PULSE_WIDTH_G => 10)
+         PULSE_WIDTH_G => 1000)
       port map (
          clk     => tsUserClk125,       -- [in]
          dataIn  => tsTxPhyInit,        -- [in]
