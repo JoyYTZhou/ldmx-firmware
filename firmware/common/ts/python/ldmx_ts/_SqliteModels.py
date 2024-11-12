@@ -3,7 +3,8 @@ import time
 import threading
 import queue
 
-from sqlalchemy import Column, Integer, BigInteger, SmallInteger, CheckConstraint
+from sqlalchemy import Column, Integer, BigInteger, SmallInteger, CheckConstraint, Computed
+from sqlalchemy.orm import mapped_column, Mapped
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.exc import SQLAlchemyError, OperationalError
 
@@ -46,40 +47,48 @@ class MsgType(enum.Enum):
     six_channel = '6_channel'
     eight_channel = '8_channel'
 
+class RawEventDataSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
+    __tablename__ = 'raw_event_data'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    data: = Column(LargeBinary, nullable=False)
+
 # Define the 'ts_raw_daq_events' table
 class TsRawDaqEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
     __tablename__ = 'ts_raw_daq_event'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-#    event_id = Column(Integer, ForeignKey('events.id'), nullable=False)
-    pulse_id = Column(BigInteger, nullable=False) # uint64 -> BigInteger
-    bunch_count = Column(SmallInteger, nullable=False) # uint8 -> SmallInteger
-    channel_count = Column(SmallInteger, nullable=False)    
-    lane = Column(SmallInteger, nullable=False)  # uint8 -> SmallInteger
-    capId = Column(SmallInteger, nullable=False)  # uint8 -> SmallInteger
-    ce = Column(SmallInteger, nullable=False)  # uint8 -> SmallInteger
-    bc0 = Column(SmallInteger, nullable=False)  # uint8 -> SmallInteger
-    adc0 = Column(SmallInteger, nullable=False)  # uint8 -> SmallInteger
-    adc1 = Column(SmallInteger, nullable=False)  # uint8 -> SmallInteger
-    adc2 = Column(SmallInteger, nullable=False)  # uint8 -> SmallInteger
-    adc3 = Column(SmallInteger, nullable=False)  # uint8 -> SmallInteger
-    adc4 = Column(SmallInteger, nullable=True)  # uint8 -> SmallInteger
-    adc5 = Column(SmallInteger, nullable=True)  # uint8 -> SmallInteger
-    adc6 = Column(SmallInteger, nullable=True)  # uint8 -> SmallInteger
-    adc7 = Column(SmallInteger, nullable=True)  # uint8 -> SmallInteger    
-    tdc0 = Column(SmallInteger, nullable=False)  # uint8 -> SmallInteger
-    tdc1 = Column(SmallInteger, nullable=False)  # uint8 -> SmallInteger
-    tdc2 = Column(SmallInteger, nullable=False)  # uint8 -> SmallInteger
-    tdc3 = Column(SmallInteger, nullable=False)  # uint8 -> SmallInteger
-    tdc4 = Column(SmallInteger, nullable=True)  # uint8 -> SmallInteger
-    tdc5 = Column(SmallInteger, nullable=True)  # uint8 -> SmallInteger
-    tdc6 = Column(SmallInteger, nullable=True)  # uint8 -> SmallInteger
-    tdc7 = Column(SmallInteger, nullable=True)  # uint8 -> SmallInteger    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    # Uncomment this if a foreign key relationship is required
+    # event_id: Mapped[int] = mapped_column(Integer, ForeignKey('events.id'), nullable=False)
+    pulse_id: Mapped[int] = mapped_column(BigInteger, nullable=False)  # uint64 -> BigInteger
+    bunch_count: Mapped[int] = mapped_column(SmallInteger, nullable=False)  # uint8 -> SmallInteger
+    channel_count: Mapped[int] = mapped_column(SmallInteger, nullable=False)    
+    lane: Mapped[int] = mapped_column(SmallInteger, nullable=False)  # uint8 -> SmallInteger
+    flags: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+#     capId: Mapped[int] = mapped_column(SmallInteger, Computed('flags & 0x3'))
+#     ce: Mapped[int] = mapped_column(SmallInteger, Computed('(flags >> 2) & 0x1'))
+#     bc0: Mapped[int] = mapped_column(SmallInteger, Computed('(flags >> 3) & 0x1'))
+    adc0: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    adc1: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    adc2: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    adc3: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    adc4: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    adc5: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    adc6: Mapped[int] = mapped_column(SmallInteger, nullable=True)
+    adc7: Mapped[int] = mapped_column(SmallInteger, nullable=True)
+    tdc0: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    tdc1: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    tdc2: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    tdc3: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    tdc4: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    tdc5: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    tdc6: Mapped[int] = mapped_column(SmallInteger, nullable=True)
+    tdc7: Mapped[int] = mapped_column(SmallInteger, nullable=True)    
 
-    # Add a CheckConstraint to restrict the allowed values for channel_count
+    # Corrected CheckConstraint for allowed values of channel_count
     __table_args__ = (
-        CheckConstraint(channel_count.in_([6, 8]), name='check_channel_count'),
-    )
+        CheckConstraint('channel_count = 6 OR channel_count = 8', name='check_channel_count'),
+    )    
 
     @hybrid_property
     def adc(self):
@@ -130,46 +139,16 @@ class SqlEventReceiver(pr.DataReceiver):
 
         #print(f'Put {event} in queue')
 
-        self.database.put(event)
+        self.database.put(self.dataclass, event)
 
         
             
 class TsRawDaqEventSqlReceiver(SqlEventReceiver):
 
     def __init__(self, database, **kwargs):
-        super().__init__(dataclass = ldmx_ts.TsRawDaqEvent, database = database, **kwargs)
+        super().__init__(dataclass = 'RawDaqEvent', database = database, **kwargs)
         
         self.ts_raw_daq_event_table = TsRawDaqEventSql.__table__
-
-#         sqlalchemy.Table(
-#             'ts_raw_daq_event', sqlalchemy.MetaData(),
-#             Column('id', Integer, primary_key=True, autoincrement=True),
-#             # Column('event_id', Integer, ForeignKey('events.id'), nullable=False),  # Uncomment if using a foreign key
-#             Column('pulse_id', BigInteger, nullable=False),
-#             Column('bunch_count', SmallInteger, nullable=False),
-#             Column('channel_count', SmallInteger, nullable=False),
-#             Column('lane', SmallInteger, nullable=False),
-#             Column('capId', SmallInteger, nullable=False),
-#             Column('ce', SmallInteger, nullable=False),
-#             Column('bc0', SmallInteger, nullable=False),
-#             Column('adc0', SmallInteger, nullable=False),
-#             Column('adc1', SmallInteger, nullable=False),
-#             Column('adc2', SmallInteger, nullable=False),
-#             Column('adc3', SmallInteger, nullable=False),
-#             Column('adc4', SmallInteger, nullable=False),
-#             Column('adc5', SmallInteger, nullable=False),
-#             Column('adc6', SmallInteger, nullable=True),
-#             Column('adc7', SmallInteger, nullable=True),
-#             Column('tdc0', SmallInteger, nullable=False),
-#             Column('tdc1', SmallInteger, nullable=False),
-#             Column('tdc2', SmallInteger, nullable=False),
-#             Column('tdc3', SmallInteger, nullable=False),
-#             Column('tdc4', SmallInteger, nullable=False),
-#             Column('tdc5', SmallInteger, nullable=False),
-#             Column('tdc6', SmallInteger, nullable=True),
-#             Column('tdc7', SmallInteger, nullable=True),
-#             CheckConstraint('channel_count IN (6, 8)', name='check_channel_count')
-#         )
 
         self.msg_dict = {
             'pulse_id': 0,
@@ -196,77 +175,42 @@ class TsRawDaqEventSqlReceiver(SqlEventReceiver):
     def insertEvent(self, connection, event):
         # Prepare a list to hold all dictionaries for bulk insert
         batch_data = []
-    
+
+        event_view = event.view(ldmx_ts.TsS30xlRawDaqEventDType)
         # Collect all rows for the batch insert
-        for msg in event.msgs:
+        for i in range(2):
+            msg = event_view['msgs'][0][i]
             msg_data = {
-                'pulse_id': event.header.pulseId,
-                'bunch_count': event.header.bunchCount,
+                'pulse_id': event_view['header']['pulseId'][0],
+                'bunch_count': event_view['header']['bunchCount'][0],
                 'channel_count': 6,
-                'lane': msg.lane,
-                'capId': msg.capId,
-                'ce': msg.ce,
-                'bc0': msg.bc0,
-                'adc0': msg.adc[0],
-                'adc1': msg.adc[1],
-                'adc2': msg.adc[2],
-                'adc3': msg.adc[3],
-                'adc4': msg.adc[4],
-                'adc5': msg.adc[5],
-                'tdc0': msg.tdc[0],
-                'tdc1': msg.tdc[1],
-                'tdc2': msg.tdc[2],
-                'tdc3': msg.tdc[3],
-                'tdc4': msg.tdc[4],
-                'tdc5': msg.tdc[5]
+                'lane': msg['lane'],
+                'flags': msg['flags'],
+                'adc0': msg['adc'][0],
+                'adc1': msg['adc'][1],
+                'adc2': msg['adc'][2],
+                'adc3': msg['adc'][3],
+                'adc4': msg['adc'][4],
+                'adc5': msg['adc'][5],
+                'tdc0': msg['tdc'][0],
+                'tdc1': msg['tdc'][1],
+                'tdc2': msg['tdc'][2],
+                'tdc3': msg['tdc'][3],
+                'tdc4': msg['tdc'][4],
+                'tdc5': msg['tdc'][5]
             }
+            #print(msg_data)
             batch_data.append(msg_data)
 
-            # Execute a bulk insert with all collected rows
-            if batch_data:
-                connection.execute(self.ts_raw_daq_event_table.insert(), batch_data)
+        return (self.ts_raw_daq_event_table, batch_data)
+        # Execute a bulk insert with all collected rows
+        if batch_data:
+            connection.execute(self.ts_raw_daq_event_table.insert(), batch_data)
         
-#         for i, msg in enumerate(event.msgs):
-#             self.msg_dict['pulse_id']  = event.header.pulseId
-#             self.msg_dict['bunch_count'] = event.header.bunchCount
-#             self.msg_dict['lane'] = msg.lane
-#             self.msg_dict['capId']= msg.capId
-#             self.msg_dict['ce'] =msg.ce
-#             self.msg_dict['bc0']=msg.bc0
-#             self.msg_dict['adc0'] =msg.adc[0]
-#             self.msg_dict['adc1'] =msg.adc[1]
-#             self.msg_dict['adc2'] =msg.adc[2]
-#             self.msg_dict['adc3'] =msg.adc[3]
-#             self.msg_dict['adc4'] =msg.adc[4]
-#             self.msg_dict['adc5'] =msg.adc[5]
-#             self.msg_dict['tdc0'] =msg.tdc[0]
-#             self.msg_dict['tdc1'] =msg.tdc[1]
-#             self.msg_dict['tdc2'] =msg.tdc[2]
-#             self.msg_dict['tdc3'] =msg.tdc[3]
-#             self.msg_dict['tdc4'] =msg.tdc[4]
-#             self.msg_dict['tdc5'] =msg.tdc[5]
-
-#             connection.execute(self.ts_raw_daq_event_table.insert(), [self.msg_dict])
-
-                    
-            
-            #print(f'Writing msg into database - {msg}')
-#             sqlEvent = TsRawDaqEventSql(
-#                 pulse_id = event.header.pulseId,
-#                 bunch_count = event.header.bunchCount,
-#                 channel_count = 6,
-#                 lane = msg.lane,
-#                 capId = msg.capId,
-#                 ce = msg.ce,
-#                 bc0 = msg.bc0,
-#                 adc = msg.adc,
-#                 tdc = msg.tdc)
-
-#             session.add(sqlEvent)
-
-
     def parseEvent(self, rawNumpy):
-        return ldmx_ts.TsRawDaqEvent.from_numpy(rawNumpy)
+        #return rawNumpy.view(ldmx_ts.TsS30xlRawDaqEventDType)
+        #return ldmx_ts.TsRawDaqEvent.from_numpy(rawNumpy)
+        return rawNumpy
         
 
 class TsS30xlThresholdTriggerEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
@@ -306,25 +250,6 @@ class TsS30xlThresholdTriggerEventSqlReceiver(SqlEventReceiver):
 
         self.table = TsS30xlThresholdTriggerEventSql.__table__
 
-#         sqlalchemy.Table(
-#             'ts_s30xl_threshold_trigger_event', sqlalchemy.MetaData(),
-#             Column('id', Integer, primary_key=True, autoincrement=True)
-#             Column('pulse_id', BigInteger, nullable=False) # uint64 -> BigInteger
-#             Column('bunch_count', SmallInteger, nullable=False) # uint8 -> SmallInteger
-#             Column('hits', Integer, nullable=False)
-#             Column('amplitude0', Integer, nullable=False)
-#             Column('amplitude1', Integer, nullable=False)
-#             Column('amplitude2', Integer, nullable=False)
-#             Column('amplitude3', Integer, nullable=False)
-#             Column('amplitude4', Integer, nullable=False)
-#             Column('amplitude5', Integer, nullable=False)
-#             Column('amplitude6', Integer, nullable=False)
-#             Column('amplitude7', Integer, nullable=False)
-#             Column('amplitude8', Integer, nullable=False)
-#             Column('amplitude9', Integer, nullable=False)
-#             Column('amplitude10', Integer, nullable=False)
-#             Column('amplitude11', Integer, nullable=False))
-
         self.table_dict = {
             'pulse_id': 0,
             'bunch_count': 0,
@@ -359,14 +284,9 @@ class TsS30xlThresholdTriggerEventSqlReceiver(SqlEventReceiver):
         self.table_dict['amplitude10'] = event.amplitudes[10]
         self.table_dict['amplitude11'] = event.amplitudes[11]
 
-        connection.execute(self.table.insert(), [self.table_dict])
-#         sqlEvent = TsS30xlThresholdTriggerEventSql(
-#             pulse_id = event.header.pulseId,
-#             bunch_count = event.header.bunchCount,
-#             hits = event.hits,
-#             amplitudes = event.amplitudes)
+        return (self.table, [self.table_dict])
 
-#         session.add(sqlEvent)
+        connection.execute(self.table.insert(), [self.table_dict])
         
 
     def parseEvent(self, rawNumpy):

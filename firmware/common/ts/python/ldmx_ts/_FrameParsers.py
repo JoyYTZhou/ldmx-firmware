@@ -5,7 +5,7 @@ import numpy as np
 from dataclasses import dataclass, field
 from typing import List
 
-from ldmx_tdaq import EventHeader, DaqEventFilter, SubsystemId
+from ldmx_tdaq import EventHeader, DaqEventFilter, SubsystemId, EventHeaderDType
 
 import ldmx_ts
 
@@ -14,9 +14,7 @@ import ldmx_ts
 @dataclass
 class TsData6ChMsg:
     lane: int
-    capId: int
-    ce: int
-    bc0: int
+    flags: int
     adc: List[int] = field(default_factory=list)
     tdc: List[int] = field(default_factory=list)
 
@@ -26,18 +24,15 @@ class TsData6ChMsg:
             lane = int(data[15]),
             adc = [int(data[i]) for i in range(0, 6)],
             tdc = [int(data[i]) for i in range(8, 14)],
-            capId = int(data[14] & 0x3),
-            ce = int(data[14]>>2 & 0x1),
-            bc0 = int(data[14]>>3 & 0x1))
+            flags = int(data[14]))
         return msg
 
-TsData6ChMsgDtype = ts_data_msg_dtype = np.dtype([
-    ('lane', np.uint8),
-    ('capId', np.uint8),
-    ('ce', np.uint8),
-    ('bc0', np.uint8),
+TsData6ChMsgDType = np.dtype([
     ('adc', np.uint8, (6,)),  # Fixed-size array for 6 ADC values
-    ('tdc', np.uint8, (6,))   # Fixed-size array for 6 TDC values
+    ('empty1', np.uint16),
+    ('tdc', np.uint8, (6,)),   # Fixed-size array for 6 TDC values
+    ('flags', np.uint8),    
+    ('lane', np.uint8),
 ])
     
 @dataclass
@@ -56,6 +51,11 @@ class TsRawDaqEvent:
             msgs = [TsData6ChMsg.from_numpy(msg_raw) for msg_raw in event_data])
         return ret
 
+TsS30xlRawDaqEventDType = np.dtype([
+    ('header', EventHeaderDType),
+    ('msgs', TsData6ChMsgDType, (2,))
+])
+
 class TsRawDaqEventFilter(DaqEventFilter):
     def __init__(self):
         super().__init__(
@@ -69,7 +69,8 @@ class TsRawDaqEventReceiver(rogue.interfaces.stream.Slave):
     def _acceptFrame(self, frame):
         rawNumpy = frame.getNumpy(0, frame.getPayload())
 
-        event = TsRawDaqEvent.from_numpy(rawNumpy)
+        event = rawNumpy.view(TsData6ChMsgDType)
+        #event = TsRawDaqEvent.from_numpy(rawNumpy)
         #print(event)
 
 

@@ -30,7 +30,7 @@ class SqliteDatabase(pr.Device):
 
     SqliteBase = sqlalchemy.ext.declarative.declarative_base()    
 
-    def __init__(self, *, url='sqlite:////dev/shm/bareese/test.db'):
+    def __init__(self, *, url='sqlite:////u1/bareese/test.db'):
         super().__init__()
         
         self._log = pr.logInit(cls=self, name="SqliteFileWriter", path=None)
@@ -93,8 +93,8 @@ class SqliteDatabase(pr.Device):
         self._handlers[dataclass] = handler
         self._queues[dataclass] = queue.Queue()
 
-    def put(self, event):
-        self._queues[event.__class__].put(event)
+    def put(self, typ, event):
+        self._queues[typ].put(event)
 
     def _stop(self):
         with self._queues_lock:
@@ -143,18 +143,22 @@ class SqliteDatabase(pr.Device):
                         with self._engine.begin() as connection:
                             count = 0
                             start_time = time.time()
+                            batch_data = []
+                            handler = self._handlers.get(event_type)                            
 
                             # Process all events for this specific event type
                             while event is not None:
-                                handler = self._handlers.get(event.__class__)
-                                if handler:
-                                    handler(connection, event)  # Handle the event (e.g., insert into the table)
-                                    count += 1
+                                table, bd = handler(connection, event)  # Handle the event (e.g., insert into the table)
+                                count += 1
+
+                                batch_data.extend(bd)
 
                                 if q.empty():
                                     event = None
                                 else:
                                     event = q.get()
+
+                            connection.execute(table.insert(), batch_data)
 
                         # Log the transaction results
                         duration = time.time() - start_time
@@ -162,6 +166,7 @@ class SqliteDatabase(pr.Device):
 
                     except Exception as e:
                         print(f"Error processing queue for event type {event_type}: {e}")
+                        raise e
 
             # Short sleep to reduce CPU usage if no events are available
             time.sleep(0.01)

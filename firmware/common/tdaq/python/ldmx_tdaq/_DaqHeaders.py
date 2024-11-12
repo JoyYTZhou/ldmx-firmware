@@ -42,7 +42,7 @@ EventHeaderDType = np.dtype([
     ('burnCount', np.uint8),
     ('subsystemId', np.uint8),
     ('contributorId', np.uint8),
-    ('bunchCount', np.uint8),
     ('empty', np.uint32),
+    ('bunchCount', np.uint8),
     ('pulseId', np.uint64),
 ])
