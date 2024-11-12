@@ -239,61 +239,61 @@ begin
          sAxisCtrl   => eventAxisCtrl,        -- [out]
          mAxisClk    => axisClk,              -- [in]
          mAxisRst    => axisRst,              -- [in]
-         mAxisMaster => eventFifoAxisMaster,  -- [out]
-         mAxisSlave  => eventFifoAxisSlave);  -- [in]
+         mAxisMaster => eventAxisMaster,  -- [out]
+         mAxisSlave  => eventAxisSlave);  -- [in]
 
-   U_AxiStreamBatcherAxil_1 : entity surf.AxiStreamBatcherAxil
-      generic map (
-         TPD_G                        => TPD_G,
-         COMMON_CLOCK_G               => true,
-         MAX_NUMBER_SUB_FRAMES_G      => 200,
-         SUPER_FRAME_BYTE_THRESHOLD_G => 8192,
-         MAX_CLK_GAP_G                => 256,
-         AXIS_CONFIG_G                => EMAC_AXIS_CONFIG_C,
-         INPUT_PIPE_STAGES_G          => 1,
-         OUTPUT_PIPE_STAGES_G         => 1)
-      port map (
-         axisClk         => axisClk,                 -- [in]
-         axisRst         => axisRst,                 -- [in]
-         idle            => open,                    -- [out]
-         sAxisMaster     => eventFifoAxisMaster,     -- [in]
-         sAxisSlave      => eventFifoAxisSlave,      -- [out]
-         mAxisMaster     => eventBatchedAxisMaster,  -- [out]
-         mAxisSlave      => eventBatchedAxisSlave,   -- [in]
-         axilClk         => axilClk,                 -- [in]
-         axilRst         => axilRst,                 -- [in]
-         axilReadMaster  => axilReadMaster,          -- [in]
-         axilReadSlave   => axilReadSlave,           -- [out]
-         axilWriteMaster => axilWriteMaster,         -- [in]
-         axilWriteSlave  => axilWriteSlave);         -- [out]
+--    U_AxiStreamBatcherAxil_1 : entity surf.AxiStreamBatcherAxil
+--       generic map (
+--          TPD_G                        => TPD_G,
+--          COMMON_CLOCK_G               => true,
+--          MAX_NUMBER_SUB_FRAMES_G      => 200,
+--          SUPER_FRAME_BYTE_THRESHOLD_G => 8192,
+--          MAX_CLK_GAP_G                => 256,
+--          AXIS_CONFIG_G                => EMAC_AXIS_CONFIG_C,
+--          INPUT_PIPE_STAGES_G          => 1,
+--          OUTPUT_PIPE_STAGES_G         => 1)
+--       port map (
+--          axisClk         => axisClk,                 -- [in]
+--          axisRst         => axisRst,                 -- [in]
+--          idle            => open,                    -- [out]
+--          sAxisMaster     => eventFifoAxisMaster,     -- [in]
+--          sAxisSlave      => eventFifoAxisSlave,      -- [out]
+--          mAxisMaster     => eventBatchedAxisMaster,  -- [out]
+--          mAxisSlave      => eventBatchedAxisSlave,   -- [in]
+--          axilClk         => axilClk,                 -- [in]
+--          axilRst         => axilRst,                 -- [in]
+--          axilReadMaster  => axilReadMaster,          -- [in]
+--          axilReadSlave   => axilReadSlave,           -- [out]
+--          axilWriteMaster => axilWriteMaster,         -- [in]
+--          axilWriteSlave  => axilWriteSlave);         -- [out]
 
-   -------------------------------------------------------------------------------------------------
-   -- Final FIFO
-   -------------------------------------------------------------------------------------------------
-   U_AxiStreamFifoV2_EVENT_FIFO_2 : entity surf.AxiStreamFifoV2
-      generic map (
-         TPD_G               => TPD_G,
-         PIPE_STAGES_G       => 0,
-         SLAVE_READY_EN_G    => false,
-         VALID_THOLD_G       => 0,
---          VALID_BURST_MODE_G     => VALID_BURST_MODE_G,
-         GEN_SYNC_FIFO_G     => true,
---         FIFO_FIXED_THRESH_G => true,
---         FIFO_PAUSE_THRESH_G => EVENT_FIFO_PAUSE_THRESH_G,
-         FIFO_ADDR_WIDTH_G   => EVENT_FIFO_ADDR_WIDTH_G,
-         SYNTH_MODE_G        => EVENT_FIFO_SYNTH_MODE_G,
-         MEMORY_TYPE_G       => EVENT_FIFO_MEMORY_TYPE_G,
-         SLAVE_AXI_CONFIG_G  => EMAC_AXIS_CONFIG_C,
-         MASTER_AXI_CONFIG_G => EMAC_AXIS_CONFIG_C)
-      port map (
-         sAxisClk    => axisClk,                 -- [in]
-         sAxisRst    => axisRst,                 -- [in]
-         sAxisMaster => eventBatchedAxisMaster,  -- [in]
-         sAxisSlave  => eventBatchedAxisSlave,   -- [out]
-         sAxisCtrl   => open,                    -- [out]
-         mAxisClk    => axisClk,                 -- [in]
-         mAxisRst    => axisRst,                 -- [in]
-         mAxisMaster => eventAxisMaster,         -- [out]
-         mAxisSlave  => eventAxisSlave);         -- [in]   
+--    -------------------------------------------------------------------------------------------------
+--    -- Final FIFO
+--    -------------------------------------------------------------------------------------------------
+--    U_AxiStreamFifoV2_EVENT_FIFO_2 : entity surf.AxiStreamFifoV2
+--       generic map (
+--          TPD_G               => TPD_G,
+--          PIPE_STAGES_G       => 0,
+--          SLAVE_READY_EN_G    => false,
+--          VALID_THOLD_G       => 0,
+-- --          VALID_BURST_MODE_G     => VALID_BURST_MODE_G,
+--          GEN_SYNC_FIFO_G     => true,
+-- --         FIFO_FIXED_THRESH_G => true,
+-- --         FIFO_PAUSE_THRESH_G => EVENT_FIFO_PAUSE_THRESH_G,
+--          FIFO_ADDR_WIDTH_G   => EVENT_FIFO_ADDR_WIDTH_G,
+--          SYNTH_MODE_G        => EVENT_FIFO_SYNTH_MODE_G,
+--          MEMORY_TYPE_G       => EVENT_FIFO_MEMORY_TYPE_G,
+--          SLAVE_AXI_CONFIG_G  => EMAC_AXIS_CONFIG_C,
+--          MASTER_AXI_CONFIG_G => EMAC_AXIS_CONFIG_C)
+--       port map (
+--          sAxisClk    => axisClk,                 -- [in]
+--          sAxisRst    => axisRst,                 -- [in]
+--          sAxisMaster => eventBatchedAxisMaster,  -- [in]
+--          sAxisSlave  => eventBatchedAxisSlave,   -- [out]
+--          sAxisCtrl   => open,                    -- [out]
+--          mAxisClk    => axisClk,                 -- [in]
+--          mAxisRst    => axisRst,                 -- [in]
+--          mAxisMaster => eventAxisMaster,         -- [out]
+--          mAxisSlave  => eventAxisSlave);         -- [in]   
 
 end architecture rtl;
