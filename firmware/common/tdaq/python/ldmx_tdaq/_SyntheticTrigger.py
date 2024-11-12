@@ -47,3 +47,10 @@ class SyntheticTrigger(pr.Device):
             dependencies = [self.RoRPeriodRaw],
             linkedGet = lambda read: 37.1428572e6 /  (1+self.RoRPeriodRaw.get(read=read)),
             units = 'Hz'))
+
+        self.add(pr.RemoteVariable(
+            name = 'RoRPattern',
+            offset = 0x10,
+            bitSize = 64,
+            base = pr.UInt,
+            mode = 'RW'))

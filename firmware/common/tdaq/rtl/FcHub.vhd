@@ -258,14 +258,14 @@ begin
    -------------------------------------------------------------------------------------------------
    -- Debugging
    -------------------------------------------------------------------------------------------------
-   U_StretchDbgRorTx : entity surf.SynchronizerOneShot
-      generic map (
-         TPD_G         => TPD_G,
-         PULSE_WIDTH_G => 10)
-      port map (
-         clk     => lclsTimingClk,
-         dataIn  => fcTxMsg.valid,
-         dataOut => fcTxMsgValid);
+--    U_StretchDbgRorTx : entity surf.SynchronizerOneShot
+--       generic map (
+--          TPD_G         => TPD_G,
+--          PULSE_WIDTH_G => 10)
+--       port map (
+--          clk     => lclsTimingClk,
+--          dataIn  => fcTxMsg.valid,
+--          dataOut => fcTxMsgValid);
 
 
 end rtl;

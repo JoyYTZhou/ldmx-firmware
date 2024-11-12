@@ -56,6 +56,8 @@ end SyntheticTrigger;
 architecture rtl of SyntheticTrigger is
 
    type RegType is record
+      rorQueue       : slv(63 downto 0);
+      rorPattern     : slv(63 downto 0);
       usrRoR         : sl;
       enableRor      : sl;
       rOrPeriodCount : slv(31 downto 0);
@@ -66,6 +68,8 @@ architecture rtl of SyntheticTrigger is
    end record RegType;
 
    constant REG_INIT_C : RegType := (
+      rorQueue       => (others => '0'),
+      rorPattern     => X"0000000049249249",
       usrRoR         => '0',
       enableRor      => '0',
       rOrPeriodCount => (others => '0'),
@@ -117,9 +121,10 @@ begin
       -- Determine the transaction type
       axiSlaveWaitTxn(axilEp, syncAxilWriteMaster, syncAxilReadMaster, v.axilWriteSlave, v.axilReadSlave);
 
-      axiSlaveRegister (axilEp, x"00", 0, v.usrRoR);
-      axiSlaveRegister (axilEp, x"04", 0, v.enableRoR);
-      axiSlaveRegister (axilEp, x"08", 0, v.rOrPeriod);
+      axiSlaveRegister(axilEp, x"00", 0, v.usrRoR);
+      axiSlaveRegister(axilEp, x"04", 0, v.enableRoR);
+      axiSlaveRegister(axilEp, x"08", 0, v.rOrPeriod);
+      axiSlaveRegister(axilEp, X"10", 0, v.rorPattern);
 
 
       -- Closeout the transaction
@@ -127,6 +132,11 @@ begin
 
 
       v.triggerData := TRIGGER_DATA_INIT_C;
+
+      if (r.usrRoR = '1') then
+         v.rorQueue := r.rorPattern;
+         v.usrRoR   := '0';
+      end if;
 
       if (fcBus.bc0 = '1') then
          v.triggerData.valid := '1';
@@ -136,9 +146,13 @@ begin
       if (fcBus.bunchStrobe = '1') then
          v.triggerData.valid := '1';
 
-         if (r.usrRoR = '1') then
+         -- Shift the queue with each bunch strobe
+         v.rorQueue := '0' & r.rorQueue(63 downto 1);
+
+         -- Send a ror when directed by queue
+         if (r.rorQueue(0) = '1') then
             v.triggerData.data(0) := '1';
-            v.usrRoR              := '0';
+--            v.usrRoR              := '0';
          end if;
 
          if (r.enableRoR = '1') then
@@ -146,8 +160,8 @@ begin
             v.rOrPeriodCount := r.rOrPeriodCount + 1;
             if (r.rOrPeriodCount = r.rOrPeriod) then
                -- TX RoR
-               v.rOrPeriodCount      := (others => '0');
-               v.triggerData.data(0) := '1';
+               v.rOrPeriodCount := (others => '0');
+               v.rorQueue       := r.rorPattern;
             end if;
          end if;
       end if;

@@ -359,13 +359,13 @@ begin
    -------------------------------------------------------------------------------------------------
    -- Debugging
    -------------------------------------------------------------------------------------------------
-   U_StretchDbgRorTx : entity surf.SynchronizerOneShot
-      generic map (
-         TPD_G         => TPD_G,
-         PULSE_WIDTH_G => 10)
-      port map (
-         clk     => fcClk185Loc,
-         dataIn  => fcValid,
-         dataOut => fcRxMsgValid);
+--    U_StretchDbgRorTx : entity surf.SynchronizerOneShot
+--       generic map (
+--          TPD_G         => TPD_G,
+--          PULSE_WIDTH_G => 10)
+--       port map (
+--          clk     => fcClk185Loc,
+--          dataIn  => fcValid,
+--          dataOut => fcRxMsgValid);
 
 end architecture rtl;
