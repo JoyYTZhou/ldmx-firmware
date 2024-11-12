@@ -218,8 +218,8 @@ begin
          SUBSYSTEM_ID_G            => TS_DAQ_SUBSYSTEM_ID_C,
          CONTRIBUTOR_ID_G          => TS_RAW_DATA_DAQ_ID_C,
          RAW_AXIS_CFG_G            => AXIS_CFG_C,
-         EVENT_FIFO_PAUSE_THRESH_G => 2**9-16,
-         EVENT_FIFO_ADDR_WIDTH_G   => 9,
+         EVENT_FIFO_PAUSE_THRESH_G => 2**7-16,
+         EVENT_FIFO_ADDR_WIDTH_G   => 7,
          EVENT_FIFO_SYNTH_MODE_G   => "inferred",
          EVENT_FIFO_MEMORY_TYPE_G  => "block")
       port map (
