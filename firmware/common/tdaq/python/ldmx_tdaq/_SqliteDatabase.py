@@ -37,10 +37,11 @@ class SqliteDatabase(pr.Device):
         self._url = url
         self._engine = sqlalchemy.create_engine(url, connect_args={"check_same_thread": False})
         
-        self.queue = queue.Queue()
+        self._handlers = {}
+        self._queues = {}
+        self._queues_lock = threading.Lock()
         self._thread = threading.Thread(target=self._worker)
         self._thread.start()
-        self._handlers = {}
         
         self.SqliteBase.metadata.create_all(self._engine)
 
@@ -90,55 +91,77 @@ class SqliteDatabase(pr.Device):
 
     def add_handler(self, dataclass, handler):
         self._handlers[dataclass] = handler
+        self._queues[dataclass] = queue.Queue()
+
+    def put(self, event):
+        self._queues[event.__class__].put(event)
 
     def _stop(self):
-        if not self.queue.empty():
-            print('Waiting for SQL Receiver to finish')
-        self.queue.put(None)
+        with self._queues_lock:
+#             # Check if queues have any events to process
+#             if self._queues and any(not q.empty() for q in self._queues.values()):
+#                 # Wait until all queues are empty
+#                 while any(not q.empty() for q in self._queues.values()):
+#                     for q in self._queues.values():
+#                         print(f'q.empty= {q.empty()}')
+#                     print('Waiting for SQL Receiver to finish processing queues')
+#                     time.sleep(0.1)  # Short sleep to avoid busy-waiting
+
+            # Insert a `None` into each remaining queue to signal the worker to stop
+            for q in self._queues.values():
+                print('Stop with None')
+                q.put(None)
+
+        # Wait for the worker thread to finish
         self._thread.join()
-        print('SQL Receiver finished')   
-        
+        print('SQL Receiver finished')
 
     def _worker(self):
         while True:
-            # Block and wait for a queue entry to arrive
-            event = self.queue.get()
+            # Acquire lock to safely check and access self._queues
+            with self._queues_lock:
 
-            # Exit thread if a None entry is received
-            if event is None:
-                return
+                # Process each queue directly from active_queues
+                for event_type, q in self._queues.items():
+                    if q.empty():
+                        continue
+                    else:
+                        event = q.get()
 
-            # Continue only if the database connection is present
-            if not self._engine:
-                continue
+                    # If a None event is received return so the thread can terminate
+                    if event is None:
+                        print('Got None Event')
+                        return
 
-            try:
-                with self._engine.begin() as connection:
-                    count = 0
-                    start_time = time.time()
-                    while event is not None:
-                        #print(f'Read {event} from queue')
-                        handler = self._handlers[event.__class__]
-                        # Insert the event into the database
-                        handler(connection, event)
-                        count = count + 1
+                    # Only proceed if the database engine is available
+                    if not self._engine:
+                        continue
 
-                        # If the queue is empty, commit the transaction and break
-                        if self.queue.empty():
-                            duration = time.time() - start_time
-                            print(f'Processed {count} events in {duration:4f} seconds = {count/duration:4f} events/second')
-                            start_time = time.time()                            
-                            break
+                    try:
+                        # Start a new transaction for the current event type's queue
+                        print('Got Event, opening connection')
+                        with self._engine.begin() as connection:
+                            count = 0
+                            start_time = time.time()
 
-                        # Get the next event from the queue
-                        event = self.queue.get()
+                            # Process all events for this specific event type
+                            while event is not None:
+                                handler = self._handlers.get(event.__class__)
+                                if handler:
+                                    handler(connection, event)  # Handle the event (e.g., insert into the table)
+                                    count += 1
 
-                    # Transaction auto-commits here when exiting wth with block
-                        
+                                if q.empty():
+                                    event = None
+                                else:
+                                    event = q.get()
 
-                duration = time.time() - start_time
-                print(f'Added {count} events to the database in {duration:4f} seconds = {count/duration:4f} events/second')
+                        # Log the transaction results
+                        duration = time.time() - start_time
+                        print(f'Committed {count} events of type {event_type} in {duration:.4f} seconds = {count/duration:.4f} events/second')
 
+                    except Exception as e:
+                        print(f"Error processing queue for event type {event_type}: {e}")
 
-            except Exception as e:
-                print(e)
+            # Short sleep to reduce CPU usage if no events are available
+            time.sleep(0.01)

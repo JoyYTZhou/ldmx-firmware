@@ -130,7 +130,7 @@ class SqlEventReceiver(pr.DataReceiver):
 
         #print(f'Put {event} in queue')
 
-        self.database.queue.put(event)
+        self.database.put(event)
 
         
             
