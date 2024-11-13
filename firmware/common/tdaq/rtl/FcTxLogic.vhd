@@ -54,7 +54,7 @@ end entity FcTxLogic;
 architecture rtl of FcTxLogic is
 
    type RegType is record
-      runState       : slv(4 downto 0);
+      runState       : slv(3 downto 0);
       stateChanged   : sl;
       fcMsg          : FcMessageType;
       axilReadSlave  : AxiLiteReadSlaveType;
@@ -111,7 +111,7 @@ begin
       if (lclsTimingBus.strobe = '1' and lclsTimingBus.valid = '1' and (r.stateChanged = '1' or r.runState /= RUN_STATE_RUNNING_C)) then
          v.fcMsg.valid        := '1';
          v.fcMsg.msgType      := MSG_TYPE_TIMING_C;
-         v.fcMsg.pulseId      := lclsTimingBus.message.pulseId;
+         v.fcMsg.pulseId      := lclsTimingBus.message.pulseId(55 downto 0);
          v.fcMsg.runState     := r.runState;
          v.fcMsg.stateChanged := r.stateChanged;
          v.stateChanged       := '0';

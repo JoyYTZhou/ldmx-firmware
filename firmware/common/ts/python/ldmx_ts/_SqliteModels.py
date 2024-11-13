@@ -26,8 +26,9 @@ class TsRawDaqEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
     __tablename__ = 'ts_raw_daq_event'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    pulse_id: Mapped[int] = mapped_column(BigInteger, nullable=False)  # uint64 -> BigInteger
-    bunch_count: Mapped[int] = mapped_column(SmallInteger, nullable=False)  # uint8 -> SmallInteger
+    timestamp: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    pulse_id: Mapped[int] = mapped_column(BigInteger, Computed('timestamp / 8'))
+    bunch_count: Mapped[int] = mapped_column(SmallInteger, Computed('timestamp & 0x3F')
     channel_count: Mapped[int] = mapped_column(SmallInteger, nullable=False)    
     lane: Mapped[int] = mapped_column(SmallInteger, nullable=False)  # uint8 -> SmallInteger
     flags: Mapped[int] = mapped_column(SmallInteger, nullable=False)
@@ -122,8 +123,7 @@ class TsRawDaqEventSqlReceiver(SqlEventReceiver):
         for i in range(2):
             msg = event_view['msgs'][0][i]
             msg_data = {
-                'pulse_id': int(event_view['header']['pulseId'][0]),
-                'bunch_count': int(event_view['header']['bunchCount'][0]),
+                'timestamp': int(event_view['header']['timestamp'][0])
                 'channel_count': 6,
                 'lane': int(msg['lane']),
                 'flags': int(msg['flags']),
@@ -156,8 +156,9 @@ class TsS30xlThresholdTriggerEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
     __tablename__ = 'ts_s30xl_threshold_trigger_event'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    pulse_id = Column(BigInteger, nullable=False) # uint64 -> BigInteger
-    bunch_count = Column(SmallInteger, nullable=False) # uint8 -> SmallInteger
+    timestamp: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    pulse_id: Mapped[int] = mapped_column(BigInteger, Computed('timestamp / 8'))
+    bunch_count: Mapped[int] = mapped_column(SmallInteger, Computed('timestamp & 0x3F')
     hits = Column(Integer, nullable=False)
     amplitude0 = Column(Integer, nullable=False)
     amplitude1 = Column(Integer, nullable=False)
@@ -190,8 +191,7 @@ class TsS30xlThresholdTriggerEventSqlReceiver(SqlEventReceiver):
     def parser(self, data):
         event = ldmx_ts.TsS30xlThresholdTriggerEvent.from_numpy(data)
         table_dict = {
-            'pulse_id': event.header.pulseId,
-            'bunch_count': event.header.bunchCount,
+            'timestamp': event.header.timestamp,
             'hits': event.hits,
             'amplitude0': event.amplitudes[0],
             'amplitude1':  event.amplitudes[1],
