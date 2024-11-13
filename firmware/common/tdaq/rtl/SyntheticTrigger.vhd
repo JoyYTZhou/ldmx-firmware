@@ -130,13 +130,7 @@ begin
       -- Closeout the transaction
       axiSlaveDefault(axilEp, v.axilWriteSlave, v.axilReadSlave, AXI_RESP_DECERR_C);
 
-
       v.triggerData := TRIGGER_DATA_INIT_C;
-
-      if (r.usrRoR = '1') then
-         v.rorQueue := r.rorPattern;
-         v.usrRoR   := '0';
-      end if;
 
       if (fcBus.bc0 = '1') then
          v.triggerData.valid := '1';
@@ -168,6 +162,11 @@ begin
 
       if (r.enableRor = '0' or v.rOrPeriod /= r.rOrPeriod) then
          v.rOrPeriodCount := (others => '0');
+      end if;
+
+      if (r.usrRoR = '1') then
+         v.rorQueue := r.rorPattern;
+         v.usrRoR   := '0';
       end if;
 
 
