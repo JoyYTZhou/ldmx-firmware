@@ -212,6 +212,9 @@ architecture rtl of S30xlAPx is
    signal ethGtRefClk78G  : sl;
    signal ethGtRefRst78   : sl;
 
+   signal axisClk : sl;
+   signal axisRst : sl;
+
 begin
 
    -------------------------------------------------------------------------------------------------
@@ -247,6 +250,16 @@ begin
          clk      => axilClk,           -- [in]
          asyncRst => '0',               -- [in]
          syncRst  => axilRst);          -- [out]
+
+   axisClk <= ethGtRefClk156G;
+   U_RstSync_2 : entity surf.RstSync
+      generic map (
+         TPD_G         => TPD_G,
+         OUT_REG_RST_G => true)
+      port map (
+         clk      => axisClk,           -- [in]
+         asyncRst => '0',               -- [in]
+         syncRst  => axisRst);          -- [out]
 
    -------------------------------------------------------------------------------------------------
    -- LED
@@ -321,8 +334,8 @@ begin
          sAxilReadSlave      => locAxilReadSlaves(AXIL_ETH_C),    -- [out]
          sAxilWriteMaster    => locAxilWriteMasters(AXIL_ETH_C),  -- [in]
          sAxilWriteSlave     => locAxilWriteSlaves(AXIL_ETH_C),   -- [out]
-         axisClk             => axilClk,                          -- [in]
-         axisRst             => axilRst,                          -- [in]
+         axisClk             => axisClk,                          -- [in]
+         axisRst             => axisRst,                          -- [in]
          tsDaqRawAxisMaster  => tsDaqRawAxisMaster,               -- [in]
          tsDaqRawAxisSlave   => tsDaqRawAxisSlave,                -- [out]
          tsDaqTrigAxisMaster => tsDaqTrigAxisMaster,              -- [in]
@@ -472,8 +485,8 @@ begin
          fcClk185Out          => tsFcClk185,                            -- [out]
          fcRst185Out          => tsFcRst185,                            -- [out]
          thresholdTriggerData => tsThresholdTriggerData,                -- [out]
-         axisClk              => axilClk,                               -- [in]
-         axisRst              => axilRst,                               -- [in]
+         axisClk              => axisClk,                               -- [in]
+         axisRst              => axisRst,                               -- [in]
          tsDaqRawAxisMaster   => tsDaqRawAxisMaster,                    -- [out]
          tsDaqRawAxisSlave    => tsDaqRawAxisSlave,                     -- [in]
          tsDaqTrigAxisMaster  => tsDaqTrigAxisMaster,                   -- [out]

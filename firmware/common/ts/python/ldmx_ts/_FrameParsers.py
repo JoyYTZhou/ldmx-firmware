@@ -88,7 +88,7 @@ class TsS30xlThresholdTriggerEvent:
         event_data = EventHeader.data(arr).reshape(-1, 4)
         
         amplitudes = [int.from_bytes(ch[:3], byteorder='little') for ch in event_data]
-        hits = np.packbits(event_data[:, 3], bitorder='little').view(np.uint16)[0]
+        hits = int(np.packbits(event_data[:, 3], bitorder='little').view(np.uint16)[0])
 
         ret = cls(
             header = header,
