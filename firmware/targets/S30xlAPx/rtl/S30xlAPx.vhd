@@ -344,7 +344,7 @@ begin
    -------------------------------------------------------------------------------------------------
    -- Create stableclk reset
    -------------------------------------------------------------------------------------------------
-   U_RstSync_2 : entity surf.RstSync
+   U_RstSync_3 : entity surf.RstSync
       generic map (
          TPD_G         => TPD_G,
          OUT_REG_RST_G => true)
