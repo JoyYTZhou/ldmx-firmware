@@ -28,7 +28,7 @@ class TsRawDaqEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     timestamp: Mapped[int] = mapped_column(BigInteger, nullable=False)
     pulse_id: Mapped[int] = mapped_column(BigInteger, Computed('timestamp / 8'))
-    bunch_count: Mapped[int] = mapped_column(SmallInteger, Computed('timestamp & 0x3F')
+    bunch_count: Mapped[int] = mapped_column(SmallInteger, Computed('timestamp & 0x3F'))
     channel_count: Mapped[int] = mapped_column(SmallInteger, nullable=False)    
     lane: Mapped[int] = mapped_column(SmallInteger, nullable=False)  # uint8 -> SmallInteger
     flags: Mapped[int] = mapped_column(SmallInteger, nullable=False)
@@ -123,7 +123,7 @@ class TsRawDaqEventSqlReceiver(SqlEventReceiver):
         for i in range(2):
             msg = event_view['msgs'][0][i]
             msg_data = {
-                'timestamp': int(event_view['header']['timestamp'][0])
+                'timestamp': int(event_view['header']['timestamp'][0]),
                 'channel_count': 6,
                 'lane': int(msg['lane']),
                 'flags': int(msg['flags']),
@@ -158,7 +158,7 @@ class TsS30xlThresholdTriggerEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
     id = Column(Integer, primary_key=True, autoincrement=True)
     timestamp: Mapped[int] = mapped_column(BigInteger, nullable=False)
     pulse_id: Mapped[int] = mapped_column(BigInteger, Computed('timestamp / 8'))
-    bunch_count: Mapped[int] = mapped_column(SmallInteger, Computed('timestamp & 0x3F')
+    bunch_count: Mapped[int] = mapped_column(SmallInteger, Computed('timestamp & 0x3F'))
     hits = Column(Integer, nullable=False)
     amplitude0 = Column(Integer, nullable=False)
     amplitude1 = Column(Integer, nullable=False)
