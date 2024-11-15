@@ -56,7 +56,7 @@ architecture rtl of RorDaqDataDelay is
    -- fcClk185 signals
    type RegType is record
       state    : StateType;
-      bc0Id     : slv(63 downto 0);
+      bc0Id    : slv(55 downto 0);
       fifoWrEn : sl;
       fifoRdEn : sl;
       fifoRst  : sl;
@@ -65,7 +65,7 @@ architecture rtl of RorDaqDataDelay is
 
    constant REG_INIT_C : RegType := (
       state    => INIT_S,
-      bc0Id     => (others => '0'),
+      bc0Id    => (others => '0'),
       fifoWrEn => '0',
       fifoRdEn => '0',
       fifoRst  => '0',
@@ -114,7 +114,7 @@ begin
             if (fcBus.pulseStrobe = '1' and
                 fcBus.stateChanged = '1') then
                if (fcBus.runState = RUN_STATE_BC0_C) then
-                  v.bc0Id  := fcBus.pulseID;
+                  v.bc0Id := fcBus.pulseID;
                   v.state := WAIT_BC0_DATA_S;
                else
                   v.state := INIT_S;
@@ -127,7 +127,7 @@ begin
                v.fifoWrEn := '1';
                v.state    := WAIT_ROR_S;
             end if;
-            
+
             if (fcBus.runState /= RUN_STATE_BC0_C) then
                v.state := INIT_S;
             end if;
@@ -141,8 +141,8 @@ begin
 
             -- Readout request during alignment is the BC0 RoR
             if (fcBus.readoutRequest.valid = '1') then
-               v.state    := ALIGNED_S;
-               v.aligned  := '1';
+               v.state   := ALIGNED_S;
+               v.aligned := '1';
             end if;
 
             -- Any state change should send it back to unaligned

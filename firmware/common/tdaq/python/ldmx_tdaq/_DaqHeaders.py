@@ -6,8 +6,9 @@ import ldmx_tdaq
 @dataclass
 class EventHeader:
     burnCount: int
-    subsystemId: int 
+    subsystemId: int
     contributorId: int
+    timestamp: int
     bunchCount: int
     pulseId: int
     #data: np.ndarray
@@ -18,8 +19,9 @@ class EventHeader:
             burnCount = int(arr[0]),
             subsystemId = int(arr[1]),
             contributorId = int(arr[2]),
-            bunchCount = int(arr[7]),
-            pulseId = int(arr[8:16].view(np.uint64)))
+            timestamp = int(arr[8:16].view(np.uint64)),
+            bunchCount = int(arr[8]),
+            pulseId = int(arr[8:16].view(np.uint64))>>8)
         if header.burnCount !=0:
             print(header)
         return header
@@ -29,8 +31,9 @@ class EventHeader:
         self.burnCount = int(arr[0])
         self.subsystemId = int(arr[1])
         self.contributorId = int(arr[2])
-        self.bunchCount = int(arr[7])
-        self.pulseId = int(arr[8:16].view(np.uint64))
+        self.timestamp = int(arr[8:16].view(np.uint64))
+        self.bunchCount = int(arr[8])
+        self.pulseId = int(arr[8:16].view(np.uint64))>>8
         if header.burnCount !=0:
             print(self)
 
@@ -42,7 +45,7 @@ EventHeaderDType = np.dtype([
     ('burnCount', np.uint8),
     ('subsystemId', np.uint8),
     ('contributorId', np.uint8),
-    ('empty', np.uint32),
-    ('bunchCount', np.uint8),
-    ('pulseId', np.uint64),
+    ('empty1', np.uint8),
+    ('empty2', np.uint32),
+    ('timestamp', np.uint64),
 ])

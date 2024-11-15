@@ -27,31 +27,30 @@ package FcPkg is
    -- Fast Control Messages sent on PGPFC are 80 bits, with fields defined here
    -- FcMessageType encodes the fields into a record
    -------------------------------------------------------------------------------------------------
-   constant FC_LEN_C              : natural := 80;
-   subtype MSG_TYPE_RANGE_C is natural range FC_LEN_C-1 downto 76;
-   subtype BUNCH_CNT_RANGE_C is natural range 69 downto 64;
-   subtype RUN_STATE_RANGE_C is natural range 68 downto 64;
-   constant STATE_CHANGED_INDEX_C : natural := 69;
-   subtype PULSE_ID_RANGE_C is natural range 63 downto 0;
+   constant FC_LEN_C              : natural := 64;
+   subtype MSG_TYPE_RANGE_C is natural range 63 downto 62;
+   subtype BUNCH_CNT_RANGE_C is natural range 61 downto 56;
+   subtype RUN_STATE_RANGE_C is natural range 59 downto 56;
+   constant STATE_CHANGED_INDEX_C : natural := 60;
+   subtype PULSE_ID_RANGE_C is natural range 55 downto 0;
 
-   constant RUN_STATE_RESET_C    : slv(4 downto 0) := "00000";
-   constant RUN_STATE_IDLE_C     : slv(4 downto 0) := "00001";
-   constant RUN_STATE_BC0_C      : slv(4 downto 0) := "00010";
-   constant RUN_STATE_PRESTART_C : slv(4 downto 0) := "00011";
-   constant RUN_STATE_RUNNING_C  : slv(4 downto 0) := "00100";
-   constant RUN_STATE_STOPPED_C  : slv(4 downto 0) := "00101";
+   constant RUN_STATE_RESET_C    : slv(3 downto 0) := "0000";
+   constant RUN_STATE_IDLE_C     : slv(3 downto 0) := "0001";
+   constant RUN_STATE_BC0_C      : slv(3 downto 0) := "0010";
+   constant RUN_STATE_PRESTART_C : slv(3 downto 0) := "0011";
+   constant RUN_STATE_RUNNING_C  : slv(3 downto 0) := "0100";
+   constant RUN_STATE_STOPPED_C  : slv(3 downto 0) := "0101";
 
-   constant MSG_TYPE_TIMING_C : slv(3 downto 0) := toSlv(0, 4);
-   constant MSG_TYPE_ROR_C    : slv(3 downto 0) := toSlv(1, 4);
+   constant MSG_TYPE_TIMING_C : slv(1 downto 0) := toSlv(0, 2);
+   constant MSG_TYPE_ROR_C    : slv(1 downto 0) := toSlv(1, 2);
 
    type FcMessageType is record
       valid        : sl;
-      msgType      : slv(3 downto 0);
-      -- reserxved : slv(5 downto 0);
+      msgType      : slv(1 downto 0);
       bunchCount   : slv(5 downto 0);
-      runState     : slv(4 downto 0);
+      runState     : slv(3 downto 0);
       stateChanged : sl;
-      pulseID      : slv(63 downto 0);
+      pulseID      : slv(55 downto 0);
       message      : slv(FC_LEN_C-1 downto 0);
    end record;
 
@@ -75,7 +74,7 @@ package FcPkg is
    type FcTimestampType is record
       valid      : sl;
       bunchCount : slv(5 downto 0);
-      pulseId    : slv(63 downto 0);
+      pulseId    : slv(55 downto 0);
    end record FcTimestampType;
 
    constant FC_TIMESTAMP_INIT_C : FcTimestampType := (
@@ -83,7 +82,7 @@ package FcPkg is
       bunchCount => (others => '0'),
       pulseId    => (others => '0'));
 
-   constant FC_TIMESTAMP_SIZE_C : integer := 72;
+   constant FC_TIMESTAMP_SIZE_C : integer := 64;
 
    function toSlv (
       fcTimestamp : FcTimestampType)
@@ -94,6 +93,10 @@ package FcPkg is
       valid  : sl := '1')
       return FcTimestampType;
 
+   function "+"(lhs : FcTimestampType; rhs : integer) return FcTimestampType;
+   function "-"(lhs : FcTimestampType; rhs : integer) return FcTimestampType;
+
+
    -------------------------------------------------------------------------------------------------
    -- The Fast control receiver block outputs a bus of fast control data on this record
    -------------------------------------------------------------------------------------------------
@@ -103,16 +106,16 @@ package FcPkg is
 
       -- Placed on bus with each TM received
       pulseStrobe  : sl;
-      pulseId      : slv(63 downto 0);
-      runState     : slv(4 downto 0);
+      pulseId      : slv(55 downto 0);
+      runState     : slv(3 downto 0);
       stateChanged : sl;
 
       -- These are counted based on Timing messages
-      bunchStrobePre  : sl;             -- Pulsed 1 cycle before bunchCount increments
-      bunchStrobe     : sl;             -- Pulsed on cycle that bunchCount increments
-      bunchCount      : slv(5 downto 0);
-      subCount        : slv(2 downto 0);
-      bc0             : sl;
+      bunchStrobePre : sl;              -- Pulsed 1 cycle before bunchCount increments
+      bunchStrobe    : sl;              -- Pulsed on cycle that bunchCount increments
+      bunchCount     : slv(5 downto 0);
+      subCount       : slv(2 downto 0);
+      bc0            : sl;
 
       -- 185 MHz counter from T0
       runTime : slv(63 downto 0);
@@ -126,19 +129,19 @@ package FcPkg is
    end record FcBusType;
 
    constant FC_BUS_INIT_C : FcBusType := (
-      rxLinkStatus    => '0',
-      pulseStrobe     => '0',
-      pulseId         => (others => '0'),
-      runState        => (others => '0'),
-      stateChanged    => '0',
-      bunchStrobePre  => '0',
-      bunchStrobe     => '0',
-      bunchCount      => (others => '0'),
-      subCount        => (others => '0'),
-      bc0             => '0',
-      runTime         => (others => '0'),
-      readoutRequest  => FC_TIMESTAMP_INIT_C,
-      fcMsg           => FC_MSG_INIT_C);
+      rxLinkStatus   => '0',
+      pulseStrobe    => '0',
+      pulseId        => (others => '0'),
+      runState       => (others => '0'),
+      stateChanged   => '0',
+      bunchStrobePre => '0',
+      bunchStrobe    => '0',
+      bunchCount     => (others => '0'),
+      subCount       => (others => '0'),
+      bc0            => '0',
+      runTime        => (others => '0'),
+      readoutRequest => FC_TIMESTAMP_INIT_C,
+      fcMsg          => FC_MSG_INIT_C);
 
 
    -------------------------------------------------------------------------------------------------
@@ -183,15 +186,15 @@ package body FcPkg is
       retVar         := FC_MSG_INIT_C;
       retVar.valid   := valid;
       retVar.msgType := vector(MSG_TYPE_RANGE_C);
-      -- no latches are inferred because retVar is initialized
-      -- right below the 'begin'
+                                        -- no latches are inferred because retVar is initialized
+                                        -- right below the 'begin'
 
-      -- check the message type
+                                        -- check the message type
       if (retVar.msgType = MSG_TYPE_ROR_C) then
-         -- if RoR, grab the bunch count
+                                        -- if RoR, grab the bunch count
          retVar.bunchCount := vector(BUNCH_CNT_RANGE_C);
       else
-         -- if non-RoR, grab the state
+                                        -- if non-RoR, grab the state
          retVar.runState     := vector(RUN_STATE_RANGE_C);
          retVar.stateChanged := vector(STATE_CHANGED_INDEX_C);
       end if;
@@ -207,8 +210,8 @@ package body FcPkg is
       return slv is
       variable ret : slv(FC_TIMESTAMP_SIZE_C-1 downto 0);
    begin
-      ret := (others => '0');
-      ret(71 downto 8) := fcTimestamp.pulseId;
+      ret              := (others => '0');
+      ret(63 downto 8) := fcTimestamp.pulseId;
       ret(5 downto 0)  := fcTimestamp.bunchCount;
       return ret;
    end function toSlv;
@@ -220,10 +223,43 @@ package body FcPkg is
       variable ret : FcTimestampType;
    begin
       ret.valid      := valid;
-      ret.pulseId    := vector(71 downto 8);
+      ret.pulseId    := vector(63 downto 8);
       ret.bunchCount := vector(5 downto 0);
       return ret;
    end function toFcTimestamp;
 
+   -- Function to add an integer to FcTimestampType, supporting both positive and negative rhs
+   function "+"(lhs : FcTimestampType; rhs : integer) return FcTimestampType is
+      variable result           : FcTimestampType := lhs;
+      variable temp_bunch_count : integer;
+      variable pulse_adjustment : integer;
+   begin
+      -- Convert bunchCount to an integer and add rhs
+      temp_bunch_count :=conv_integer(result.bunchCount) + rhs;
+
+      -- Calculate adjustments for pulseId based on positive or negative temp_bunch_count
+      if temp_bunch_count >= 0 then
+         -- Positive case: increment pulseId for every rollover (40 counts per rollover)
+         pulse_adjustment := temp_bunch_count / 40;
+         temp_bunch_count := temp_bunch_count mod 40;
+      else
+         -- Negative case: decrement pulseId for every "borrow" needed
+         pulse_adjustment := (temp_bunch_count - 39) / 40;  -- Adjust for downward division in VHDL
+         temp_bunch_count := (temp_bunch_count mod 40 + 40) mod 40;  -- Wrap into [0, 39] range
+      end if;
+
+      -- Update bunchCount and pulseId with the calculated adjustments
+      result.bunchCount := toSlv(temp_bunch_count, result.bunchCount'length);
+      result.pulseId    := result.pulseId + pulse_adjustment;
+
+      return result;
+   end function "+";
+
+   -- Function to subtract an integer from FcTimestampType by calling "+" with -rhs
+   function "-"(lhs : FcTimestampType; rhs : integer) return FcTimestampType is
+   begin
+      -- Call the "+" function with -rhs
+      return lhs + (-rhs);
+   end function "-";
 
 end package body FcPkg;

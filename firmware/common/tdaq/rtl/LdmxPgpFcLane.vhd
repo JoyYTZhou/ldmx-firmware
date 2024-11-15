@@ -256,7 +256,7 @@ begin
             AXI_BASE_ADDR_G => AXIL_BASE_ADDR_G,
             TX_ENABLE_G     => TX_ENABLE_G,
             RX_ENABLE_G     => RX_ENABLE_G,
-            FC_WORDS_G      => 5,
+            FC_WORDS_G      => 4,
             VC_INTERLEAVE_G => 1,
             NUM_VC_EN_G     => ite(NUM_VC_EN_G = 0, 1, NUM_VC_EN_G))
          port map (
@@ -314,7 +314,7 @@ begin
             AXI_BASE_ADDR_G => AXIL_BASE_ADDR_G,
             TX_ENABLE_G     => TX_ENABLE_G,
             RX_ENABLE_G     => RX_ENABLE_G,
-            FC_WORDS_G      => 5,
+            FC_WORDS_G      => 4,
             VC_INTERLEAVE_G => 1,
             NUM_VC_EN_G     => ite(NUM_VC_EN_G = 0, 1, NUM_VC_EN_G))
          port map (

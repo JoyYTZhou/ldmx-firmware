@@ -45,7 +45,7 @@ class FcEmu(pr.Device):
             name         = 'PulseIDinit',
             description  = 'Set pulseID initial value. Being registered when Timing Messages are disabled',
             offset       = 0x00C,
-            bitSize      = 64,
+            bitSize      = 56,
             mode         = 'RW',
         ))
 
@@ -69,7 +69,7 @@ class FcEmu(pr.Device):
             name         = 'FCrunStateSet',
             description  = 'Next FC Message Run State set value (subsequent messages retain this state)',
             offset       = 0x01C,
-            bitSize      = 5,
+            bitSize      = 4,
             mode         = 'RW',
         ))
 

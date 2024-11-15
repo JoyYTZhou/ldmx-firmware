@@ -61,8 +61,8 @@ architecture rtl of FcEmu is
       bunchCountStrb        : sl;
       bunchClk              : sl;
       fcMsg                 : FcMessageType;
-      pulseIDinit           : slv(63 downto 0);
-      fcRunStateSet         : slv(4 downto 0);
+      pulseIDinit           : slv(55 downto 0);
+      fcRunStateSet         : slv(3 downto 0);
       bunchCountPeriodCount : slv(5 downto 0);
       bunchCountPeriodSet   : slv(5 downto 0);
       bunchCountPeriod      : slv(5 downto 0);
