@@ -102,7 +102,7 @@ class S30xlAPxRoot(pr.Root):
         
 
         # Add the Sqlite Database
-        self.add(ldmx_tdaq.SqliteDatabase())
+        self.add(ldmx_tdaq.SqliteDatabase(hidden=False))
         self.addInterface(self.SqliteDatabase)
 
         # Create and connect SQL Receivers
@@ -117,6 +117,8 @@ class S30xlAPxRoot(pr.Root):
         self.addInterface(self.tsS30xlThresholdTriggerEventSqlReceiver)
         #self.tsS30xlThresholdTriggerEventSqlReceiver << self.tsS30xlThresholdTriggerEventFilter
         self.tsS30xlThresholdTriggerEventSqlReceiver << fifo4 << self.tsTrigEventStream #self.tsTrigEventStreamUnbatcher
+
+        self.add(ldmx_tdaq.SqliteVariableLogger(self.SqliteDatabase))
         
         # Log variable
 #         self.sqlLogger = pyrogue.interfaces.SqlLogger(

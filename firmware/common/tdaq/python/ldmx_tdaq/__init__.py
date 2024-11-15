@@ -14,4 +14,4 @@ from ._DaqEventFilter import *
 from ._DaqHeaders import *
 from ._Constants import *
 from ._SqliteDatabase import *
-
+from ._SqliteVariableLogger import *

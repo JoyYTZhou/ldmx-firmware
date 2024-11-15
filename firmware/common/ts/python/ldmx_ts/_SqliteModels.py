@@ -94,7 +94,7 @@ class SqlEventReceiver(pr.DataReceiver):
         self.database = database
         self.table = table
 
-        self.database.add_parser(self.table, self.parser)
+#         self.database.add_parser(self.table, self.parser)
 
     def parser(self, data):
         # Default parser 
@@ -104,7 +104,7 @@ class SqlEventReceiver(pr.DataReceiver):
         # Read the frame into numpy array
         ba = frame.getBa()
 
-        self.database.put(self.table, ba)
+        self.database.put(self.parser, ba)
 
         
             
@@ -143,10 +143,10 @@ class TsRawDaqEventSqlReceiver(SqlEventReceiver):
             #print(msg_data)
             batch_data.append(msg_data)
 
-        return batch_data
+        return {self.table: batch_data}
 
     def process(self, frame):
-        self.database.put(self.table, frame.getNumpy())
+        self.database.put(self.parser, frame.getNumpy())
         #return rawNumpy.view(ldmx_ts.TsS30xlRawDaqEventDType)
         #return ldmx_ts.TsRawDaqEvent.from_numpy(rawNumpy)
         #return rawNumpy
@@ -206,9 +206,9 @@ class TsS30xlThresholdTriggerEventSqlReceiver(SqlEventReceiver):
             'amplitude10': event.amplitudes[10],
             'amplitude11': event.amplitudes[11]}
 
-        return [table_dict]
+        return {self.table: [table_dict]}
 
 
     def process(self, frame):
-        self.database.put(self.table, frame.getNumpy())
+        self.database.put(self.parser, frame.getNumpy())
 
