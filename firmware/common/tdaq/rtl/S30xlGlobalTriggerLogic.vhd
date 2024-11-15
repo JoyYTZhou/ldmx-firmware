@@ -67,7 +67,7 @@ end entity S30xlGlobalTriggerLogic;
 
 architecture rtl of S30xlGlobalTriggerLogic is
 
-   constant MIN_ROR_PERIOD_C : slv(3 downto 0) := toSlv(6, 4);
+   constant MIN_ROR_PERIOD_C : slv(3 downto 0) := toSlv(3, 4);
 
    type RegType is record
       counter                   : slv(3 downto 0);
