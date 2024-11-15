@@ -18,7 +18,7 @@ class FcRxLogic(pr.Device):
             mode = 'RO',
             base = pr.UInt,
             offset = 0x10,
-            bitSize = 80))
+            bitSize = 64))
 
         self.add(pr.RemoteVariable(
             name = 'FcClkRst',
