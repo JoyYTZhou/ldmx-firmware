@@ -61,6 +61,7 @@ end entity TsRxLogic;
 architecture rtl of TsRxLogic is
 
    constant K28_5_C : slv(7 downto 0) := "10111100";  -- K28.5, 0xBC
+   constant K28_3_C : slv(7 downto 0) := "01111100";
 
    type StateType is (
       INIT_S,
@@ -191,7 +192,7 @@ begin
 
          when WAIT_COMMA_S =>
             -- Should only ever receive comma or idle here
-            if (tsRxDataK = "01" and tsRxData(7 downto 0) = K28_5_C) then
+            if (tsRxDataK = "01" and (tsRxData(7 downto 0) = K28_5_C or tsRxData(7 downto 0) = K28_3_C)) then
                v.tsRxMsg.bc0                := tsRxData(8);
                v.tsRxMsg.ce                 := tsRxData(9);
                v.tsRxMsg.capId              := tsRxData(11 downto 10);
