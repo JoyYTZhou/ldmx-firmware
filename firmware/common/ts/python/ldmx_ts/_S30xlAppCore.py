@@ -13,12 +13,12 @@ class S30xlAppCore(pr.Device):
         self.add(ldmx_ts.TsDataRx(
             offset = 0x2000_0000))
 
-        self.add(surf.protocols.batcher.AxiStreamBatcherAxil(
-            name = 'RawBatcher',
-            offset = 0x100000))
+#         self.add(surf.protocols.batcher.AxiStreamBatcherAxil(
+#             name = 'RawBatcher',
+#             offset = 0x100000))
 
-        self.add(surf.protocols.batcher.AxiStreamBatcherAxil(
-            name = 'TrigBatcher',
-            offset = 0x100100))
+#         self.add(surf.protocols.batcher.AxiStreamBatcherAxil(
+#             name = 'TrigBatcher',
+#             offset = 0x100100))
         
 
