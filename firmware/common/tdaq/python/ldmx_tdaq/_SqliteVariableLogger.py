@@ -39,11 +39,11 @@ class Variable(ldmx_tdaq.SqliteDatabase.SqliteBase):
     status = relationship("VariableString", foreign_keys=[status_id])
 
     # Virtual columns for displaying `value` from varible_strings
-    path_value   = Column(String, Computed("(SELECT value FROM variable_strings WHERE id = path_id)", persisted=False))
-    enum_value   = Column(String, Computed("(SELECT value FROM variable_strings WHERE id = enum_id)", persisted=False))
-    disp_value   = Column(String, Computed("(SELECT value FROM variable_strings WHERE id = disp_id)", persisted=False))
-    severity_value   = Column(String, Computed("(SELECT value FROM variable_strings WHERE id = severity_id)", persisted=False))
-    status_value   = Column(String, Computed("(SELECT value FROM variable_strings WHERE id = status_id)", persisted=False))
+#     path_value   = Column(String, Computed("(SELECT value FROM variable_strings WHERE id = path_id)", persisted=False))
+#     enum_value   = Column(String, Computed("(SELECT value FROM variable_strings WHERE id = enum_id)", persisted=False))
+#     disp_value   = Column(String, Computed("(SELECT value FROM variable_strings WHERE id = disp_id)", persisted=False))
+#     severity_value   = Column(String, Computed("(SELECT value FROM variable_strings WHERE id = severity_id)", persisted=False))
+#     status_value   = Column(String, Computed("(SELECT value FROM variable_strings WHERE id = status_id)", persisted=False))
 
 class SqliteVariableLogger(pr.Device):
     def __init__(self, database, **kwargs):

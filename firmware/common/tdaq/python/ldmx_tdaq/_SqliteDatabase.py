@@ -156,7 +156,7 @@ class SqliteDatabase(pr.DataWriter):
 
                 # Continue only if the database connection is present
                 if not self._engine:
-                    print('Got entry but engine is None')
+                    #print('Got entry but engine is None')
                     continue
 
                 # Process the data using its parser and add the result to the insert_dict
