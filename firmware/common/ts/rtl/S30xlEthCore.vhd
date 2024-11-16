@@ -582,6 +582,7 @@ begin
          INT_PIPE_STAGES_G   => 1,
          PIPE_STAGES_G       => 0,
          SLAVE_READY_EN_G    => true,
+         FIFO_ADDR_WIDTH_G   => 10,
          GEN_SYNC_FIFO_G     => false,
          AXIL_CLK_FREQ_G     => AXIL_CLK_FREQ_G,
          AXI_STREAM_CONFIG_G => AXIS_CONFIG_C)
