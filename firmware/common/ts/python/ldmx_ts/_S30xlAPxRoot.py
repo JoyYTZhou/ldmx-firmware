@@ -92,13 +92,13 @@ class S30xlAPxRoot(pr.Root):
         self.addInterface(fifo1, fifo2, fifo3, fifo4)
 
         # Unbatch the streams
-#         self.tsDaqEventStreamUnbatcher = rogue.protocols.batcher.SplitterV1()
-#         self.tsDaqEventStreamUnbatcher << fifo1 << self.tsDaqEventStream
-#         self.addInterface(self.tsDaqEventStreamUnbatcher)
+        self.tsDaqEventStreamUnbatcher = rogue.protocols.batcher.SplitterV1()
+        self.tsDaqEventStreamUnbatcher << fifo1 << self.tsDaqEventStream
+        self.addInterface(self.tsDaqEventStreamUnbatcher)
 
-#         self.tsTrigEventStreamUnbatcher = rogue.protocols.batcher.SplitterV1()
-#         self.tsTrigEventStreamUnbatcher << fifo2 << self.tsTrigEventStream
-#         self.addInterface(self.tsTrigEventStreamUnbatcher)
+        self.tsTrigEventStreamUnbatcher = rogue.protocols.batcher.SplitterV1()
+        self.tsTrigEventStreamUnbatcher << fifo2 << self.tsTrigEventStream
+        self.addInterface(self.tsTrigEventStreamUnbatcher)
         
 
         # Add the Sqlite Database
@@ -110,13 +110,13 @@ class S30xlAPxRoot(pr.Root):
         self.add(self.tsRawDaqEventSqlReceiver)
         self.addInterface(self.tsRawDaqEventSqlReceiver)
 #        self.tsRawDaqEventSqlReceiver << self.tsRawDaqEventFilter
-        self.tsRawDaqEventSqlReceiver << fifo3 << self.tsDaqEventStream #self.tsDaqEventStreamUnbatcher
+        self.tsRawDaqEventSqlReceiver << fifo3 << self.tsDaqEventStreamUnbatcher
 
         self.tsS30xlThresholdTriggerEventSqlReceiver = ldmx_ts.TsS30xlThresholdTriggerEventSqlReceiver(database=self.SqliteDatabase)
         self.add(self.tsS30xlThresholdTriggerEventSqlReceiver)
         self.addInterface(self.tsS30xlThresholdTriggerEventSqlReceiver)
         #self.tsS30xlThresholdTriggerEventSqlReceiver << self.tsS30xlThresholdTriggerEventFilter
-        self.tsS30xlThresholdTriggerEventSqlReceiver << fifo4 << self.tsTrigEventStream #self.tsTrigEventStreamUnbatcher
+        self.tsS30xlThresholdTriggerEventSqlReceiver << fifo4 << self.tsTrigEventStreamUnbatcher
 
         self.add(ldmx_tdaq.SqliteVariableLogger(self.SqliteDatabase))
         
