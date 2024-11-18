@@ -238,13 +238,13 @@ begin
          sAxisCtrl   => eventAxisCtrl,        -- [out]
          mAxisClk    => axisClk,              -- [in]
          mAxisRst    => axisRst,              -- [in]
-         mAxisMaster => eventBatchedAxisMaster,  -- [out]
-         mAxisSlave  => eventBatchedAxisSlave);  -- [in]
+         mAxisMaster => eventFifoAxisMaster,  -- [out]
+         mAxisSlave  => eventFifoAxisSlave);  -- [in]
 
    U_AxiStreamBatcherAxil_1 : entity surf.AxiStreamBatcherAxil
       generic map (
          TPD_G                        => TPD_G,
-         COMMON_CLOCK_G               => true,
+         COMMON_CLOCK_G               => false,
          MAX_NUMBER_SUB_FRAMES_G      => 200,
          SUPER_FRAME_BYTE_THRESHOLD_G => 8192,
          MAX_CLK_GAP_G                => 256,

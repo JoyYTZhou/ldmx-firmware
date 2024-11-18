@@ -34,8 +34,8 @@ class EventHeader:
         self.timestamp = int(arr[8:16].view(np.uint64))
         self.bunchCount = int(arr[8])
         self.pulseId = int(arr[8:16].view(np.uint64))>>8
-        if header.burnCount !=0:
-            print(self)
+        #if header.burnCount !=0:
+        print(self)
 
     @classmethod
     def data(cls, arr):
