@@ -10,6 +10,13 @@
 
 import pyrogue as pr
 
+def count_ones(n: int) -> int:
+    count = 0
+    while n:
+        n &= n - 1  # Clears the least significant 1 bit
+        count += 1
+    return count
+
 class SyntheticTrigger(pr.Device):
     def __init__( self,**kwargs):
         super().__init__(**kwargs)
@@ -43,7 +50,7 @@ class SyntheticTrigger(pr.Device):
         ))
 
         self.add(pr.LinkVariable(
-            name = 'RoRFrequency',
+            name = 'RoRBurstFrequency',
             dependencies = [self.RoRPeriodRaw],
             linkedGet = lambda read: 37.1428572e6 /  (1+self.RoRPeriodRaw.get(read=read)),
             units = 'Hz'))
@@ -54,3 +61,9 @@ class SyntheticTrigger(pr.Device):
             bitSize = 64,
             base = pr.UInt,
             mode = 'RW'))
+
+        self.add(pr.LinkVariable(
+            name = 'TotalRoRFrequency',
+            dependencies = [self.RoRPeriodRaw, self.RoRPattern],
+            linkedGet = lambda read: count_ones(self.RoRPattern.value()) * 37.1428572e6 /  (1+self.RoRPeriodRaw.value()),
+            units = 'Hz'))
