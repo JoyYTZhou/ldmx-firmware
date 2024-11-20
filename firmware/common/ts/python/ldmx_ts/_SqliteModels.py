@@ -3,7 +3,7 @@ import time
 import threading
 import queue
 
-from sqlalchemy import Column, Integer, BigInteger, SmallInteger, CheckConstraint, Computed, BLOB
+from sqlalchemy import Column, Integer, BigInteger, SmallInteger, CheckConstraint, Computed, BLOB, LargeBinary
 from sqlalchemy.orm import mapped_column, Mapped
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.exc import SQLAlchemyError, OperationalError
@@ -19,7 +19,7 @@ class RawEventDataSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
     __tablename__ = 'raw_event_data'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    data = Column(BLOB, nullable=False)
+    data = Column(LargeBinary, nullable=False)
 
 # Define the 'ts_raw_daq_events' table
 class TsRawDaqEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
@@ -89,7 +89,7 @@ class TsRawDaqEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
             
 
 class SqlEventReceiver(pr.DataReceiver):
-    def __init__(self, table, database, **kwargs):
+    def __init__(self, database, table=RawEventDataSql.__table__, **kwargs):
         super().__init__(**kwargs)
 
         self.database = database
@@ -98,10 +98,12 @@ class SqlEventReceiver(pr.DataReceiver):
 #         self.database.add_parser(self.table, self.parser)
 
     def parser(self, data):
+        #print('parser()')
         # Default parser 
-        return [{'data': data}]
+        return {self.table: [{'data':data}]}
         
     def process(self, frame):
+        #print('process()')
         # Read the frame into numpy array
         ba = frame.getBa()
 
