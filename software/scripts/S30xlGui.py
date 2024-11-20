@@ -18,7 +18,7 @@ import ldmx_ts
 #rogue.Logging.setFilter('pyrogue.stream.TcpCore', rogue.Logging.Debug)
 
 #rogue.Logging.setLevel(rogue.Logging.Debug)
- 
+
 # parser = ldmx_tracker.FcHubArgParser()
 # args = parser.parse_args()
 parser = argparse.ArgumentParser()
@@ -54,7 +54,7 @@ args = parser.parse_known_args()[0]
 print(args)
 
 with ldmx_ts.S30xlAPxRoot(**vars(args)) as root:
+
     pyrogue.pydm.runPyDM(
         serverList = root.zmqServer.address,
         title='S30XL')
-
