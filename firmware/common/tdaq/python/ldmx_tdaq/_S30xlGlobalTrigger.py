@@ -11,7 +11,9 @@ class S30xlGlobalTrigger(pr.Device):
             offset = 0x000))
 
         self.add(ldmx_tdaq.SyntheticTrigger(
-            offset = 0x100))
+            offset = 0x100,
+            expand = True))
 
         self.add(ldmx_tdaq.S30xlGlobalTriggerLogic(
-            offset = 0x300))
+            offset = 0x300,
+            expand = True))

@@ -11,7 +11,8 @@ class S30xlAppCore(pr.Device):
             offset = 0x0_0000))
 
         self.add(ldmx_ts.TsDataRx(
-            offset = 0x2000_0000))
+            offset = 0x2000_0000,
+            expand = True))
 
 #         self.add(surf.protocols.batcher.AxiStreamBatcherAxil(
 #             name = 'RawBatcher',

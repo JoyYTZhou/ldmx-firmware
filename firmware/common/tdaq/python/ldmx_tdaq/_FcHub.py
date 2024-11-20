@@ -8,7 +8,8 @@ class FcHub(pr.Device):
 
         self.add(ldmx_tdaq.FcTxLogic(
             name   = "FcTxLogic",
-            offset = 0x010_0000))
+            offset = 0x010_0000,
+            expand = True))
 
         self.add(ldmx_tdaq.Lcls2TimingRx(
             name   = 'Lcls2TimingRx',

@@ -13,7 +13,8 @@ class TsRxLogic(pr.Device):
             mode = 'RO',
             bitOffset = 0,
             bitSize = 1,
-            base = pr.Bool))
+            base = pr.Bool,
+            pollInterval = 1))
 
         self.add(pr.RemoteCommand(
             name = 'CountReset',
@@ -43,7 +44,8 @@ class TsRxLogic(pr.Device):
             bitSize = 64,
             base = pr.UInt,
             disp = '{:d}',
-            mode = 'RO'))
+            mode = 'RO',
+            pollInterval = 1))
 
         self.add(pr.RemoteVariable(
             name = 'RxErrorCount',
@@ -51,7 +53,8 @@ class TsRxLogic(pr.Device):
             bitSize = 32,
             base = pr.UInt,
             disp = '{:d}',
-            mode = 'RO'))
+            mode = 'RO',
+            pollInterval = 1))
 
         self.add(pr.RemoteVariable(
             name = 'InitCount',
@@ -59,7 +62,8 @@ class TsRxLogic(pr.Device):
             bitSize = 32,
             base = pr.UInt,
             disp = '{:d}',
-            mode = 'RO'))
+            mode = 'RO',
+            pollInterval = 1))
 
         self.add(pr.RemoteVariable(
             name = 'Bc0Count',
@@ -67,7 +71,8 @@ class TsRxLogic(pr.Device):
             bitSize = 32,
             base = pr.UInt,
             disp = '{:d}',
-            mode = 'RO'))
+            mode = 'RO',
+            pollInterval = 1))
 
         self.add(pr.RemoteVariable(
             name = 'State',
@@ -75,6 +80,7 @@ class TsRxLogic(pr.Device):
             offset = 0x14,
             bitSize = 4,
             bitOffset = 0,
+            pollInterval = 1,
             enum = {
                 0x0: 'INIT_S',
                 0x1: 'WAIT_RESETDONE_LOW_S',

@@ -8,7 +8,8 @@ class S30xlAPx(pr.Device):
         super().__init__(**kwargs)
 
         self.add(surf.axi.AxiVersion(
-            offset = 0x0000))
+            offset = 0x0000,
+            expand = True))
 
         self.add(ldmx_ts.S30xlAppCore(
             offset = 0x8000_0000,
@@ -16,10 +17,12 @@ class S30xlAPx(pr.Device):
 
         self.add(ldmx_tdaq.S30xlGlobalTrigger(
             name = 'GlobalTrigger',
-            offset = 0x3000_0000))
+            offset = 0x3000_0000,
+            expand = True))
 
         self.add(ldmx_tdaq.FcHub(
-            offset = 0x2000_0000))
+            offset = 0x2000_0000,
+            expand = True))
 
         self.add(ldmx_ts.S30xlApxEthCore(
             offset = 0x1000_0000))
