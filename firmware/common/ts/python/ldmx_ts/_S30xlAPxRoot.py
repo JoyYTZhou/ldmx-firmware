@@ -31,9 +31,9 @@ class S30xlAPxRoot(pr.Root):
 
         else:
             # Open rUDP connections
-            self.srpUdp = pyrogue.protocols.UdpRssiPack(host=host, port=8192, packVer=2, name='SrpRssi')
-            self.tsDaqUdp = pyrogue.protocols.UdpRssiPack(host=host, port=8193, packVer=2, name='TsDaqEventRssi')
-            self.trigDataUdp = pyrogue.protocols.UdpRssiPack(host=host, port=8194, packVer=2, name='TsTrigEventRssi')
+            self.srpUdp = pyrogue.protocols.UdpRssiPack(host=host, jumbo=True, port=8192, packVer=2, name='SrpRssi')
+            self.tsDaqUdp = pyrogue.protocols.UdpRssiPack(host=host, jumbo=True, port=8193, packVer=2, name='TsDaqEventRssi')
+            self.trigDataUdp = pyrogue.protocols.UdpRssiPack(host=host, jumbo=True, port=8194, packVer=2, name='TsTrigEventRssi')
 
             self.addInterface(self.srpUdp, self.tsDaqUdp, self.trigDataUdp)
             
