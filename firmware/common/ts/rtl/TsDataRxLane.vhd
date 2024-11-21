@@ -310,7 +310,7 @@ begin
       port map (
          dataClk         => tsRecClkMmcm,                          -- [in]
          dataRst         => tsRecClkRst,                           -- [in]
-         dataValid       => tsRxPhyResetDone,                      -- [in]
+         dataValid       => ringDataValid,                      -- [in]
          dataValue       => ringDataValue,                         -- [in]
 --          bufferEnable    => bufferEnable,     -- [in]
 --          bufferClear     => bufferClear,      -- [in]
