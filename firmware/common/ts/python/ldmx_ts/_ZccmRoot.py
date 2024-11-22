@@ -2,6 +2,7 @@ import rogue
 import rogue.interfaces.memory
 import rogue.interfaces.stream
 import rogue.hardware.axi
+import click
 
 import pyrogue as pr
 
@@ -12,19 +13,29 @@ rogue.Version.minVersion('6.0.0')
 
 class ZccmRoot(pr.Root):
     def __init__(self,
-            ip       = None, # ETH Host Name (or IP address),
-            zmqSrvEn = False,  # Flag to include the ZMQ server
-            top_level="",     
+            ip       = None,  # ETH Host Name (or IP address),
+            sim      = False, # Set this flag if running local testbench
+            zmqSrvEn = False, # Flag to include the ZMQ server
+            pollEn   = False, # Enable polling
+            initRead = False, # Read all upon startup
+            top_level="",
             **kwargs):
         super().__init__(**kwargs)
+
+        # Start up flags
+        self._pollEn   = pollEn
+        self._initRead = initRead
 
         if zmqSrvEn:
             self.zmqServer = pr.interfaces.ZmqServer(root=self, addr='127.0.0.1', port=0)
             self.addInterface(self.zmqServer)
-        
-        # Check if running local on SoC
-        if ip != None:
 
+        # Check if running local on SoC, or in sim mode
+        if sim:
+            # this value has to match whatever is in the .vhd testbench top
+            simPort = 11000
+            self.memMap = rogue.interfaces.memory.TcpClient('localhost', simPort)
+        elif ip != None:
             # Check if we can ping the device and TCP socket not open
             socCore.connectionTest(ip)
 
@@ -33,18 +44,18 @@ class ZccmRoot(pr.Root):
 
             # DMA[lane=0][TDEST=0] = ports 10000 & 10001
             self.tcpStream = rogue.interfaces.stream.TcpClient(ip,10000)
-
         else:
             # Use the memory map driver
             self.memMap = rogue.hardware.axi.AxiMemMap('/dev/axi_memory_map')
 
-        # Added the devices
-        self.add(socCore.AxiSocCore(
-            memBase      = self.memMap,
-            offset       = 0x04_0000_0000,
-            numDmaLanes  = 1,
-        ))
-        
+        if not(sim):
+            # Added the devices
+            self.add(socCore.AxiSocCore(
+                memBase      = self.memMap,
+                offset       = 0x04_0000_0000,
+                numDmaLanes  = 1,
+            ))
+
         self.add(ldmx_ts.ZccmApplication(
             memBase = self.memMap,
             offset  = 0x04_8000_0000,

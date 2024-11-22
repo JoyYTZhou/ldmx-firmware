@@ -12,8 +12,6 @@
 --
 ----------------------------------------------------------------------------------
 
-
-
 Library UNISIM;
 use UNISIM.vcomponents.all;
 library IEEE;
@@ -38,11 +36,9 @@ use ldmx_ts.zCCM_Pkg.ALL;
 
 entity zCCM_kria is
    generic (
-      TPD_G                : time    := 0.5 ns;
-      SIMULATION_G         : boolean := false;
-      ROGUE_SIM_EN_G       : boolean                     := false;
-      ROGUE_SIM_PORT_NUM_G : natural range 1024 to 49151 := 11000;
-      BUILD_INFO_G         : BuildInfoType);
+      TPD_G : time := 0.5 ns;
+      SIMULATION_G : boolean := false;
+      BUILD_INFO_G : BuildInfoType);
     Port (
           -- clock pins to RMs
           MCLK_BUF_SEL    : out    sl;
@@ -140,14 +136,12 @@ end zCCM_kria;
 
 begin
 
-    U_Core : entity axi_soc_ultra_plus_core.AxiSocUltraPlusCore
+    U_Uut : entity work.zCCM_kria
       generic map (
-         TPD_G                => TPD_G,
-         ROGUE_SIM_EN_G       => ROGUE_SIM_EN_G,
-         ROGUE_SIM_PORT_NUM_G => ROGUE_SIM_PORT_NUM_G,
-         BUILD_INFO_G         => BUILD_INFO_G,
-         EXT_AXIL_MASTER_G    => false,
-         DMA_SIZE_G           => 1)
+         TPD_G             => TPD_G,
+         BUILD_INFO_G      => BUILD_INFO_G,
+         EXT_AXIL_MASTER_G => false,
+         DMA_SIZE_G        => 1)
       port map (
          ------------------------
          --  Top Level Interfaces
