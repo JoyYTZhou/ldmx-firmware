@@ -149,7 +149,7 @@ begin
          rdTimestamp => rorFifoTimestamp,      -- [out]
          rdValid     => open);                 -- [out]
 
-   comb : process (axisRst, eventAxisCtrl, r, rawFifoAxisMaster, rorFifoTimestamp) is
+   comb : process (axisRst, eventAxisCtrl, fifoRstSync, r, rawFifoAxisMaster, rorFifoTimestamp) is
       variable v : RegType;
    begin
       v := r;

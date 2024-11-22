@@ -186,8 +186,9 @@ begin
          rdValid     => timestampFifoValid);    -- [out]   
 
 
-   comb : process (fcBus, fcRst185, r, syncAxilReadMaster, syncAxilWriteMaster, timestampFifoRdData,
-                   timestampFifoValid, tsMsgFifoRdData, tsMsgFifoValid) is
+   comb : process (fcBus, fcRst185, r, syncAxilReadMaster, syncAxilWriteMaster, timestampFifoCount,
+                   timestampFifoRdData, timestampFifoValid, tsMsgFifoCount, tsMsgFifoRdData,
+                   tsMsgFifoValid) is
       variable v      : RegType := REG_INIT_C;
       variable axilEp : AxiLiteEndpointType;
    begin

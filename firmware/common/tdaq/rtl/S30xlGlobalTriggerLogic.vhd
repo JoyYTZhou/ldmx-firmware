@@ -97,7 +97,8 @@ begin
    tsS30xlThresholdTriggerDaq <= toThresholdTriggerDaq(tsThresholdTriggerData, triggerTimestamp);
    synTriggerMessage          <= toFcMessage(synTriggerData.data(FC_LEN_C-1 downto 0), synTriggerData.valid);
 
-   comb : process (fcBus, r, synTriggerData, triggerTimestamp, tsS30xlThresholdTriggerDaq) is
+   comb : process (axilReadMaster, axilWriteMaster, fcBus, r, synTriggerData, triggerTimestamp,
+                   tsS30xlThresholdTriggerDaq) is
       variable v      : RegType;
       variable axilEp : AxiLiteEndpointType;
    begin
