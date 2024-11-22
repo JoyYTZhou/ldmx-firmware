@@ -266,14 +266,14 @@ begin
          NUM_WRITE_REG_G => 1,
          NUM_READ_REG_G  => 13)
       port map (
-         axiClk         => fcClk185,              -- [in]
-         axiClkRst      => fcRst185,              -- [in]
-         axiReadMaster  => syncAxilReadMaster,    -- [in]
-         axiReadSlave   => syncAxilReadSlave,     -- [out]
-         axiWriteMaster => syncAxilWriteMaster,   -- [in]
-         axiWriteSlave  => syncAxilWriteSlave,    -- [out]
-         writeRegister  => open,                  -- [out]
-         readRegister   => readRegister);         -- [in]
+         axiClk         => fcClk185,             -- [in]
+         axiClkRst      => fcRst185,             -- [in]
+         axiReadMaster  => syncAxilReadMaster,   -- [in]
+         axiReadSlave   => syncAxilReadSlave,    -- [out]
+         axiWriteMaster => syncAxilWriteMaster,  -- [in]
+         axiWriteSlave  => syncAxilWriteSlave,   -- [out]
+         writeRegister  => open,                 -- [out]
+         readRegister   => readRegister);        -- [in]
 
    comb : process (fifoAmplitudes, fifoHits, r, rorDataValid) is
       variable v : RegType;
@@ -367,21 +367,21 @@ begin
          EVENT_FIFO_SYNTH_MODE_G   => "inferred",
          EVENT_FIFO_MEMORY_TYPE_G  => "block")
       port map (
-         fcClk185        => fcClk185,         -- [in]
-         fcRst185        => fcRst185,         -- [in]
-         fcBus           => fcBus,            -- [in]
-         axilClk         => axilClk,          -- [in]
-         axilRst         => axilRst,          -- [in]
-         axilReadMaster  => axilReadMaster,   -- [in]
-         axilReadSlave   => axilReadSlave,    -- [out]
-         axilWriteMaster => axilWriteMaster,  -- [in]
-         axilWriteSlave  => axilWriteSlave,   -- [out]
-         axisClk         => axisClk,          -- [in]
-         axisRst         => axisRst,          -- [in]
-         rawAxisMaster   => r.axisMaster,     -- [in]
-         rawAxisCtrl     => open,             -- [out]
-         eventAxisMaster => eventAxisMaster,  -- [out]
-         eventAxisSlave  => eventAxisSlave);  -- [in]
+         fcClk185        => fcClk185,                                  -- [in]
+         fcRst185        => fcRst185,                                  -- [in]
+         fcBus           => fcBus,                                     -- [in]
+         axilClk         => axilClk,                                   -- [in]
+         axilRst         => axilRst,                                   -- [in]
+         axilReadMaster  => locAxilReadMasters(AXIL_EVENT_FORMAT_C),   -- [in]
+         axilReadSlave   => locAxilReadSlaves(AXIL_EVENT_FORMAT_C),    -- [out]
+         axilWriteMaster => locAxilWriteMasters(AXIL_EVENT_FORMAT_C),  -- [in]
+         axilWriteSlave  => locAxilWriteSlaves(AXIL_EVENT_FORMAT_C),   -- [out]
+         axisClk         => axisClk,                                   -- [in]
+         axisRst         => axisRst,                                   -- [in]
+         rawAxisMaster   => r.axisMaster,                              -- [in]
+         rawAxisCtrl     => open,                                      -- [out]
+         eventAxisMaster => eventAxisMaster,                           -- [out]
+         eventAxisSlave  => eventAxisSlave);                           -- [in]
 
 
 end architecture rtl;

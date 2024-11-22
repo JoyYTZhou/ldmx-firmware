@@ -34,10 +34,10 @@ class S30xlAppCore(pr.Device):
         for ch in range(12):
             self.add(pr.RemoteVariable(
                 name = f'TrigAmplitude{ch}Delay',
-                base = pr.Bool,
+                base = pr.UInt,
                 offset = 0x101000 + (4*ch),
-                bitSize = 1,
-                bitOffset = 8,
+                bitSize = 8,
+                bitOffset = 0,
                 mode = 'RO'))
 
         for ch in range(12):
