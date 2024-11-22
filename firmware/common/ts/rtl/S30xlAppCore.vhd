@@ -102,11 +102,11 @@ architecture rtl of S30xlAppCore is
          connectivity => X"FFFF"),
       AXIL_TS_DAQ_C   => (
          baseAddr     => AXIL_BASE_ADDR_G + X"00100000",
-         addrBits     => 8,
+         addrBits     => 12,
          connectivity => X"FFFF"),
       AXIL_TS_TRIG_C  => (
-         baseAddr     => AXIL_BASE_ADDR_G + X"00100100",
-         addrBits     => 8,
+         baseAddr     => AXIL_BASE_ADDR_G + X"00101000",
+         addrBits     => 12,
          connectivity => X"FFFF"));
 
    signal locAxilReadMasters  : AxiLiteReadMasterArray(AXIL_NUM_C-1 downto 0);
@@ -228,8 +228,9 @@ begin
    -------------------------------------------------------------------------------------------------
    U_TsRawDaq_1 : entity ldmx_ts.TsRawDaq
       generic map (
-         TPD_G      => TPD_G,
-         TS_LANES_G => TS_LANES_G)
+         TPD_G            => TPD_G,
+         TS_LANES_G       => TS_LANES_G,
+         AXIL_BASE_ADDR_G => AXIL_XBAR_CFG_C(AXIL_TS_DAQ_C).baseAddr)
       port map (
          fcClk185        => fcClk185,                            -- [in]
          fcRst185        => fcRst185,                            -- [in]
@@ -266,8 +267,9 @@ begin
    -------------------------------------------------------------------------------------------------
    U_TsTrigDaq_1 : entity ldmx_ts.TsTrigDaq
       generic map (
-         TPD_G      => TPD_G,
-         TS_LANES_G => TS_LANES_G)
+         TPD_G            => TPD_G,
+         TS_LANES_G       => TS_LANES_G,
+         AXIL_BASE_ADDR_G => AXIL_XBAR_CFG_C(AXIL_TS_TRIG_C).baseAddr)
       port map (
          fcClk185        => fcClk185,                             -- [in]
          fcRst185        => fcRst185,                             -- [in]

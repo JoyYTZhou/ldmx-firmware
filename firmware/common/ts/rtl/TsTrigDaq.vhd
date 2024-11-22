@@ -36,8 +36,9 @@ use ldmx_ts.TsPkg.all;
 entity TsTrigDaq is
 
    generic (
-      TPD_G      : time    := 1 ns;
-      TS_LANES_G : integer := 2);
+      TPD_G            : time             := 1 ns;
+      TS_LANES_G       : integer          := 2;
+      AXIL_BASE_ADDR_G : slv(31 downto 0) := (others => '0'));
 
    port (
       -- TS Trig Data and Timing
@@ -45,7 +46,7 @@ entity TsTrigDaq is
       fcRst185      : in sl;
       fcBus         : in FcBusType;
       tsTrigDaqData : in TsS30xlThresholdTriggerDaqType;
-      
+
       -- AXI-Lite Interface (axilClk domain)
       axilClk         : in  sl;
       axilRst         : in  sl;
@@ -53,7 +54,7 @@ entity TsTrigDaq is
       axilReadSlave   : out AxiLiteReadSlaveType;
       axilWriteMaster : in  AxiLiteWriteMasterType;
       axilWriteSlave  : out AxiLiteWriteSlaveType;
-      
+
       -- Streaming interface to ETH
       axisClk         : in  sl;
       axisRst         : in  sl;
@@ -99,11 +100,77 @@ architecture rtl of TsTrigDaq is
 --    signal rorTimestampFifoValid  : sl;
 
    signal aligned  : slv(12 downto 0);
+   signal delay    : slv8Array(12 downto 0);
    signal axisCtrl : AxiStreamCtrlType;
 
    signal rorDataValid : sl;
 
+   constant NUM_AXIL_C          : natural := 2;
+   constant AXIL_LOC_C          : natural := 0;
+   constant AXIL_EVENT_FORMAT_C : natural := 1;
+
+   constant AXIL_XBAR_CFG_C : AxiLiteCrossbarMasterConfigArray(NUM_AXIL_C-1 downto 0) := (
+      AXIL_LOC_C          => (
+         baseAddr         => AXIL_BASE_ADDR_G + X"0000",
+         addrBits         => 8,
+         connectivity     => X"FFFF"),
+      AXIL_EVENT_FORMAT_C => (
+         baseAddr         => AXIL_BASE_ADDR_G + X"100",
+         addrBits         => 8,
+         connectivity     => X"FFFF"));
+
+
+   signal locAxilWriteMasters : AxiLiteWriteMasterArray(NUM_AXIL_C-1 downto 0);
+   signal locAxilWriteSlaves  : AxiLiteWriteSlaveArray(NUM_AXIL_C-1 downto 0) := (others => AXI_LITE_WRITE_SLAVE_EMPTY_DECERR_C);
+   signal locAxilReadMasters  : AxiLiteReadMasterArray(NUM_AXIL_C-1 downto 0);
+   signal locAxilReadSlaves   : AxiLiteReadSlaveArray(NUM_AXIL_C-1 downto 0)  := (others => AXI_LITE_READ_SLAVE_EMPTY_DECERR_C);
+
+   signal syncAxilWriteMaster : AxiLiteWriteMasterType;
+   signal syncAxilWriteSlave  : AxiLiteWriteSlaveType;
+   signal syncAxilReadMaster  : AxiLiteReadMasterType;
+   signal syncAxilReadSlave   : AxiLiteReadSlaveType;
+
+   signal readRegister : Slv32Array(12 downto 0);
+
 begin
+   -------------------------------------------------------------------------------------------------
+   -- AXIL Crossbar
+   -------------------------------------------------------------------------------------------------
+   U_XBAR : entity surf.AxiLiteCrossbar
+      generic map (
+         TPD_G              => TPD_G,
+         NUM_SLAVE_SLOTS_G  => 1,
+         NUM_MASTER_SLOTS_G => NUM_AXIL_C,
+         MASTERS_CONFIG_G   => AXIL_XBAR_CFG_C)
+      port map (
+         axiClk              => axilClk,
+         axiClkRst           => axilRst,
+         sAxiWriteMasters(0) => axilWriteMaster,
+         sAxiWriteSlaves(0)  => axilWriteSlave,
+         sAxiReadMasters(0)  => axilReadMaster,
+         sAxiReadSlaves(0)   => axilReadSlave,
+         mAxiWriteMasters    => locAxilWriteMasters,
+         mAxiWriteSlaves     => locAxilWriteSlaves,
+         mAxiReadMasters     => locAxilReadMasters,
+         mAxiReadSlaves      => locAxilReadSlaves);
+
+   U_AxiLiteAsync : entity surf.AxiLiteAsync
+      generic map (
+         TPD_G        => TPD_G,
+         COMMON_CLK_G => false)
+      port map (
+         sAxiClk         => axilClk,                          -- [in]
+         sAxiClkRst      => axilClk,                          -- [in]
+         sAxiReadMaster  => locAxilReadMasters(AXIL_LOC_C),   -- [in]
+         sAxiReadSlave   => locAxilReadSlaves(AXIL_LOC_C),    -- [out]
+         sAxiWriteMaster => locAxilWriteMasters(AXIL_LOC_C),  -- [in]
+         sAxiWriteSlave  => locAxilWriteSlaves(AXIL_LOC_C),   -- [out]
+         mAxiClk         => fcClk185,                         -- [in]
+         mAxiClkRst      => fcRst185,                         -- [in]
+         mAxiReadMaster  => syncAxilReadMaster,               -- [out]
+         mAxiReadSlave   => syncAxilReadSlave,                -- [in]
+         mAxiWriteMaster => syncAxilWriteMaster,              -- [out]
+         mAxiWriteSlave  => syncAxilWriteSlave);              -- [in]
 
    -------------------------------------------------------------------------------------------------
    -- Delay and buffer amplitudes
@@ -122,6 +189,7 @@ begin
             timestampIn => tsTrigDaqData.timestamp,      -- [in]
             dataIn      => tsTrigDaqData.amplitudes(i),  -- [in]
             aligned     => aligned(i),                   -- [out]
+            delay       => delay(i),                     -- [out]
             dataOut     => delayedAmplitudes(i));        -- [out]
 
 
@@ -187,28 +255,25 @@ begin
          dout   => fifoHits,                    -- [out]
          valid  => rorDataValid);               -- [out]
 
+   GEN_READ_REG : for i in 12 downto 0 generate
+      readRegister(i) <= resize(aligned(i) & delay(i), 32);
+   end generate GEN_READ_REG;
 
-   -- Buffer ROR timestamps
---    rorTimestampFifoInSlv <= toSlv(tsTrigDaqData.timestamp);
---    ROR_TIMESTAMP_FIFO : entity surf.Fifo
---       generic map (
---          TPD_G           => TPD_G,
---          GEN_SYNC_FIFO_G => false,
---          FWFT_EN_G       => true,
---          SYNTH_MODE_G    => "inferred",
---          MEMORY_TYPE_G   => "distributed",
---          DATA_WIDTH_G    => FC_TIMESTAMP_SIZE_C,
---          ADDR_WIDTH_G    => 5)
---       port map (
---          rst    => fcRst185,                    -- [in]
---          wr_clk => fcClk185,                    -- [in]
---          wr_en  => fcBus.readoutRequest.valid,  -- [in]
---          din    => rorTimestampFifoInSlv,       -- [in]
---          rd_clk => axisClk,                     -- [in]
---          rd_en  => r.fifoRdEn,                  -- [in]
---          dout   => rorTimestampFifoOutSlv,      -- [out]
---          valid  => rorTimestampFifoValid);      -- [out]
 
+   U_AxiLiteRegs_1 : entity surf.AxiLiteRegs
+      generic map (
+         TPD_G           => TPD_G,
+         NUM_WRITE_REG_G => 1,
+         NUM_READ_REG_G  => 13)
+      port map (
+         axiClk         => fcClk185,              -- [in]
+         axiClkRst      => fcRst185,              -- [in]
+         axiReadMaster  => syncAxilReadMaster,    -- [in]
+         axiReadSlave   => syncAxilReadSlave,     -- [out]
+         axiWriteMaster => syncAxilWriteMaster,   -- [in]
+         axiWriteSlave  => syncAxilWriteSlave,    -- [out]
+         writeRegister  => open,                  -- [out]
+         readRegister   => readRegister);         -- [in]
 
    comb : process (fifoAmplitudes, fifoHits, r, rorDataValid) is
       variable v : RegType;

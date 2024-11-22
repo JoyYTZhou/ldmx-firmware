@@ -42,6 +42,7 @@ entity RorDaqDataDelay is
       timestampIn : in  FcTimestampType;
       dataIn      : in  slv(DATA_WIDTH_G-1 downto 0);
       aligned     : out sl;
+      delay       : out slv(7 downto 0);
       dataOut     : out slv(DATA_WIDTH_G-1 downto 0));
 end entity RorDaqDataDelay;
 
@@ -87,14 +88,15 @@ begin
          DATA_WIDTH_G    => DATA_WIDTH_G,
          ADDR_WIDTH_G    => 8)
       port map (
-         rst    => r.fifoRst,           -- [in]
-         wr_clk => fcClk185,            -- [in]
-         wr_en  => rin.fifoWrEn,        -- [in]
-         din    => dataIn,              -- [in]
-         rd_clk => fcClk185,            -- [in]
-         rd_en  => rin.fifoRdEn,        -- [in]
-         dout   => dataOut,             -- [out]
-         valid  => open);               -- [out]
+         rst           => r.fifoRst,     -- [in]
+         wr_clk        => fcClk185,      -- [in]
+         wr_en         => rin.fifoWrEn,  -- [in]
+         din           => dataIn,        -- [in]
+         wr_data_count => delay,         -- [out]
+         rd_clk        => fcClk185,      -- [in]
+         rd_en         => rin.fifoRdEn,  -- [in]
+         dout          => dataOut,       -- [out]
+         valid         => open);         -- [out]
 
    comb : process (fcBus, fcRst185, r, timestampIn) is
       variable v : RegType := REG_INIT_C;

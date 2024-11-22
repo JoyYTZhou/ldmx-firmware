@@ -36,8 +36,9 @@ use ldmx_ts.TsPkg.all;
 entity TsRawDaq is
 
    generic (
-      TPD_G      : time    := 1 ns;
-      TS_LANES_G : integer := 2);
+      TPD_G            : time             := 1 ns;
+      TS_LANES_G       : integer          := 2;
+      AXIL_BASE_ADDR_G : slv(31 downto 0) := (others => '0'));
 
    port (
       -- TS Raw Data and Timing
@@ -183,6 +184,7 @@ begin
             timestampIn => fcMsgTimestamp,           -- [in]
             dataIn      => tsRxMsgsSlvDelayIn(i),    -- [in]
             aligned     => aligned(i),               -- [out]
+            delay       => delay(i),                 -- [out]
             dataOut     => tsRxMsgsSlvDelayOut(i));  -- [out]
 
 
@@ -211,28 +213,25 @@ begin
       tsRxMsgsFifoOut(i) <= toTsData6ChMsg(tsRxMsgsSlvFifoOut(i), tsRxMsgsFifoValid(i));
    end generate;
 
---    rorTimestampFifoInSlv <= toSlv(fcMsgTimestamp);
---    ROR_TIMESTAMP_FIFO : entity surf.Fifo
---       generic map (
---          TPD_G           => TPD_G,
---          GEN_SYNC_FIFO_G => false,
---          FWFT_EN_G       => true,
---          SYNTH_MODE_G    => "inferred",
---          MEMORY_TYPE_G   => "distributed",
---          DATA_WIDTH_G    => FC_TIMESTAMP_SIZE_C,
---          ADDR_WIDTH_G    => 5)
---       port map (
---          rst    => fcRst185,                    -- [in]
---          wr_clk => fcClk185,                    -- [in]
---          wr_en  => fcBus.readoutRequest.valid,  -- [in]
---          din    => rorTimestampFifoInSlv,       -- [in]
---          rd_clk => axisClk,                     -- [in]
---          rd_en  => r.fifoRdEn,                  -- [in]
---          dout   => rorTimestampFifoOutSlv,      -- [out]
---          valid  => rorTimestampFifoValid);      -- [out]
+   GEN_READ_REG : for i in TS_LANES_G-1 downto 0 generate
+      readRegister(i) <= resize(aligned(i) & delay(i), 32);
+   end generate GEN_READ_REG;
 
-   -- For debugging
---   rorTimestampFifoOut <= toFcTimestamp(rorTimestampFifoOutSlv, rorTimestampFifoValid);
+
+   U_AxiLiteRegs_1 : entity surf.AxiLiteRegs
+      generic map (
+         TPD_G           => TPD_G,
+         NUM_WRITE_REG_G => 1,
+         NUM_READ_REG_G  => TS_LANES_G)
+      port map (
+         axiClk         => fcClk185,            -- [in]
+         axiClkRst      => fcRst185,            -- [in]
+         axiReadMaster  => syncAxilReadMaster,   -- [in]
+         axiReadSlave   => syncAxilReadSlave,    -- [out]
+         axiWriteMaster => syncAxilWriteMaster,  -- [in]
+         axiWriteSlave  => syncAxilWriteSlave,   -- [out]
+         writeRegister  => open,                -- [out]
+         readRegister   => readRegister);       -- [in]
 
    comb : process (r, tsRxMsgsFifoOut, tsRxMsgsFifoValid) is
       variable v : RegType;
@@ -292,20 +291,20 @@ begin
          EVENT_FIFO_SYNTH_MODE_G   => "inferred",
          EVENT_FIFO_MEMORY_TYPE_G  => "block")
       port map (
-         fcClk185        => fcClk185,         -- [in]
-         fcRst185        => fcRst185,         -- [in]
-         fcBus           => fcBus,            -- [in]
-         axilClk         => axilClk,          -- [in]
-         axilRst         => axilRst,          -- [in]
-         axilReadMaster  => axilReadMaster,   -- [in]
-         axilReadSlave   => axilReadSlave,    -- [out]
-         axilWriteMaster => axilWriteMaster,  -- [in]
-         axilWriteSlave  => axilWriteSlave,   -- [out]
-         axisClk         => axisClk,          -- [in]
-         axisRst         => axisRst,          -- [in]
-         rawAxisMaster   => r.axisMaster,     -- [in]
-         rawAxisCtrl     => open,             -- [out]
-         eventAxisMaster => eventAxisMaster,  -- [out]
-         eventAxisSlave  => eventAxisSlave);  -- [in]   
+         fcClk185        => fcClk185,                                  -- [in]
+         fcRst185        => fcRst185,                                  -- [in]
+         fcBus           => fcBus,                                     -- [in]
+         axilClk         => axilClk,                                   -- [in]
+         axilRst         => axilRst,                                   -- [in]
+         axilReadMaster  => locAxilReadMasters(AXIL_EVENT_FORMAT_C),   -- [in]
+         axilReadSlave   => locAxilReadSlaves(AXIL_EVENT_FORMAT_C),    -- [out]
+         axilWriteMaster => locAxilWriteMasters(AXIL_EVENT_FORMAT_C),  -- [in]
+         axilWriteSlave  => locAxilWriteSlaves(AXIL_EVENT_FORMAT_C),   -- [out]
+         axisClk         => axisClk,                                   -- [in]
+         axisRst         => axisRst,                                   -- [in]
+         rawAxisMaster   => r.axisMaster,                              -- [in]
+         rawAxisCtrl     => open,                                      -- [out]
+         eventAxisMaster => eventAxisMaster,                           -- [out]
+         eventAxisSlave  => eventAxisSlave);                           -- [in]   
 
 end architecture rtl;
