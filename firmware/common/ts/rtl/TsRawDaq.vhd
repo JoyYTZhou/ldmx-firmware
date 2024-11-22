@@ -95,18 +95,87 @@ architecture rtl of TsRawDaq is
 --    signal rorTimestampFifoValid  : sl;
 --    signal rorTimestampFifoOut    : FcTimestampType;
    signal aligned             : slv(TS_LANES_G-1 downto 0);
+   signal delay               : slv8Array(TS_LANES_G-1 downto 0);
    signal axisCtrl            : AxiStreamCtrlType;
 
+   constant NUM_AXIL_C          : natural := 2;
+   constant AXIL_LOC_C          : natural := 0;
+   constant AXIL_EVENT_FORMAT_C : natural := 1;
+
+   constant AXIL_XBAR_CFG_C : AxiLiteCrossbarMasterConfigArray(NUM_AXIL_C-1 downto 0) := (
+      AXIL_LOC_C          => (
+         baseAddr         => AXIL_BASE_ADDR_G + X"0000",
+         addrBits         => 8,
+         connectivity     => X"FFFF"),
+      AXIL_EVENT_FORMAT_C => (
+         baseAddr         => AXIL_BASE_ADDR_G + X"100",
+         addrBits         => 8,
+         connectivity     => X"FFFF"));
+
+
+   signal locAxilWriteMasters : AxiLiteWriteMasterArray(NUM_AXIL_C-1 downto 0);
+   signal locAxilWriteSlaves  : AxiLiteWriteSlaveArray(NUM_AXIL_C-1 downto 0) := (others => AXI_LITE_WRITE_SLAVE_EMPTY_DECERR_C);
+   signal locAxilReadMasters  : AxiLiteReadMasterArray(NUM_AXIL_C-1 downto 0);
+   signal locAxilReadSlaves   : AxiLiteReadSlaveArray(NUM_AXIL_C-1 downto 0)  := (others => AXI_LITE_READ_SLAVE_EMPTY_DECERR_C);
+
+   signal syncAxilWriteMaster : AxiLiteWriteMasterType;
+   signal syncAxilWriteSlave  : AxiLiteWriteSlaveType;
+   signal syncAxilReadMaster  : AxiLiteReadMasterType;
+   signal syncAxilReadSlave   : AxiLiteReadSlaveType;
+
+   signal readRegister : Slv32Array(TS_LANES_G-1 downto 0);
+
 begin
+
+   -------------------------------------------------------------------------------------------------
+   -- AXIL Crossbar
+   -------------------------------------------------------------------------------------------------
+   U_XBAR : entity surf.AxiLiteCrossbar
+      generic map (
+         TPD_G              => TPD_G,
+         NUM_SLAVE_SLOTS_G  => 1,
+         NUM_MASTER_SLOTS_G => NUM_AXIL_C,
+         MASTERS_CONFIG_G   => AXIL_XBAR_CFG_C)
+      port map (
+         axiClk              => axilClk,
+         axiClkRst           => axilRst,
+         sAxiWriteMasters(0) => axilWriteMaster,
+         sAxiWriteSlaves(0)  => axilWriteSlave,
+         sAxiReadMasters(0)  => axilReadMaster,
+         sAxiReadSlaves(0)   => axilReadSlave,
+         mAxiWriteMasters    => locAxilWriteMasters,
+         mAxiWriteSlaves     => locAxilWriteSlaves,
+         mAxiReadMasters     => locAxilReadMasters,
+         mAxiReadSlaves      => locAxilReadSlaves);
+
+   U_AxiLiteAsync : entity surf.AxiLiteAsync
+      generic map (
+         TPD_G        => TPD_G,
+         COMMON_CLK_G => false)
+      port map (
+         sAxiClk         => axilClk,                          -- [in]
+         sAxiClkRst      => axilClk,                          -- [in]
+         sAxiReadMaster  => locAxilReadMasters(AXIL_LOC_C),   -- [in]
+         sAxiReadSlave   => locAxilReadSlaves(AXIL_LOC_C),    -- [out]
+         sAxiWriteMaster => locAxilWriteMasters(AXIL_LOC_C),  -- [in]
+         sAxiWriteSlave  => locAxilWriteSlaves(AXIL_LOC_C),   -- [out]
+         mAxiClk         => fcClk185,                         -- [in]
+         mAxiClkRst      => fcRst185,                         -- [in]
+         mAxiReadMaster  => syncAxilReadMaster,               -- [out]
+         mAxiReadSlave   => syncAxilReadSlave,                -- [in]
+         mAxiWriteMaster => syncAxilWriteMaster,               -- [out]
+         mAxiWriteSlave  => syncAxilWriteSlave);               -- [in]
+
 
    GEN_LANES : for i in TS_LANES_G-1 downto 0 generate
       tsRxMsgsSlvDelayIn(i) <= toSlv(fcTsRxMsgs(i));
       -- Buffer and delay incoming data to ROR
       U_RorDaqDataDelay_1 : entity ldmx_tdaq.RorDaqDataDelay
          generic map (
-            TPD_G         => TPD_G,
-            DATA_WIDTH_G  => TS_DATA_6CH_MSG_SIZE_C,
-            MEMORY_TYPE_G => "block")
+            TPD_G          => TPD_G,
+            DATA_WIDTH_G   => TS_DATA_6CH_MSG_SIZE_C,
+            DELAY_OFFSET_G => -6,
+            MEMORY_TYPE_G  => "block")
          port map (
             fcClk185    => fcClk185,                 -- [in]
             fcRst185    => fcRst185,                 -- [in]

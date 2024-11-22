@@ -31,9 +31,10 @@ use ldmx_tdaq.FcPkg.all;
 entity RorDaqDataDelay is
 
    generic (
-      TPD_G         : time    := 1 ns;
-      DATA_WIDTH_G  : integer := 16;
-      MEMORY_TYPE_G : string  := "distributed");
+      TPD_G          : time    := 1 ns;
+      DATA_WIDTH_G   : integer := 16;
+      DELAY_OFFSET_G : integer := 0;
+      MEMORY_TYPE_G  : string  := "distributed");
    port (
       fcClk185    : in  sl;
       fcRst185    : in  sl;
@@ -114,7 +115,7 @@ begin
             if (fcBus.pulseStrobe = '1' and
                 fcBus.stateChanged = '1') then
                if (fcBus.runState = RUN_STATE_BC0_C) then
-                  v.bc0Id := fcBus.pulseID;
+                  v.bc0Id := fcBus.pulseID + DELAY_OFFSET_G;
                   v.state := WAIT_BC0_DATA_S;
                else
                   v.state := INIT_S;
