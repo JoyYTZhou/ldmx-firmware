@@ -240,6 +240,14 @@ class ZccmApplication(pr.Device):
             hidden       = False
         ))
 
+        # Backplane (RM2/RM3) UART
+        self.add(pr.RemoteVariable(
+            name         = 'RM23_UART',
+            offset       = 0x2_C0EC,
+            pollInterval = 0,
+            hidden       = False
+        ))
+
         
         # Backplane (RM0/RM1) GPIO
         self.add(PCA9536(
@@ -248,7 +256,7 @@ class ZccmApplication(pr.Device):
             pollInterval = 0,
             hidden       = False
         ))
-        
+
         # RM0/RM1 I2C extender
         self.add(LTC4331(
             name         = 'RM01_I2C_EXT',
