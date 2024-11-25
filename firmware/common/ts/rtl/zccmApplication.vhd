@@ -404,6 +404,41 @@ begin
   -------------------------------------------------------
   --synchronize LED and BCR with commands from FC Rec.
   -------------------------------------------------------
+
+  test_bc0 : process(axilClk,axilRst)
+    variable count : INTEGER range 0 to 2 := 0;
+  begin
+    if axilRst = '1' then
+      count := 0;
+      pulse_BCR_rtl <= '0';
+    elsif rising_edge(axilClk) then
+      if count = 2 then
+        pulse_BCR_rtl <= '1';
+        count := 0;
+      else
+        pulse_BCR_rtl <= '0';
+        count := count + 1;
+      end if;
+    end if;
+  end process test_bc0;
+
+  test_led : process(axilClk,axilRst)
+    variable count : INTEGER range 0 to 5 := 0;
+  begin
+    if axilRst = '1' then
+      count := 0;
+      pulse_LED_rtl <= '0';
+    elsif rising_edge(axilClk) then
+      if count = 2 then
+        pulse_LED_rtl <= '1';
+        count := 0;
+      else
+        pulse_LED_rtl <= '0';
+        count := count + 1;
+      end if;
+    end if;
+  end process test_led;
+
   -- synch_led :  entity ldmx_ts.FastCommandSynch
   --   generic Map(
   --     TPD_G => TPD_G)

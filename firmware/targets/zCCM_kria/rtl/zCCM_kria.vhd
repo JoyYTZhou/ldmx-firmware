@@ -334,7 +334,7 @@ begin
       I  => MCLK     -- 1-bit input: Buffer input
     );
 
-    MCLK_BUF_SEL <= '1';
+    MCLK_BUF_SEL <= '0';
     
 end Behavioral;
 
