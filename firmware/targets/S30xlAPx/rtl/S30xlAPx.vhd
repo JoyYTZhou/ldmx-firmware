@@ -173,8 +173,8 @@ architecture rtl of S30xlAPx is
          addrBits           => 31,
          connectivity       => X"FFFF"));
 
-   signal axilClk : sl;
-   signal axilRst : sl;
+   signal axilClk : sl := '0';
+   signal axilRst : sl := '0';
 
    signal ethAxilReadMaster  : AxiLiteReadMasterType;
    signal ethAxilReadSlave   : AxiLiteReadSlaveType;
@@ -207,13 +207,13 @@ architecture rtl of S30xlAPx is
    signal gtDaqAxisMaster : AxiStreamMasterType;
    signal gtDaqAxisSlave  : AxiStreamSlaveType;
 
-   signal clk125In        : sl;
-   signal ethGtRefClk156G : sl;
-   signal ethGtRefClk78G  : sl;
-   signal ethGtRefRst78   : sl;
+   signal clk125In        : sl := '0';
+   signal ethGtRefClk156G : sl := '0';
+   signal ethGtRefClk78G  : sl := '0';
+   signal ethGtRefRst78   : sl := '0';
 
-   signal axisClk : sl;
-   signal axisRst : sl;
+   signal axisClk : sl := '0';
+   signal axisRst : sl := '0';
 
 begin
 

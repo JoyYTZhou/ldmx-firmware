@@ -73,6 +73,8 @@ architecture rtl of TsRawDaq is
    type RegType is record
       state       : StateType;
       fifoRdEn    : sl;
+      fifoWrEn    : sl;
+      fifoWrShift : slv(12 downto 0);
       laneCounter : integer range 0 to TS_LANES_G-1;
       axisMaster  : AxiStreamMasterType;
    end record RegType;
@@ -80,6 +82,8 @@ architecture rtl of TsRawDaq is
    constant REG_INIT_C : RegType := (
       state       => WAIT_ROR_S,
       fifoRdEn    => '0',
+      fifoWrEn    => '0',
+      fifoWrShift => (others => '0'),
       laneCounter => 0,
       axisMaster  => axiStreamMasterInit(AXIS_CFG_C));
 
@@ -91,13 +95,10 @@ architecture rtl of TsRawDaq is
    signal tsRxMsgsSlvFifoOut  : TsData6ChMsgSlvArray(TS_LANES_G-1 downto 0);
    signal tsRxMsgsFifoValid   : slv(TS_LANES_G-1 downto 0);
    signal tsRxMsgsFifoOut     : TsData6ChMsgArray(TS_LANES_G-1 downto 0);
---    signal rorTimestampFifoInSlv  : slv(FC_TIMESTAMP_SIZE_C-1 downto 0);
---    signal rorTimestampFifoOutSlv : slv(FC_TIMESTAMP_SIZE_C-1 downto 0);
---    signal rorTimestampFifoValid  : sl;
---    signal rorTimestampFifoOut    : FcTimestampType;
-   signal aligned             : slv(TS_LANES_G-1 downto 0);
-   signal delay               : slv8Array(TS_LANES_G-1 downto 0);
-   signal axisCtrl            : AxiStreamCtrlType;
+
+   signal aligned  : slv(TS_LANES_G-1 downto 0);
+   signal delay    : slv8Array(TS_LANES_G-1 downto 0);
+   signal axisCtrl : AxiStreamCtrlType;
 
    constant NUM_AXIL_C          : natural := 2;
    constant AXIL_LOC_C          : natural := 0;
@@ -105,7 +106,7 @@ architecture rtl of TsRawDaq is
 
    constant AXIL_XBAR_CFG_C : AxiLiteCrossbarMasterConfigArray(NUM_AXIL_C-1 downto 0) := (
       AXIL_LOC_C          => (
-         baseAddr         => AXIL_BASE_ADDR_G + X"0000",
+         baseAddr         => AXIL_BASE_ADDR_G + X"000",
          addrBits         => 8,
          connectivity     => X"FFFF"),
       AXIL_EVENT_FORMAT_C => (
@@ -155,7 +156,7 @@ begin
          COMMON_CLK_G => false)
       port map (
          sAxiClk         => axilClk,                          -- [in]
-         sAxiClkRst      => axilClk,                          -- [in]
+         sAxiClkRst      => axilRst,                          -- [in]
          sAxiReadMaster  => locAxilReadMasters(AXIL_LOC_C),   -- [in]
          sAxiReadSlave   => locAxilReadSlaves(AXIL_LOC_C),    -- [out]
          sAxiWriteMaster => locAxilWriteMasters(AXIL_LOC_C),  -- [in]
@@ -164,8 +165,8 @@ begin
          mAxiClkRst      => fcRst185,                         -- [in]
          mAxiReadMaster  => syncAxilReadMaster,               -- [out]
          mAxiReadSlave   => syncAxilReadSlave,                -- [in]
-         mAxiWriteMaster => syncAxilWriteMaster,               -- [out]
-         mAxiWriteSlave  => syncAxilWriteSlave);               -- [in]
+         mAxiWriteMaster => syncAxilWriteMaster,              -- [out]
+         mAxiWriteSlave  => syncAxilWriteSlave);              -- [in]
 
 
    GEN_LANES : for i in TS_LANES_G-1 downto 0 generate
@@ -178,36 +179,42 @@ begin
             DELAY_OFFSET_G => -6,
             MEMORY_TYPE_G  => "block")
          port map (
-            fcClk185    => fcClk185,                 -- [in]
-            fcRst185    => fcRst185,                 -- [in]
-            fcBus       => fcBus,                    -- [in]
-            timestampIn => fcMsgTimestamp,           -- [in]
-            dataIn      => tsRxMsgsSlvDelayIn(i),    -- [in]
-            aligned     => aligned(i),               -- [out]
-            delay       => delay(i),                 -- [out]
-            dataOut     => tsRxMsgsSlvDelayOut(i));  -- [out]
-
+            fcClk185     => fcClk185,                 -- [in]
+            fcRst185     => fcRst185,                 -- [in]
+            fcBus        => fcBus,                    -- [in]
+            timestampIn  => fcMsgTimestamp,           -- [in]
+            dataIn       => tsRxMsgsSlvDelayIn(i),    -- [in]
+            aligned      => aligned(i),               -- [out]
+            delay        => delay(i),                 -- [out]
+            timestampOut => fcMsgTimestampDelay(i),  -- [out]
+            dataOut      => tsRxMsgsSlvDelayOut(i));  -- [out]
 
       -- Buffer delayed data in fifos upon each ROR
       -- Will be read out into AXI Stream frame
-      ROR_DATA_FIFO : entity surf.Fifo
+      U_FcTimestampFifo_1 : entity ldmx_tdaq.FcTimestampFifo
          generic map (
             TPD_G           => TPD_G,
             GEN_SYNC_FIFO_G => false,
-            FWFT_EN_G       => true,
             SYNTH_MODE_G    => "inferred",
             MEMORY_TYPE_G   => "distributed",
+            ADDR_WIDTH_G    => 5,
             DATA_WIDTH_G    => TS_DATA_6CH_MSG_SIZE_C,
-            ADDR_WIDTH_G    => 5)
+            AUTO_WRITE_G    => false)
          port map (
-            rst    => fcRst185,                    -- [in]
-            wr_clk => fcClk185,                    -- [in]
-            wr_en  => fcBus.readoutRequest.valid,  -- [in]
-            din    => tsRxMsgsSlvDelayOut(i),      -- [in]
-            rd_clk => axisClk,                     -- [in]
-            rd_en  => r.fifoRdEn,                  -- [in]
-            dout   => tsRxMsgsSlvFifoOut(i),       -- [out]
-            valid  => tsRxMsgsFifoValid(i));       -- [out]
+            rst         => fcRst185,                  -- [in]
+            wrClk       => fcClk185,                  -- [in]
+            wrEn        => rin.fifoWrEn,              -- [in]
+            wrFull      => open,                      -- [out]
+            wrTimestamp => fcMsgTimestampDelay(i),    -- [in]
+            wrData      => tsRxMsgsSlvDelayOut(i),    -- [in]
+            wrCount     => open,                      -- [out]
+            rdClk       => axisClk,                   -- [in]
+            rdEn        => r.fifoRdEn,                -- [in]
+            rdCount     => open,                      -- [out]
+            rdTimestamp => tsRxMsgsFifoTimestamp(i),  -- [out]
+            rdData      => tsRxMsgsFifoOut(i),        -- [out]
+            rdValid     => tsRxMsgsFifoValid(i));     -- [out]
+
 
       -- For debugging
       tsRxMsgsFifoOut(i) <= toTsData6ChMsg(tsRxMsgsSlvFifoOut(i), tsRxMsgsFifoValid(i));
@@ -224,14 +231,14 @@ begin
          NUM_WRITE_REG_G => 1,
          NUM_READ_REG_G  => TS_LANES_G)
       port map (
-         axiClk         => fcClk185,            -- [in]
-         axiClkRst      => fcRst185,            -- [in]
+         axiClk         => fcClk185,             -- [in]
+         axiClkRst      => fcRst185,             -- [in]
          axiReadMaster  => syncAxilReadMaster,   -- [in]
          axiReadSlave   => syncAxilReadSlave,    -- [out]
          axiWriteMaster => syncAxilWriteMaster,  -- [in]
          axiWriteSlave  => syncAxilWriteSlave,   -- [out]
-         writeRegister  => open,                -- [out]
-         readRegister   => readRegister);       -- [in]
+         writeRegister  => open,                 -- [out]
+         readRegister   => readRegister);        -- [in]
 
    comb : process (r, tsRxMsgsFifoOut, tsRxMsgsFifoValid) is
       variable v : RegType;
@@ -241,6 +248,18 @@ begin
       v.axisMaster := axiStreamMasterInit(AXIS_CFG_C);
       v.fifoRdEn   := '0';
 
+      -- Queue up writes from delay into fifo
+      if (fcBus.readoutRequest.valid = '1') then
+         v.fifoWrShift := "1111111111111";
+      end if;
+
+      -- Write data into fifo 
+      if (tsRxMsgsFifoValid(0) = '1' and v.fifoWrShift(0) = '1') then
+         v.fifoWrEn    := '1';
+         v.fifoWrShift := '0' & r.fifoWrShift(12 downto 1);
+      end if;
+
+
       case r.state is
          when WAIT_ROR_S =>
             -- Got a ROR, write the header
@@ -248,7 +267,8 @@ begin
                v.laneCounter                  := 0;
                v.axisMaster.tValid            := '0';
                v.axisMaster.tData(7 downto 0) := toSlv(TS_LANES_G, 8);
-               v.state                        := DO_DATA_S;
+
+               v.state := DO_DATA_S;
             end if;
 
          when DO_DATA_S =>

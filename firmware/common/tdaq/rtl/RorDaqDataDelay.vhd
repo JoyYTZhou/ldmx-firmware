@@ -36,14 +36,15 @@ entity RorDaqDataDelay is
       DELAY_OFFSET_G : integer := 0;
       MEMORY_TYPE_G  : string  := "distributed");
    port (
-      fcClk185    : in  sl;
-      fcRst185    : in  sl;
-      fcBus       : in  FcBusType;
-      timestampIn : in  FcTimestampType;
-      dataIn      : in  slv(DATA_WIDTH_G-1 downto 0);
-      aligned     : out sl;
-      delay       : out slv(7 downto 0);
-      dataOut     : out slv(DATA_WIDTH_G-1 downto 0));
+      fcClk185     : in  sl;
+      fcRst185     : in  sl;
+      fcBus        : in  FcBusType;
+      timestampIn  : in  FcTimestampType;
+      dataIn       : in  slv(DATA_WIDTH_G-1 downto 0);
+      aligned      : out sl;
+      delay        : out slv(7 downto 0);
+      timestampOut : out FcTimestampType;
+      dataOut      : out slv(DATA_WIDTH_G-1 downto 0));
 end entity RorDaqDataDelay;
 
 architecture rtl of RorDaqDataDelay is
@@ -53,59 +54,83 @@ architecture rtl of RorDaqDataDelay is
       WAIT_BC0_ID_S,
       WAIT_BC0_DATA_S,
       WAIT_ROR_S,
+      POSITIVE_OFFSET_S,
+      NEGATIVE_OFFSET_S,
       ALIGNED_S);
 
    -- fcClk185 signals
    type RegType is record
-      state    : StateType;
-      bc0Id    : slv(55 downto 0);
-      fifoWrEn : sl;
-      fifoRdEn : sl;
-      fifoRst  : sl;
-      aligned  : sl;
+      state        : StateType;
+      count        : integer range 0 to abs(DELAY_OFFSET_G);
+      bc0Timestamp : FcTimestampType;
+      fifoWrEn     : sl;
+      fifoRdEn     : sl;
+      fifoRst      : sl;
+      aligned      : sl;
+      delay        : slv(7 downto 0);
    end record;
 
    constant REG_INIT_C : RegType := (
-      state    => INIT_S,
-      bc0Id    => (others => '0'),
-      fifoWrEn => '0',
-      fifoRdEn => '0',
-      fifoRst  => '0',
-      aligned  => '0');
+      state        => INIT_S,
+      count        => 0,
+      bc0Timestamp => FC_TIMESTAMP_INIT_C,
+      fifoWrEn     => '0',
+      fifoRdEn     => '0',
+      fifoRst      => '0',
+      aligned      => '0',
+      delay        => (others => '0'));
 
    signal r   : RegType := REG_INIT_C;
    signal rin : RegType;
 
+   signal delayTmp : slv(7 downto 0);
+
 begin
 
-   U_Fifo_1 : entity surf.Fifo
+   U_FcTimestampFifo_1 : entity ldmx_tdaq.FcTimestampFifo
       generic map (
          TPD_G           => TPD_G,
          GEN_SYNC_FIFO_G => true,
-         FWFT_EN_G       => true,
          SYNTH_MODE_G    => "inferred",
          MEMORY_TYPE_G   => MEMORY_TYPE_G,
+         ADDR_WIDTH_G    => 8,
          DATA_WIDTH_G    => DATA_WIDTH_G,
-         ADDR_WIDTH_G    => 8)
+         AUTO_WRITE_G    => false)
       port map (
-         rst           => r.fifoRst,     -- [in]
-         wr_clk        => fcClk185,      -- [in]
-         wr_en         => rin.fifoWrEn,  -- [in]
-         din           => dataIn,        -- [in]
-         wr_data_count => delay,         -- [out]
-         rd_clk        => fcClk185,      -- [in]
-         rd_en         => rin.fifoRdEn,  -- [in]
-         dout          => dataOut,       -- [out]
-         valid         => open);         -- [out]
+         rst         => r.fifoRst,      -- [in]
+         wrClk       => fcClk185,       -- [in]
+         wrEn        => rin.fifoWrEn,   -- [in]
+         wrFull      => open,           -- [out]
+         wrTimestamp => timestampIn,    -- [in]
+         wrData      => dataIn,         -- [in]
+         wrCount     => delayTmp,       -- [out]
+         rdClk       => fcClk185,       -- [in]
+         rdEn        => rin.fifoRdEn,   -- [in]
+         rdCount     => open,           -- [out]
+         rdTimestamp => timestampOut,   -- [out]
+         rdData      => dataOut,        -- [out]
+         rdValid     => open);          -- [out]
+
 
    comb : process (fcBus, fcRst185, r, timestampIn) is
-      variable v : RegType := REG_INIT_C;
+      variable v         : RegType := REG_INIT_C;
+      variable timestamp : FcTimestampType;
    begin
       v := r;
 
       v.fifoWrEn := '0';
       v.fifoRdEn := '0';
       v.fifoRst  := '0';
+      v.count    := 0;
+
+      timestamp.valid      := '1';
+      timestamp.bunchCount := fcBus.bunchCount;
+      timestamp.pulseId    := fcBus.pulseId;
+
+      -- Sample delay on each bunch strobe
+      if (fcBus.bunchStrobe = '1') then
+         v.delay := delayTmp;
+      end if;
 
       case r.state is
          when INIT_S =>
@@ -117,8 +142,8 @@ begin
             if (fcBus.pulseStrobe = '1' and
                 fcBus.stateChanged = '1') then
                if (fcBus.runState = RUN_STATE_BC0_C) then
-                  v.bc0Id := fcBus.pulseID + DELAY_OFFSET_G;
-                  v.state := WAIT_BC0_DATA_S;
+                  v.bc0Timestamp := timestamp;
+                  v.state        := WAIT_BC0_DATA_S;
                else
                   v.state := INIT_S;
                end if;
@@ -126,7 +151,7 @@ begin
 
          when WAIT_BC0_DATA_S =>
             -- Wait until BC0 data arrives then start writing into FIFO 
-            if (timestampIn.valid = '1' and timestampIn.pulseID = r.bc0Id) then
+            if (timestampIn = r.bc0Timestamp) then
                v.fifoWrEn := '1';
                v.state    := WAIT_ROR_S;
             end if;
@@ -144,8 +169,13 @@ begin
 
             -- Readout request during alignment is the BC0 RoR
             if (fcBus.readoutRequest.valid = '1') then
-               v.state   := ALIGNED_S;
-               v.aligned := '1';
+               if (DELAY_OFFSET_G = 0) then
+                  v.state := ALIGNED_S;
+               elsif (DELAY_OFFSET_G < 0) then
+                  v.state := NEGATIVE_OFFSET_S;
+               else
+                  v.state := POSITIVE_OFFSET_S;
+               end if;
             end if;
 
             -- Any state change should send it back to unaligned
@@ -153,7 +183,34 @@ begin
                v.state := INIT_S;
             end if;
 
+         when NEGATIVE_OFFSET_S =>
+            -- For negative offset
+            -- Allow abs(offset) timestamps of data into the fifo without reading out
+            v.count := r.count;
+            if (timestampIn.valid = '1') then
+               v.fifoWrEn := '1';
+               v.count    := r.count + 1;
+               if (r.count = ((-1) * DELAY_OFFSET_G)-1) then
+                  v.state := ALIGNED_S;
+               end if;
+            end if;
+
+
+         when POSITIVE_OFFSET_S =>
+            -- if positive offset
+            -- Allow abs(offset) fifo reads while not writing to the fifo
+            v.count := r.count;
+            if (fcBus.bunchStrobePre = '1') then
+               v.fifoRdEn := '1';
+               v.count    := r.count + 1;
+               if (r.count = DELAY_OFFSET_G-1) then
+                  v.state := ALIGNED_S;
+               end if;
+            end if;
+
+
          when ALIGNED_S =>
+            v.aligned := '1';
             -- Continue writing data as it arrives
             if (timestampIn.valid = '1') then
                v.fifoWrEn := '1';
@@ -177,6 +234,7 @@ begin
       end if;
 
       aligned <= r.aligned;
+      delay   <= r.delay;
 
       rin <= v;
 

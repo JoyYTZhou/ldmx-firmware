@@ -160,7 +160,7 @@ begin
          COMMON_CLK_G => false)
       port map (
          sAxiClk         => axilClk,                          -- [in]
-         sAxiClkRst      => axilClk,                          -- [in]
+         sAxiClkRst      => axilRst,                          -- [in]
          sAxiReadMaster  => locAxilReadMasters(AXIL_LOC_C),   -- [in]
          sAxiReadSlave   => locAxilReadSlaves(AXIL_LOC_C),    -- [out]
          sAxiWriteMaster => locAxilWriteMasters(AXIL_LOC_C),  -- [in]
