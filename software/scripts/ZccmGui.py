@@ -8,6 +8,7 @@ top_level = os.path.realpath(__file__).split('software')[0]
 pr.addLibraryPath(top_level+'firmware/submodules/surf/python')
 pr.addLibraryPath(top_level+'firmware/submodules/lcls-timing-core/python')
 pr.addLibraryPath(top_level+'firmware/submodules/axi-soc-ultra-plus-core/python')
+pr.addLibraryPath(top_level+'firmware/submodules/axi-pcie-core/python')
 pr.addLibraryPath(top_level+'firmware/common/ts/python')
 pr.addLibraryPath(top_level+'firmware/common/tdaq/python')
 
@@ -34,8 +35,28 @@ if __name__ == "__main__":
     parser.add_argument(
         "--ip",
         type     = str,
-        required = True,
+        required = False,
         help     = "ETH Host Name (or IP address)",
+    )
+
+    parser.add_argument(
+        "--sim",
+        action   = "store_true",
+        help     = "Run in local simulation mode",
+    )
+
+    parser.add_argument(
+        "--pollEn",
+        action = 'store_true',
+        default  = False,
+        help     = "Enable auto-polling",
+    )
+
+    parser.add_argument(
+        "--initRead",
+        action = 'store_true',
+        default  = False,
+        help     = "Read upon starting up the GUI",
     )
 
     # Get the arguments
@@ -44,9 +65,12 @@ if __name__ == "__main__":
     #################################################################
 
     with ldmx_ts.ZccmRoot(
-        ip       = args.ip,
-        top_level=top_level,
-        zmqSrvEn = True,
+        ip        = args.ip,
+        sim       = args.sim,
+        pollEn    = args.pollEn,
+        initRead  = args.initRead,
+        top_level = top_level,
+        zmqSrvEn  = True,
     ) as root:
         pyrogue.pydm.runPyDM(
             serverList = root.zmqServer.address,
