@@ -243,7 +243,7 @@ begin
          writeRegister  => open,                 -- [out]
          readRegister   => readRegister);        -- [in]
 
-   comb : process (r, tsRxMsgsFifoOut, tsRxMsgsFifoValid) is
+   comb : process (fcBus, r, tsRxMsgsFifoOut, tsRxMsgsFifoValid) is
       variable v : RegType;
    begin
       v := r;
