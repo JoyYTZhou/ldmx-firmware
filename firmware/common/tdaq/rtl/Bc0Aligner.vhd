@@ -67,9 +67,6 @@ end entity Bc0Aligner;
 
 architecture rtl of Bc0Aligner is
 
-   constant K28_5_C : slv(7 downto 0) := "10111100";  -- K28.5, 0xBC
-   constant K28_3_C : slv(7 downto 0) := "01111100";
-   
 
    type StateType is (
       WAIT_BC0_STATE_S,

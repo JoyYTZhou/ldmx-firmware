@@ -64,6 +64,9 @@ end entity TsDataRxLane;
 
 architecture rtl of TsDataRxLane is
 
+   constant K28_5_C : slv(7 downto 0) := "10111100";  -- K28.5, 0xBC
+   constant K28_3_C : slv(7 downto 0) := "01111100";
+   
    constant NUM_AXIL_C      : natural := 4;
    constant AXIL_GTY_C      : natural := 0;
    constant AXIL_TS_RX_C    : natural := 1;
