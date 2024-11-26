@@ -257,7 +257,7 @@ begin
       end if;
 
       -- Write data into fifo 
-      if (tsRxMsgsFifoValid(0) = '1' and v.fifoWrShift(0) = '1') then
+      if (fcBus.bunchStrobe = '1' and v.fifoWrShift(0) = '1') then
          v.fifoWrEn    := '1';
          v.fifoWrShift := '0' & r.fifoWrShift(12 downto 1);
       end if;
