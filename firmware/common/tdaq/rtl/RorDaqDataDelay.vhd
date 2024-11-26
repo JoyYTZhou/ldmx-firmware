@@ -61,7 +61,7 @@ architecture rtl of RorDaqDataDelay is
    -- fcClk185 signals
    type RegType is record
       state        : StateType;
-      count        : integer range 0 to abs(DELAY_OFFSET_G);
+      count        : integer range 0 to abs(DELAY_OFFSET_G)+1;
       bc0Timestamp : FcTimestampType;
       fifoWrEn     : sl;
       fifoRdEn     : sl;
@@ -112,7 +112,7 @@ begin
          rdValid     => open);          -- [out]
 
 
-   comb : process (fcBus, fcRst185, r, timestampIn) is
+   comb : process (delayTmp, fcBus, fcRst185, r, timestampIn) is
       variable v         : RegType := REG_INIT_C;
       variable timestamp : FcTimestampType;
    begin
