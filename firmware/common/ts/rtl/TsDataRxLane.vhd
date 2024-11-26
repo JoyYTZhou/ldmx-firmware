@@ -300,7 +300,7 @@ begin
    -- Rx Ring buffer
    -------------------------------------------------------------------------------------------------
    ringDataValue <= tsRxDataK & tsRxData;
-   ringDataValid <= tsRxDataK(0) or tsRxDataK(1);
+   ringDataValid <= tsRxDataK = "01"; and (tsRxData(7 downto 0) /= K28_5_C and tsRxData(7 downto 0) /= K28_3_C)) then
    U_AxiLiteRingBuffer_1 : entity surf.AxiLiteRingBuffer
       generic map (
          TPD_G            => TPD_G,
