@@ -36,7 +36,7 @@ entity FcTimestampFifo is
       SYNTH_MODE_G    : string                := "inferred";
       MEMORY_TYPE_G   : string                := "block";
       ADDR_WIDTH_G    : integer range 4 to 48 := 4;
-      DATA_WIDTH_G    : natural;
+      DATA_WIDTH_G    : natural               := 0;
       AUTO_WRITE_G    : boolean               := true  -- Write when timestampIn.valid=1 instead of wrEn
       );
 
