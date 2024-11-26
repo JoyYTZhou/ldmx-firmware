@@ -84,6 +84,8 @@ package FcPkg is
 
    constant FC_TIMESTAMP_SIZE_C : integer := 64;
 
+   type FcTimestampArray is array (natural range <>) of FcTimestampType;
+
    function toSlv (
       fcTimestamp : FcTimestampType)
       return slv;

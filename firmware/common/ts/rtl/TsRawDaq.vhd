@@ -90,11 +90,14 @@ architecture rtl of TsRawDaq is
    signal r   : RegType := REG_INIT_C;
    signal rin : RegType;
 
-   signal tsRxMsgsSlvDelayIn  : TsData6ChMsgSlvArray(TS_LANES_G-1 downto 0);
-   signal tsRxMsgsSlvDelayOut : TsData6ChMsgSlvArray(TS_LANES_G-1 downto 0);
-   signal tsRxMsgsSlvFifoOut  : TsData6ChMsgSlvArray(TS_LANES_G-1 downto 0);
-   signal tsRxMsgsFifoValid   : slv(TS_LANES_G-1 downto 0);
-   signal tsRxMsgsFifoOut     : TsData6ChMsgArray(TS_LANES_G-1 downto 0);
+
+   signal tsRxMsgsSlvDelayIn    : TsData6ChMsgSlvArray(TS_LANES_G-1 downto 0);
+   signal tsRxMsgsSlvDelayOut   : TsData6ChMsgSlvArray(TS_LANES_G-1 downto 0);
+   signal tsRxMsgsSlvFifoOut    : TsData6ChMsgSlvArray(TS_LANES_G-1 downto 0);
+   signal tsRxMsgsFifoValid     : slv(TS_LANES_G-1 downto 0);
+   signal tsRxMsgsFifoOut       : TsData6ChMsgArray(TS_LANES_G-1 downto 0);
+   signal fcMsgTimestampDelay   : FcTimestampArray(TS_LANES_G-1 downto 0);
+   signal tsRxMsgsFifoTimestamp : FcTimestampArray(TS_LANES_G-1 downto 0);
 
    signal aligned  : slv(TS_LANES_G-1 downto 0);
    signal delay    : slv8Array(TS_LANES_G-1 downto 0);
@@ -186,7 +189,7 @@ begin
             dataIn       => tsRxMsgsSlvDelayIn(i),    -- [in]
             aligned      => aligned(i),               -- [out]
             delay        => delay(i),                 -- [out]
-            timestampOut => fcMsgTimestampDelay(i),  -- [out]
+            timestampOut => fcMsgTimestampDelay(i),   -- [out]
             dataOut      => tsRxMsgsSlvDelayOut(i));  -- [out]
 
       -- Buffer delayed data in fifos upon each ROR
@@ -212,7 +215,7 @@ begin
             rdEn        => r.fifoRdEn,                -- [in]
             rdCount     => open,                      -- [out]
             rdTimestamp => tsRxMsgsFifoTimestamp(i),  -- [out]
-            rdData      => tsRxMsgsFifoOut(i),        -- [out]
+            rdData      => tsRxMsgsSlvFifoOut(i),     -- [out]
             rdValid     => tsRxMsgsFifoValid(i));     -- [out]
 
 
