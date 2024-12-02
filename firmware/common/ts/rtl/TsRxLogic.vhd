@@ -192,7 +192,7 @@ begin
 
          when WAIT_COMMA_S =>
             -- Should only ever receive comma or idle here
-            if (tsRxDataK = "01") then -- and (tsRxData(7 downto 0) = K28_5_C or tsRxData(7 downto 0) = K28_3_C)) then
+            if (tsRxDataK = "01") then  -- and (tsRxData(7 downto 0) = K28_5_C or tsRxData(7 downto 0) = K28_3_C)) then
                v.tsRxMsg.bc0                := tsRxData(8);
                v.tsRxMsg.ce                 := tsRxData(9);
                v.tsRxMsg.capId              := tsRxData(11 downto 10);
@@ -204,6 +204,7 @@ begin
                v.state := INIT_S;
             end if;
          when WORD_1_S =>
+            v.waitCounter    := (others => '0');
             v.tsRxMsg.adc(0) := tsRxData(7 downto 0);
             v.tsRxMsg.adc(1) := tsRxData(15 downto 8);
             v.state          := WORD_2_S;
