@@ -15,6 +15,7 @@ export PRJ_PART = xcvu9p-flgc2104-1-e
 
 export PARALLEL_SYNTH = 24
 export GEN_BIT_IMAGE_GZIP = 1
+export GEN_BIT_IMAGE = 0
 
 
 # Use top level makefile
