@@ -14,7 +14,7 @@ export RUCKUS_DIR = $(abspath $(PWD)/../../submodules/ruckus)
 export PRJ_PART = xcvu9p-flgc2104-1-e
 
 export PARALLEL_SYNTH = 24
-export GZIP_BUILD_IMAGE = 1
+export GEN_BIT_IMAGE_GZIP = 1
 
 
 # Use top level makefile
