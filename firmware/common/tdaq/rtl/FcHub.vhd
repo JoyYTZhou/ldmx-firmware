@@ -212,6 +212,29 @@ begin
          axilWriteSlave   => locAxilWriteSlaves(AXIL_TX_LOGIC_C));  -- [out]
 
    -------------------------------------------------------------------------------------------------
+   -- Create Local FcBus
+   -- Needed by Lcls2TimingDaq
+   -------------------------------------------------------------------------------------------------
+   U_FcRxLogic_1 : entity ldmx_tdaq.FcRxLogic
+      generic map (
+         TPD_G                => TPD_G,
+         AXIL_CLK_IS_FC_CLK_G => false)
+      port map (
+         fcClk185        => lclsTimingClk,                         -- [in]
+         fcRst185        => lclsTimingRst,                         -- [in]
+         fcValid         => fcTxMsg.valid,                         -- [in]
+         fcWord          => fcTxMsg.message,                       -- [in]
+         fcBus           => fcBus,                                 -- [out]
+         fcBunchClk37    => open,                                  -- [out]
+         fcBunchRst37    => open,                                  -- [out]
+         axilClk         => axilClk,                               -- [in]
+         axilRst         => axilRst,                               -- [in]
+         axilReadMaster  => locAxilReadMasters(AXIL_RX_LOGIC_C),   -- [in]
+         axilReadSlave   => locAxilReadSlaves(AXIL_RX_LOGIC_C),    -- [out]
+         axilWriteMaster => locAxilWriteMasters(AXIL_RX_LOGIC_C),  -- [in]
+         axilWriteSlave  => locAxilWriteSlaves(AXIL_RX_LOGIC_C));  -- [out]
+
+   -------------------------------------------------------------------------------------------------
    -- Stable Clock and Reset from LCLS Timing Reference Clock
    -------------------------------------------------------------------------------------------------
    stableClk92 <= lclsTimingRefClkDiv2;
