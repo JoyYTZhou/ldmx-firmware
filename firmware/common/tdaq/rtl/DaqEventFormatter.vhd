@@ -41,10 +41,12 @@ entity DaqEventFormatter is
       axilWriteSlave  : out AxiLiteWriteSlaveType;
 
       -- Streaming interface
-      axisClk         : in  sl;
-      axisRst         : in  sl;
+      rawAxisClk      : in  sl;
+      raqAxisRst      : in  sl;
       rawAxisMaster   : in  AxiStreamMasterType;
       rawAxisCtrl     : out AxiStreamCtrlType;
+      eventAxisClk    : in  sl;
+      eventAxisRst    : in  sl;
       eventAxisMaster : out AxiStreamMasterType;
       eventAxisSlave  : in  AxiStreamSlaveType);
 
@@ -88,9 +90,32 @@ architecture rtl of DaqEventFormatter is
 
    signal eventBatchedAxisMaster : AxiStreamMasterType;
    signal eventBatchedAxisSlave  : AxiStreamSlaveType;
-
+   signal syncAxilWriteMaster : AxiLiteWriteMasterType;
+   
+   signal syncAxilWriteSlave  : AxiLiteWriteSlaveType;
+   signal syncAxilReadMaster  : AxiLiteReadMasterType;
+   signal syncAxilReadSlave   : AxiLiteReadSlaveType;
 
 begin
+
+   U_AxiLiteAsync : entity surf.AxiLiteAsync
+      generic map (
+         TPD_G        => TPD_G,
+         COMMON_CLK_G => false)
+      port map (
+         sAxiClk         => axilClk,                          -- [in]
+         sAxiClkRst      => axilRst,                          -- [in]
+         sAxiReadMaster  => locAxilReadMasters(AXIL_LOC_C),   -- [in]
+         sAxiReadSlave   => locAxilReadSlaves(AXIL_LOC_C),    -- [out]
+         sAxiWriteMaster => locAxilWriteMasters(AXIL_LOC_C),  -- [in]
+         sAxiWriteSlave  => locAxilWriteSlaves(AXIL_LOC_C),   -- [out]
+         mAxiClk         => eventAxisClk,                     -- [in]
+         mAxiClkRst      => eventAxisRst,                     -- [in]
+         mAxiReadMaster  => syncAxilReadMaster,               -- [out]
+         mAxiReadSlave   => syncAxilReadSlave,                -- [in]
+         mAxiWriteMaster => syncAxilWriteMaster,              -- [out]
+         mAxiWriteSlave  => syncAxilWriteSlave);              -- [in]
+
 
    fifoRst <= toSl(fcBus.runState = RUN_STATE_RESET_C);
 
@@ -98,8 +123,8 @@ begin
       generic map (
          TPD_G => TPD_G)
       port map (
-         clk     => axisClk,            -- [in]
-         rst     => axisRst,            -- [in]
+         clk     => eventAxisClk,       -- [in]
+         rst     => eventAxisRst,       -- [in]
          dataIn  => fifoRst,            -- [in]
          dataOut => fifoRstSync);       -- [out]
 
@@ -113,7 +138,7 @@ begin
          SLAVE_READY_EN_G    => false,
 --          VALID_THOLD_G          => VALID_THOLD_G,
 --          VALID_BURST_MODE_G     => VALID_BURST_MODE_G,
-         GEN_SYNC_FIFO_G     => true,
+         GEN_SYNC_FIFO_G     => false,
          FIFO_FIXED_THRESH_G => true,
          FIFO_PAUSE_THRESH_G => 2**7-2,
          FIFO_ADDR_WIDTH_G   => 7,
@@ -122,12 +147,12 @@ begin
          SLAVE_AXI_CONFIG_G  => RAW_AXIS_CFG_G,
          MASTER_AXI_CONFIG_G => EMAC_AXIS_CONFIG_C)
       port map (
-         sAxisClk    => axisClk,                -- [in]
-         sAxisRst    => axisRst,                -- [in]
+         sAxisClk    => rawAxisClk,             -- [in]
+         sAxisRst    => rawAxisRst,             -- [in]
          sAxisMaster => rawAxisMaster,          -- [in]
          sAxisSlave  => open,                   -- [out]
          sAxisCtrl   => rawAxisCtrl,            -- [out]
-         mAxisClk    => axisClk,                -- [in]
+         mAxisClk    => eventAxisClk,           -- [in]
          mAxisRst    => fifoRstSync,            -- [in]
          mAxisMaster => rawFifoAxisMaster,      -- [out]
          mAxisSlave  => rin.rawFifoAxisSlave);  -- [in]
@@ -198,7 +223,7 @@ begin
       end if;
 
       -- Reset
-      if (axisRst = '1') then
+      if (eventAxisRst = '1') then
          v := REG_INIT_C;
       end if;
 
@@ -207,9 +232,9 @@ begin
 
    end process;
 
-   seq : process (axisClk) is
+   seq : process (eventAxisClk) is
    begin
-      if (rising_edge(axisClk)) then
+      if (rising_edge(eventAxisClk)) then
          r <= rin after TPD_G;
       end if;
    end process seq;
@@ -220,10 +245,10 @@ begin
          TPD_G               => TPD_G,
          PIPE_STAGES_G       => 0,
          SLAVE_READY_EN_G    => false,
---         VALID_THOLD_G       => 0,
+         VALID_THOLD_G       => 0,
 --          VALID_BURST_MODE_G     => VALID_BURST_MODE_G,
          GEN_SYNC_FIFO_G     => true,
---         FIFO_FIXED_THRESH_G => true,
+         FIFO_FIXED_THRESH_G => true,
          FIFO_PAUSE_THRESH_G => EVENT_FIFO_PAUSE_THRESH_G,
          FIFO_ADDR_WIDTH_G   => EVENT_FIFO_ADDR_WIDTH_G,
          SYNTH_MODE_G        => EVENT_FIFO_SYNTH_MODE_G,
@@ -231,68 +256,15 @@ begin
          SLAVE_AXI_CONFIG_G  => EMAC_AXIS_CONFIG_C,
          MASTER_AXI_CONFIG_G => EMAC_AXIS_CONFIG_C)
       port map (
-         sAxisClk    => axisClk,              -- [in]
-         sAxisRst    => axisRst,              -- [in]
-         sAxisMaster => r.eventAxisMaster,    -- [in]
-         sAxisSlave  => open,                 -- [out]
-         sAxisCtrl   => eventAxisCtrl,        -- [out]
-         mAxisClk    => axisClk,              -- [in]
-         mAxisRst    => axisRst,              -- [in]
-         mAxisMaster => eventFifoAxisMaster,  -- [out]
-         mAxisSlave  => eventFifoAxisSlave);  -- [in]
+         sAxisClk    => eventAxisClk,       -- [in]
+         sAxisRst    => eventAxisRst,       -- [in]
+         sAxisMaster => r.eventAxisMaster,  -- [in]
+         sAxisSlave  => open,               -- [out]
+         sAxisCtrl   => eventAxisCtrl,      -- [out]
+         mAxisClk    => eventAxisClk,       -- [in]
+         mAxisRst    => eventAxisRst,       -- [in]
+         mAxisMaster => eventAxisMaster,    -- [out]
+         mAxisSlave  => eventAxisSlave);    -- [in]
 
-   U_AxiStreamBatcherAxil_1 : entity surf.AxiStreamBatcherAxil
-      generic map (
-         TPD_G                        => TPD_G,
-         COMMON_CLOCK_G               => false,
-         MAX_NUMBER_SUB_FRAMES_G      => 200,
-         SUPER_FRAME_BYTE_THRESHOLD_G => 8192,
-         MAX_CLK_GAP_G                => 256,
-         AXIS_CONFIG_G                => EMAC_AXIS_CONFIG_C,
-         INPUT_PIPE_STAGES_G          => 1,
-         OUTPUT_PIPE_STAGES_G         => 1)
-      port map (
-         axisClk         => axisClk,                 -- [in]
-         axisRst         => axisRst,                 -- [in]
-         idle            => open,                    -- [out]
-         sAxisMaster     => eventFifoAxisMaster,     -- [in]
-         sAxisSlave      => eventFifoAxisSlave,      -- [out]
-         mAxisMaster     => eventBatchedAxisMaster,  -- [out]
-         mAxisSlave      => eventBatchedAxisSlave,   -- [in]
-         axilClk         => axilClk,                 -- [in]
-         axilRst         => axilRst,                 -- [in]
-         axilReadMaster  => axilReadMaster,          -- [in]
-         axilReadSlave   => axilReadSlave,           -- [out]
-         axilWriteMaster => axilWriteMaster,         -- [in]
-         axilWriteSlave  => axilWriteSlave);         -- [out]
-
-   -------------------------------------------------------------------------------------------------
-   -- Final FIFO
-   -------------------------------------------------------------------------------------------------
-   U_AxiStreamFifoV2_EVENT_FIFO_2 : entity surf.AxiStreamFifoV2
-      generic map (
-         TPD_G               => TPD_G,
-         PIPE_STAGES_G       => 0,
-         SLAVE_READY_EN_G    => false,
-         VALID_THOLD_G       => 0,
---          VALID_BURST_MODE_G     => VALID_BURST_MODE_G,
-         GEN_SYNC_FIFO_G     => true,
---         FIFO_FIXED_THRESH_G => true,
---         FIFO_PAUSE_THRESH_G => EVENT_FIFO_PAUSE_THRESH_G,
-         FIFO_ADDR_WIDTH_G   => EVENT_FIFO_ADDR_WIDTH_G,
-         SYNTH_MODE_G        => EVENT_FIFO_SYNTH_MODE_G,
-         MEMORY_TYPE_G       => EVENT_FIFO_MEMORY_TYPE_G,
-         SLAVE_AXI_CONFIG_G  => EMAC_AXIS_CONFIG_C,
-         MASTER_AXI_CONFIG_G => EMAC_AXIS_CONFIG_C)
-      port map (
-         sAxisClk    => axisClk,                 -- [in]
-         sAxisRst    => axisRst,                 -- [in]
-         sAxisMaster => eventBatchedAxisMaster,  -- [in]
-         sAxisSlave  => eventBatchedAxisSlave,   -- [out]
-         sAxisCtrl   => open,                    -- [out]
-         mAxisClk    => axisClk,                 -- [in]
-         mAxisRst    => axisRst,                 -- [in]
-         mAxisMaster => eventAxisMaster,         -- [out]
-         mAxisSlave  => eventAxisSlave);         -- [in]   
 
 end architecture rtl;
