@@ -42,7 +42,7 @@ entity DaqEventFormatter is
 
       -- Streaming interface
       rawAxisClk      : in  sl;
-      raqAxisRst      : in  sl;
+      rawAxisRst      : in  sl;
       rawAxisMaster   : in  AxiStreamMasterType;
       rawAxisCtrl     : out AxiStreamCtrlType;
       eventAxisClk    : in  sl;
@@ -90,31 +90,31 @@ architecture rtl of DaqEventFormatter is
 
    signal eventBatchedAxisMaster : AxiStreamMasterType;
    signal eventBatchedAxisSlave  : AxiStreamSlaveType;
-   signal syncAxilWriteMaster : AxiLiteWriteMasterType;
-   
-   signal syncAxilWriteSlave  : AxiLiteWriteSlaveType;
-   signal syncAxilReadMaster  : AxiLiteReadMasterType;
-   signal syncAxilReadSlave   : AxiLiteReadSlaveType;
+   signal syncAxilWriteMaster    : AxiLiteWriteMasterType;
+
+   signal syncAxilWriteSlave : AxiLiteWriteSlaveType;
+   signal syncAxilReadMaster : AxiLiteReadMasterType;
+   signal syncAxilReadSlave  : AxiLiteReadSlaveType;
 
 begin
 
-   U_AxiLiteAsync : entity surf.AxiLiteAsync
-      generic map (
-         TPD_G        => TPD_G,
-         COMMON_CLK_G => false)
-      port map (
-         sAxiClk         => axilClk,                          -- [in]
-         sAxiClkRst      => axilRst,                          -- [in]
-         sAxiReadMaster  => locAxilReadMasters(AXIL_LOC_C),   -- [in]
-         sAxiReadSlave   => locAxilReadSlaves(AXIL_LOC_C),    -- [out]
-         sAxiWriteMaster => locAxilWriteMasters(AXIL_LOC_C),  -- [in]
-         sAxiWriteSlave  => locAxilWriteSlaves(AXIL_LOC_C),   -- [out]
-         mAxiClk         => eventAxisClk,                     -- [in]
-         mAxiClkRst      => eventAxisRst,                     -- [in]
-         mAxiReadMaster  => syncAxilReadMaster,               -- [out]
-         mAxiReadSlave   => syncAxilReadSlave,                -- [in]
-         mAxiWriteMaster => syncAxilWriteMaster,              -- [out]
-         mAxiWriteSlave  => syncAxilWriteSlave);              -- [in]
+--    U_AxiLiteAsync : entity surf.AxiLiteAsync
+--       generic map (
+--          TPD_G        => TPD_G,
+--          COMMON_CLK_G => false)
+--       port map (
+--          sAxiClk         => axilClk,                          -- [in]
+--          sAxiClkRst      => axilRst,                          -- [in]
+--          sAxiReadMaster  => axilReadMaster,  -- [in]
+--          sAxiReadSlave   => axilReadMaster,  -- [out]
+--          sAxiWriteMaster => axilWriteMaster,  -- [in]
+--          sAxiWriteSlave  => axilWriteSlave,  -- [out]
+--          mAxiClk         => eventAxisClk,                     -- [in]
+--          mAxiClkRst      => eventAxisRst,                     -- [in]
+--          mAxiReadMaster  => syncAxilReadMaster,               -- [out]
+--          mAxiReadSlave   => syncAxilReadSlave,                -- [in]
+--          mAxiWriteMaster => syncAxilWriteMaster,              -- [out]
+--          mAxiWriteSlave  => syncAxilWriteSlave);              -- [in]
 
 
    fifoRst <= toSl(fcBus.runState = RUN_STATE_RESET_C);
@@ -169,12 +169,12 @@ begin
          wrClk       => fcClk185,              -- [in]
          wrFull      => open,                  -- [out]
          wrTimestamp => fcBus.readoutRequest,  -- [in]
-         rdClk       => axisClk,               -- [in]
+         rdClk       => eventAxisClk,          -- [in]
          rdEn        => r.rorFifoRdEn,         -- [in]
          rdTimestamp => rorFifoTimestamp,      -- [out]
          rdValid     => open);                 -- [out]
 
-   comb : process (axisRst, eventAxisCtrl, fifoRstSync, r, rawFifoAxisMaster, rorFifoTimestamp) is
+   comb : process (eventAxisCtrl, eventAxisRst, fifoRstSync, r, rawFifoAxisMaster, rorFifoTimestamp) is
       variable v : RegType;
    begin
       v := r;
