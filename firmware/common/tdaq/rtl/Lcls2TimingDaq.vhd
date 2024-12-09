@@ -26,6 +26,9 @@ use surf.Pgp2fcPkg.all;
 use surf.EthMacPkg.all;
 use surf.SsiPkg.all;
 
+library lcls_timing_core;
+use lcls_timing_core.TimingPkg.all;
+
 library ldmx_tdaq;
 use ldmx_tdaq.FcPkg.all;
 use ldmx_tdaq.DaqPkg.all;
@@ -78,7 +81,7 @@ architecture rtl of Lcls2TimingDaq is
    constant REG_INIT_C : RegType := (
       rorFifoRdEn => '0',
       rorFifoRst  => '0',
-      pulseIdSent => '0',
+      pulseIdSent => (others => '0'),
       fcBus       => FC_BUS_INIT_C,
       axisMaster  => axiStreamMasterInit(AXIS_CFG_C));
 
@@ -86,6 +89,11 @@ architecture rtl of Lcls2TimingDaq is
    signal rin : RegType;
 
    signal axisCtrl : AxiStreamCtrlType;
+
+   signal rorFifoTimestamp : FcTimestampType;
+   signal rorFifoValid     : sl;
+   signal timingMessageSlv : slv(255 downto 0);
+   signal ramRdData        : slv(255 downto 0);
 
    constant NUM_AXIL_C          : natural := 2;
    constant AXIL_LOC_C          : natural := 0;
@@ -120,9 +128,9 @@ architecture rtl of Lcls2TimingDaq is
       ret                 := (others => '0');
       ret(63 downto 0)    := msg.pulseId;
       ret(127 downto 64)  := msg.timeStamp;
-      ret(175 downto 128) := msg.beamRequest;
-      ret(191 downto 176) := resize(msg.fixedRates, 16);
-      ret(207 downto 192) := msg.control(3);
+      ret(159 downto 128) := msg.beamRequest;
+      ret(175 downto 160) := resize(msg.fixedRates, 16);
+      ret(191 downto 176) := msg.control(3);
       return ret;
    end function toSlv;
 
@@ -161,8 +169,8 @@ begin
          sAxiReadSlave   => locAxilReadSlaves(AXIL_LOC_C),    -- [out]
          sAxiWriteMaster => locAxilWriteMasters(AXIL_LOC_C),  -- [in]
          sAxiWriteSlave  => locAxilWriteSlaves(AXIL_LOC_C),   -- [out]
-         mAxiClk         => fcClk185,                         -- [in]
-         mAxiClkRst      => fcRst185,                         -- [in]
+         mAxiClk         => lclsTimingClk,                    -- [in]
+         mAxiClkRst      => lclsTimingRst,                    -- [in]
          mAxiReadMaster  => syncAxilReadMaster,               -- [out]
          mAxiReadSlave   => syncAxilReadSlave,                -- [in]
          mAxiWriteMaster => syncAxilWriteMaster,              -- [out]
@@ -183,7 +191,7 @@ begin
          wrClk       => lclsTimingClk,         -- [in]
          wrFull      => open,                  -- [out]
          wrTimestamp => fcBus.readoutRequest,  -- [in]
-         rdClk       => axisClk,               -- [in]
+         rdClk       => lclsTimingClk,         -- [in]
          rdEn        => r.rorFifoRdEn,         -- [in]
          rdTimestamp => rorFifoTimestamp,      -- [out]
          rdValid     => rorFifoValid);         -- [out]
@@ -193,45 +201,46 @@ begin
    -- Buffer Timing messages
    -------------------------------------------------------------------------------------------------
    -- Buffer and delay incoming data to ROR
-   timingMessageSlv <= toSlv(timingBus.message);
+   timingMessageSlv <= toSlv(lclsTimingBus.message);
    U_SimpleDualPortRam_DATA : entity surf.SimpleDualPortRam
       generic map (
          TPD_G         => TPD_G,
          MEMORY_TYPE_G => "distributed",
          DOB_REG_G     => false,
          BYTE_WR_EN_G  => false,
-         DATA_WIDTH_G  => 128,
+         DATA_WIDTH_G  => 256,
          ADDR_WIDTH_G  => 4)
       port map (
-         clka   => lclsTimingClk,                           -- [in]
-         ena    => '1',                                     -- [in]
-         wea    => timingBus.valid,                         -- [in]
-         addra  => timingBus.message.pulseId(3 downto 0),   -- [in]
-         dina   => timingMessageSlv,                        -- [in]
-         clkb   => lclsTimingClk,                           -- [in]
-         enb    => '1',                                     -- [in]
-         regceb => '1',                                     -- [in]
-         rstb   => '0',                                     -- [in]
-         addrb  => r.rorFifoTimestamp.pulseId(3 downto 0),  -- [in]
-         doutb  => ramRdData);                              -- [out]
+         clka   => lclsTimingClk,                              -- [in]
+         ena    => '1',                                        -- [in]
+         wea    => lclsTimingBus.strobe,                       -- [in]
+         addra  => lclsTimingBus.message.pulseId(3 downto 0),  -- [in]
+         dina   => timingMessageSlv,                           -- [in]
+         clkb   => lclsTimingClk,                              -- [in]
+         enb    => '1',                                        -- [in]
+         regceb => '1',                                        -- [in]
+         rstb   => '0',                                        -- [in]
+         addrb  => rorFifoTimestamp.pulseId(3 downto 0),       -- [in]
+         doutb  => ramRdData);                                 -- [out]
 
 
-   comb : process (fcBus, r, tsRxMsgsFifoOut, tsRxMsgsFifoValid) is
+   comb : process (fcBus, lclsTimingBus, r, ramRdData, rorFifoTimestamp, rorFifoValid) is
       variable v : RegType;
    begin
       v := r;
 
-      v.axisMaster  := axiStreamMasterInit(AXIS_CFG_C);
-      v.rorFifoRdEn := '0';
-      v.rorFifoRst  := '0';
+      v.axisMaster                 := axiStreamMasterInit(AXIS_CFG_C);
+      v.rorFifoRdEn                := '0';
+      v.rorFifoRst                 := '0';
+      v.fcBus.readoutRequest.valid := '0';
 
       -- Needed by DaqEventFormatter to reset the FIFO
       v.fcBus.runState := fcBus.runState;
 
 
       -- Incomming timing messages overwite any sent flags
-      if (timingBus.valid = '1') then   -- Maybe use strobe?
-         v.pulseIdSent(conv_integer(timingBus.message.pulseId(3 downto 0))) := '0';
+      if (lclsTimingBus.strobe = '1') then
+         v.pulseIdSent(conv_integer(lclsTimingBus.message.pulseId(3 downto 0))) := '0';
       end if;
 
       -- Read RoRs from FIFO, associate with LCLS Timing Data
@@ -241,13 +250,14 @@ begin
 
          if (r.pulseIdSent(conv_integer(rorFifoTimestamp.pulseId(3 downto 0))) = '0') then
             -- Generate an AXI-Stream frame with LCLS Timing Data
-            v.axisMaster.tValid                                                := '1';
-            v.axisMaster.tData(127 downto 0)                                   := ramRdData;
-            v.axisMaster.tLast                                                 := '1';
+            v.axisMaster.tValid                                               := '1';
+            v.axisMaster.tData(255 downto 0)                                  := ramRdData;
+            v.axisMaster.tLast                                                := '1';
             -- Pass readout request to DaqEventFormatter
-            v.fcBus.readoutRequest                                             := rorFifoTimestamp;
+            v.fcBus.readoutRequest                                            := rorFifoTimestamp;
+            v.fcBus.readoutRequest.valid                                      := '1';
             -- Mark this pulseID as sent
-            v.pulseIdSent(conv_integer(rorFifoTimestamp(pulseId(3 downto 0)))) := '1';
+            v.pulseIdSent(conv_integer(rorFifoTimestamp.pulseId(3 downto 0))) := '1';
          end if;
 
       end if;
@@ -272,8 +282,8 @@ begin
    U_DaqEventFormatter_1 : entity ldmx_tdaq.DaqEventFormatter
       generic map (
          TPD_G                     => TPD_G,
-         SUBSYSTEM_ID_G            => TS_DAQ_SUBSYSTEM_ID_C,
-         CONTRIBUTOR_ID_G          => TS_RAW_DATA_DAQ_ID_C,
+         SUBSYSTEM_ID_G            => TDAQ_TRIGGER_SUBSYSTEM_ID_C,
+         CONTRIBUTOR_ID_G          => X"03",
          RAW_AXIS_CFG_G            => AXIS_CFG_C,
          EVENT_FIFO_PAUSE_THRESH_G => 2**9-16,
          EVENT_FIFO_ADDR_WIDTH_G   => 9,
@@ -290,7 +300,7 @@ begin
          axilWriteMaster => locAxilWriteMasters(AXIL_EVENT_FORMAT_C),  -- [in]
          axilWriteSlave  => locAxilWriteSlaves(AXIL_EVENT_FORMAT_C),   -- [out]
          rawAxisClk      => lclsTimingClk,                             -- [in]
-         raqAxisRst      => lclsTimingRst,                             -- [in]
+         rawAxisRst      => lclsTimingRst,                             -- [in]
          rawAxisMaster   => r.axisMaster,                              -- [in]
          rawAxisCtrl     => axisCtrl,                                  -- [out]
          eventAxisClk    => axisClk,                                   -- [in]

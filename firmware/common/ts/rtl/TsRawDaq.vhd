@@ -36,9 +36,9 @@ use ldmx_ts.TsPkg.all;
 entity TsRawDaq is
 
    generic (
-      TPD_G      : time    := 1 ns;
-      TS_LANES_G : integer := 2);
-
+      TPD_G            : time             := 1 ns;
+      TS_LANES_G       : integer          := 2;
+      AXIL_BASE_ADDR_G : slv(31 downto 0) := X"00000000");
    port (
       -- TS Raw Data and Timing
       fcClk185       : in sl;

@@ -44,6 +44,8 @@ package DaqPkg is
       TUSER_BITS_C  => 0,
       TUSER_MODE_C  => TUSER_FIRST_LAST_C);
 
+   
+
 
 
 end package DaqPkg;

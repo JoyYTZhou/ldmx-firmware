@@ -121,6 +121,7 @@ class TsRawDaqEventSqlReceiver(SqlEventReceiver):
         batch_data = []
 
         event_view = data.view(ldmx_ts.TsS30xlRawDaqEventDType)
+#        print(f'Parsing Raw Event - {event_view}')        
         # Collect all rows for the batch insert
         for i in range(2):
             msg = event_view['msgs'][0][i]
@@ -148,6 +149,8 @@ class TsRawDaqEventSqlReceiver(SqlEventReceiver):
         return {self.table: batch_data}
 
     def process(self, frame):
+        rawNumpy = frame.getNumpy()
+        print(f'Process Raw Event - {rawNumpy.view(ldmx_ts.TsS30xlRawDaqEventDType)}')
         self.database.put(self.parser, frame.getNumpy())
         #return rawNumpy.view(ldmx_ts.TsS30xlRawDaqEventDType)
         #return ldmx_ts.TsRawDaqEvent.from_numpy(rawNumpy)
@@ -192,6 +195,7 @@ class TsS30xlThresholdTriggerEventSqlReceiver(SqlEventReceiver):
 
     def parser(self, data):
         event = ldmx_ts.TsS30xlThresholdTriggerEvent.from_numpy(data)
+#        print(f'Parsing Trig Event - {event}')
         table_dict = {
             'timestamp': event.header.timestamp,
             'hits': event.hits,
@@ -212,5 +216,6 @@ class TsS30xlThresholdTriggerEventSqlReceiver(SqlEventReceiver):
 
 
     def process(self, frame):
+#        print('Process trig event')
         self.database.put(self.parser, frame.getNumpy())
 

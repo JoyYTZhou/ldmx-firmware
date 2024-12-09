@@ -32,23 +32,21 @@ class S30xlAPxRoot(pr.Root):
             SIM_TRIG_EVENT_PORT = 12000
 
             self.srpStream = rogue.interfaces.stream.TcpClient('localhost', SIM_SRP_PORT)
-            self.tsDaqEventStream = rogue.interfaces.stream.TcpClient('localhost', SIM_DAQ_EVENT_PORT)
-            self.tsTrigEventStream = rogue.interfaces.stream.TcpClient('localhost', SIM_TRIG_EVENT_PORT)
+            self.eventStream = rogue.interfaces.stream.TcpClient('localhost', SIM_DAQ_EVENT_PORT)
 
         else:
             # Open rUDP connections
             self.srpUdp = pyrogue.protocols.UdpRssiPack(host=host, jumbo=True, port=8192, packVer=2, name='SrpRssi')
-            self.tsDaqUdp = pyrogue.protocols.UdpRssiPack(host=host, jumbo=True, port=8193, packVer=2, name='TsDaqEventRssi')
-            self.trigDataUdp = pyrogue.protocols.UdpRssiPack(host=host, jumbo=True, port=8194, packVer=2, name='TsTrigEventRssi')
+            self.eventUdp = pyrogue.protocols.UdpRssiPack(host=host, jumbo=True, port=8193, packVer=2, name='TsDaqEventRssi')
 
-            self.addInterface(self.srpUdp, self.tsDaqUdp, self.trigDataUdp)
+            self.addInterface(self.srpUdp, self.eventUdp) #, self.trigDataUdp)
             
             self.srpStream = self.srpUdp.application(dest=0)
-            self.tsDaqEventStream = self.tsDaqUdp.application(dest=0)
-            self.tsTrigEventStream = self.trigDataUdp.application(dest=0)
+            self.eventStream = self.tsDaqUdp.application(dest=0)
+
 
         # Add stream interfaces for clean exit
-        self.addInterface(self.srpStream, self.tsDaqEventStream, self.tsTrigEventStream)
+        self.addInterface(self.srpStream, self.eventStream) #, self.tsTrigEventStream)
             
         # Connect srp stream to srp protocol
         self.srp == self.srpStream
@@ -58,8 +56,11 @@ class S30xlAPxRoot(pr.Root):
             memBase = self.srp,
             expand = True))
 
-        #daqDebug = ldmx_ts.TsRawDaqEventReceiver() #rogue.interfaces.stream.Slave()
-#        daqDebug.setDebug(100, 'Daq Debug')
+        daqDebug = rogue.interfaces.stream.Slave()
+        daqDebug.setDebug(100, 'Daq Debug')
+        self.addInterface(daqDebug)
+        self.eventStream >> daqDebug        
+        
         #trigDebug = ldmx_ts.TsS30xlThresholdTriggerEventReceiver() # rogue.interfaces.stream.Slave()
 #        trigDebug.setDebug(100, 'Trig Debug')
 
@@ -67,74 +68,56 @@ class S30xlAPxRoot(pr.Root):
 
         #self.tsDaqEventStream >> daqDebug
         #self.tsTrigEventStream >> trigDebug
+        
+        fifo1 = rogue.interfaces.stream.Fifo(0, 0, False)
+        fifo2 = rogue.interfaces.stream.Fifo(0, 0, False)
+        fifo3 = rogue.interfaces.stream.Fifo(0, 0, False)
+        fifo4 = rogue.interfaces.stream.Fifo(0, 0, False)
+        self.addInterface(fifo1, fifo2, fifo3, fifo4)        
 
+        self.eventStreamUnbatcher = rogue.protocols.batcher.SplitterV1()
+        self.eventStream >> fifo1 >> self.eventStreamUnbatcher
+        #self.eventStreamUnbatcher << fifo1 << self.eventStream
+        self.addInterface(self.eventStreamUnbatcher)
+
+        
         # Create a filter for TS RAW DAQ Events and send the TS DAQ data through it
-#         self.tsRawDaqEventFilter = ldmx_ts.TsRawDaqEventFilter()
-#         self.addInterface(self.tsRawDaqEventFilter)
-#         self.tsRawDaqEventFilter << self.tsDaqEventStream 
+        self.tsRawDaqEventFilter = ldmx_ts.TsRawDaqEventFilter()
+        self.addInterface(self.tsRawDaqEventFilter)
+        self.tsRawDaqEventFilter << self.eventStreamUnbatcher
 
-        # Generic TS Raw event receiver for debug
-#        self.tsRawDaqEventReceiver = ldmx_ts.TsRawDaqEventReceiver()
-#        self.addInterface(self.tsRawDaqEventReceiver)
-        #self.tsRawDaqEventReceiver << self.tsRawDaqEventFilter 
-#        self.tsDaqEventStream >> self.tsRawDaqEventReceiver
 
         # Create a filter for TS Threshold Trigger Events
-#         self.tsS30xlThresholdTriggerEventFilter = ldmx_ts.TsS30xlThresholdTriggerEventFilter()
-#         self.addInterface(self.tsS30xlThresholdTriggerEventFilter)
-#         self.tsS30xlThresholdTriggerEventFilter << self.tsTrigEventStream
+        self.tsS30xlThresholdTriggerEventFilter = ldmx_ts.TsS30xlThresholdTriggerEventFilter()
+        self.addInterface(self.tsS30xlThresholdTriggerEventFilter)
+        self.tsS30xlThresholdTriggerEventFilter << self.eventStreamUnbatcher
 
-        # Generic Threshold event receiver for debug
-#        self.tsS30xlThresholdTriggerEventReceiver = ldmx_ts.TsS30xlThresholdTriggerEventReceiver()
-#        self.addInterface(self.tsS30xlThresholdTriggerEventReceiver)
-#        self.tsS30xlThresholdTriggerEventReceiver <<  self.tsS30xlThresholdTriggerEventFilter
-#        self.tsTrigEventStream >> tsS30xlThresholdTriggerEventReceiver
 
-        fifo1 = rogue.interfaces.stream.Fifo(0, 0, True)
-        fifo2 = rogue.interfaces.stream.Fifo(0, 0, True)
-        fifo3 = rogue.interfaces.stream.Fifo(0, 0, True)
-        fifo4 = rogue.interfaces.stream.Fifo(0, 0, True)
+        self.lclsTimingEventFilter = ldmx_tdaq.DaqEventFilter(subsystemId=1, contributorId=3)
+        self.addInterface(self.lclsTimingEventFilter)
+        self.lclsTimingEventFilter << self.eventStreamUnbatcher
 
-        self.addInterface(fifo1, fifo2, fifo3, fifo4)
-
-        # Unbatch the streams
-        self.tsDaqEventStreamUnbatcher = rogue.protocols.batcher.SplitterV1()
-        self.tsDaqEventStreamUnbatcher << self.tsDaqEventStream
-        self.addInterface(self.tsDaqEventStreamUnbatcher)
-
-        self.tsTrigEventStreamUnbatcher = rogue.protocols.batcher.SplitterV1()
-        self.tsTrigEventStreamUnbatcher << self.tsTrigEventStream
-        self.addInterface(self.tsTrigEventStreamUnbatcher)
-        
 
         # Add the Sqlite Database
-        #self.add(ldmx_tdaq.SqliteDatabase(hidden=False))
-        #self.addInterface(self.SqliteDatabase)
+        self.add(ldmx_tdaq.SqliteDatabase(hidden=False))
+        self.addInterface(self.SqliteDatabase)
 
         # Create and connect SQL Receivers
-#         self.tsRawDaqEventSqlReceiver = ldmx_ts.TsRawDaqEventSqlReceiver(database=self.SqliteDatabase)
-#         self.add(self.tsRawDaqEventSqlReceiver)
-#         self.addInterface(self.tsRawDaqEventSqlReceiver)
-# #        self.tsRawDaqEventSqlReceiver << self.tsRawDaqEventFilter
-#         self.tsRawDaqEventSqlReceiver << fifo3 << self.tsDaqEventStreamUnbatcher
+        self.tsRawDaqEventSqlReceiver = ldmx_ts.TsRawDaqEventSqlReceiver(database=self.SqliteDatabase)
+        self.add(self.tsRawDaqEventSqlReceiver)
+        self.addInterface(self.tsRawDaqEventSqlReceiver)
+        self.tsRawDaqEventFilter >> self.tsRawDaqEventSqlReceiver
 
-#         self.tsS30xlThresholdTriggerEventSqlReceiver = ldmx_ts.TsS30xlThresholdTriggerEventSqlReceiver(database=self.SqliteDatabase)
-#         self.add(self.tsS30xlThresholdTriggerEventSqlReceiver)
-#         self.addInterface(self.tsS30xlThresholdTriggerEventSqlReceiver)
-#         #self.tsS30xlThresholdTriggerEventSqlReceiver << self.tsS30xlThresholdTriggerEventFilter
-#         self.tsS30xlThresholdTriggerEventSqlReceiver << fifo4 << self.tsTrigEventStreamUnbatcher
-
-#         self.rawEventReceiver = ldmx_ts.SqlEventReceiver(database=self.SqliteDatabase)
-#         self.add(self.rawEventReceiver)        
-#         self.addInterface(self.rawEventReceiver)
-#         self.rawEventReceiver << fifo3 << self.tsTrigEventStreamUnbatcher
-#         self.rawEventReceiver << fifo4 << self.tsDaqEventStreamUnbatcher
+        self.tsS30xlThresholdTriggerEventSqlReceiver = ldmx_ts.TsS30xlThresholdTriggerEventSqlReceiver(database=self.SqliteDatabase)
+        self.add(self.tsS30xlThresholdTriggerEventSqlReceiver)
+        self.addInterface(self.tsS30xlThresholdTriggerEventSqlReceiver)
+        self.tsS30xlThresholdTriggerEventFilter >> self.tsS30xlThresholdTriggerEventSqlReceiver 
 
         configStream = pyrogue.interfaces.stream.Variable(root=self)
 
-        self.add(pyrogue.utilities.fileio.StreamWriter(name='DataWriter')) #, configStream={0: configStream}))
-        self.tsDaqEventStreamUnbatcher >>  self.DataWriter.getChannel(1)
-        self.tsTrigEventStreamUnbatcher >> self.DataWriter.getChannel(2)
+#         self.add(pyrogue.utilities.fileio.StreamWriter(name='DataWriter')) #, configStream={0: configStream}))
+#         self.tsDaqEventStreamUnbatcher >>  self.DataWriter.getChannel(1)
+#         self.tsTrigEventStreamUnbatcher >> self.DataWriter.getChannel(2)
 
         # Debug Slave
 #         dbg = rogue.interfaces.stream.Slave()
@@ -163,3 +146,4 @@ class S30xlAPxRoot(pr.Root):
             for thread_id, frame in sys._current_frames().items():
                 print(f"\nThread ID: {thread_id}")
                 print("".join(traceback.format_stack(frame)))
+

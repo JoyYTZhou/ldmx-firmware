@@ -58,13 +58,18 @@ entity FcHub is
       -- Global Trigger Interface
       ----------------------------------------------------------------------------------------------
       -- LCLS Recovered Clock Output via fabric pins
-      lclsTimingClkOut  : out sl;
-      lclsTimingRstOut  : out sl;
-      lclsTimingFcTxMsg : out FcMessageType;
-      lclsTimingBus     : out TimingBusType;
-      globalTriggerRor  : in  FcTimestampType;
+      lclsTimingClkOut        : out sl;
+      lclsTimingRstOut        : out sl;
+      lclsTimingFcTxMsg       : out FcMessageType;
+      lclsTimingBus           : out TimingBusType;
+      globalTriggerRor        : in  FcTimestampType;
       -- Debugging port output
-      fcTxMsgValid      : out sl;
+      fcTxMsgValid            : out sl;
+      -- DAQ stream
+      axisClk                 : in  sl;
+      axisRst                 : in  sl;
+      lclsTimingDaqAxisMaster : out AxiStreamMasterType;
+      lclsTimingDaqAxisSlave  : in  AxiStreamSlaveType;
 
 
       ----------------------------------------------------------------------------------------------
@@ -94,12 +99,14 @@ end entity FcHub;
 architecture rtl of FcHub is
 
    -- AXI Lite
-   constant AXIL_NUM_C         : integer := 3;
+   constant AXIL_NUM_C         : integer := 5;
    constant AXIL_LCLS_TIMING_C : integer := 0;
    constant AXIL_TX_LOGIC_C    : integer := 1;
-   constant AXIL_FC_ARRAY_C    : integer := 2;
+   constant AXIL_RX_LOGIC_C    : integer := 2;
+   constant AXIL_FC_ARRAY_C    : integer := 3;
+   constant AXIL_TIMING_DAQ_C  : integer := 4;
 
-   constant AXIL_XBAR_CONFIG_C : AxiLiteCrossbarMasterConfigArray(AXIL_NUM_C-1 downto 0) := (
+   constant AXIL_XBAR_CONFIG_C : AxiLiteCrossBarmasterconfigarray(AXIL_NUM_C-1 downto 0) := (
       AXIL_LCLS_TIMING_C => (
          baseAddr        => AXIL_BASE_ADDR_G + X"0000_0000",
          addrBits        => 20,
@@ -108,9 +115,17 @@ architecture rtl of FcHub is
          baseAddr        => AXIL_BASE_ADDR_G +X"0010_0000",
          addrBits        => 8,
          connectivity    => X"FFFF"),
+      AXIL_RX_LOGIC_C    => (
+         baseAddr        => AXIL_BASE_ADDR_G +X"0010_1000",
+         addrBits        => 8,
+         connectivity    => X"FFFF"),
       AXIL_FC_ARRAY_C    => (
          baseAddr        => AXIL_BASE_ADDR_G +X"0020_0000",
          addrBits        => 20,
+         connectivity    => X"FFFF"),
+      AXIL_TIMING_DAQ_C  => (
+         baseAddr        => AXIL_BASE_ADDR_G + X"0030_0000",
+         addrBits        => 12,
          connectivity    => X"FFFF"));
 
    signal locAxilReadMasters  : AxiLiteReadMasterArray(AXIL_NUM_C-1 downto 0);
@@ -130,6 +145,9 @@ architecture rtl of FcHub is
 
    -- LDMX Fast Control Message to FC Senders
    signal fcTxMsg : FcMessageType;
+
+   -- Local FC Bus
+   signal fcBus : FcBusType;
 
 begin
 
@@ -233,6 +251,29 @@ begin
          axilReadSlave   => locAxilReadSlaves(AXIL_RX_LOGIC_C),    -- [out]
          axilWriteMaster => locAxilWriteMasters(AXIL_RX_LOGIC_C),  -- [in]
          axilWriteSlave  => locAxilWriteSlaves(AXIL_RX_LOGIC_C));  -- [out]
+
+   -------------------------------------------------------------------------------------------------
+   -- LCLS-II Timing DAQ
+   -------------------------------------------------------------------------------------------------
+   U_Lcls2TimingDaq_1 : entity ldmx_tdaq.Lcls2TimingDaq
+      generic map (
+         TPD_G            => TPD_G,
+         AXIL_BASE_ADDR_G => AXIL_XBAR_CONFIG_C(AXIL_TIMING_DAQ_C).baseAddr)
+      port map (
+         lclsTimingClk   => lclsTimingClk,                           -- [in]
+         lclsTimingRst   => lclsTimingRst,                           -- [in]
+         lclsTimingBus   => lclsTimingBusLoc,                        -- [in]
+         fcBus           => fcBus,                                   -- [in]
+         axilClk         => axilClk,                                 -- [in]
+         axilRst         => axilRst,                                 -- [in]
+         axilReadMaster  => locAxilReadMasters(AXIL_TIMING_DAQ_C),   -- [in]
+         axilReadSlave   => locAxilReadSlaves(AXIL_TIMING_DAQ_C),    -- [out]
+         axilWriteMaster => locAxilWriteMasters(AXIL_TIMING_DAQ_C),  -- [in]
+         axilWriteSlave  => locAxilWriteSlaves(AXIL_TIMING_DAQ_C),   -- [out]
+         axisClk         => axisClk,                                 -- [in]
+         axisRst         => axisRst,                                 -- [in]
+         eventAxisMaster => lclsTimingDaqAxisMaster,                 -- [out]
+         eventAxisSlave  => lclsTimingDaqAxisSlave);                 -- [in]   
 
    -------------------------------------------------------------------------------------------------
    -- Stable Clock and Reset from LCLS Timing Reference Clock
