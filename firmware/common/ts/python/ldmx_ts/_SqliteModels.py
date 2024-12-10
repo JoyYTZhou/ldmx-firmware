@@ -15,11 +15,6 @@ import ldmx_ts
 
 import pyrogue as pr
 
-class RawEventDataSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
-    __tablename__ = 'raw_event_data'
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    data = Column(LargeBinary, nullable=False)
 
 # Define the 'ts_raw_daq_events' table
 class TsRawDaqEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
@@ -89,7 +84,7 @@ class TsRawDaqEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
             
 
 class SqlEventReceiver(pr.DataReceiver):
-    def __init__(self, database, table=RawEventDataSql.__table__, **kwargs):
+    def __init__(self, database, table=None, **kwargs):
         super().__init__(**kwargs)
 
         self.database = database
@@ -150,7 +145,7 @@ class TsRawDaqEventSqlReceiver(SqlEventReceiver):
 
     def process(self, frame):
         rawNumpy = frame.getNumpy()
-        print(f'Process Raw Event - {rawNumpy.view(ldmx_ts.TsS30xlRawDaqEventDType)}')
+#        print(f'Process Raw Event - {rawNumpy.view(ldmx_ts.TsS30xlRawDaqEventDType)}')
         self.database.put(self.parser, frame.getNumpy())
         #return rawNumpy.view(ldmx_ts.TsS30xlRawDaqEventDType)
         #return ldmx_ts.TsRawDaqEvent.from_numpy(rawNumpy)

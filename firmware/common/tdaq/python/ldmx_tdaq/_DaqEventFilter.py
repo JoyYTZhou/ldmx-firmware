@@ -23,7 +23,7 @@ class DaqEventFilter(ris.Slave, ris.Master):
         if (self.contributorId is not None and header['contributorId'] != self.contributorId):
             forward = False
 
-        print(f'Got Frame - {header} - {forward=} - {self.__class__.__name__}')                
+        #print(f'Got Frame - {header} - {forward=} - {self.__class__.__name__}')                
 
         if forward is True:
             self._sendFrame(frame)

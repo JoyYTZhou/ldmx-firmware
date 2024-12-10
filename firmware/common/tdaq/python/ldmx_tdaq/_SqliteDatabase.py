@@ -83,7 +83,7 @@ class SqliteDatabase(pr.DataWriter):
 #         url = f'sqlite:///{url}'
         url = self.DatabaseUrl.value()
         self._engine = sqlalchemy.create_engine(url, connect_args={"check_same_thread": False})
-        print('Opened engine {self._engine}')
+        print(f'Opened engine {self._engine}')
         self.SqliteBase.metadata.create_all(self._engine)        
         sqlalchemy.event.listen(self._engine, 'before_execute', self._count_writes)
         self.SessionFactory = sqlalchemy.orm.sessionmaker(bind=self._engine)

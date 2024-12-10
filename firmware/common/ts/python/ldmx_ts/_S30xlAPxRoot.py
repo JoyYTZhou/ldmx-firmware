@@ -42,7 +42,7 @@ class S30xlAPxRoot(pr.Root):
             self.addInterface(self.srpUdp, self.eventUdp) #, self.trigDataUdp)
             
             self.srpStream = self.srpUdp.application(dest=0)
-            self.eventStream = self.tsDaqUdp.application(dest=0)
+            self.eventStream = self.eventUdp.application(dest=0)
 
 
         # Add stream interfaces for clean exit
@@ -56,10 +56,6 @@ class S30xlAPxRoot(pr.Root):
             memBase = self.srp,
             expand = True))
 
-        daqDebug = rogue.interfaces.stream.Slave()
-        daqDebug.setDebug(100, 'Daq Debug')
-        self.addInterface(daqDebug)
-        self.eventStream >> daqDebug        
         
         #trigDebug = ldmx_ts.TsS30xlThresholdTriggerEventReceiver() # rogue.interfaces.stream.Slave()
 #        trigDebug.setDebug(100, 'Trig Debug')
@@ -79,6 +75,12 @@ class S30xlAPxRoot(pr.Root):
         self.eventStream >> fifo1 >> self.eventStreamUnbatcher
         #self.eventStreamUnbatcher << fifo1 << self.eventStream
         self.addInterface(self.eventStreamUnbatcher)
+
+        daqDebug = rogue.interfaces.stream.Slave()
+        daqDebug.setDebug(1, 'Daq Debug')
+        self.addInterface(daqDebug)
+        self.eventStream >> daqDebug        
+        
 
         
         # Create a filter for TS RAW DAQ Events and send the TS DAQ data through it
@@ -106,12 +108,18 @@ class S30xlAPxRoot(pr.Root):
         self.tsRawDaqEventSqlReceiver = ldmx_ts.TsRawDaqEventSqlReceiver(database=self.SqliteDatabase)
         self.add(self.tsRawDaqEventSqlReceiver)
         self.addInterface(self.tsRawDaqEventSqlReceiver)
-        self.tsRawDaqEventFilter >> self.tsRawDaqEventSqlReceiver
+        self.tsRawDaqEventFilter >> fifo2 >> self.tsRawDaqEventSqlReceiver
 
         self.tsS30xlThresholdTriggerEventSqlReceiver = ldmx_ts.TsS30xlThresholdTriggerEventSqlReceiver(database=self.SqliteDatabase)
         self.add(self.tsS30xlThresholdTriggerEventSqlReceiver)
         self.addInterface(self.tsS30xlThresholdTriggerEventSqlReceiver)
-        self.tsS30xlThresholdTriggerEventFilter >> self.tsS30xlThresholdTriggerEventSqlReceiver 
+        self.tsS30xlThresholdTriggerEventFilter >> fifo3 >> self.tsS30xlThresholdTriggerEventSqlReceiver
+
+        self.lclsTimingEventSqlReceiver = ldmx_tdaq.LclsTimingEventSqlReceiver(database=self.SqliteDatabase)
+        self.add(self.lclsTimingEventSqlReceiver)
+        self.addInterface(self.lclsTimingEventSqlReceiver)
+        self.lclsTimingEventFilter >> fifo4 >> self.lclsTimingEventSqlReceiver 
+        
 
         configStream = pyrogue.interfaces.stream.Variable(root=self)
 

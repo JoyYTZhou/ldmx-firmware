@@ -49,3 +49,10 @@ EventHeaderDType = np.dtype([
     ('empty2', np.uint32),
     ('timestamp', np.uint64),
 ])
+
+def print_dtype(array):
+    if array.dtype.names:
+        for row in array:
+            print({name: row[name] for name in array.dtype.names})
+    else:
+        print(array)
