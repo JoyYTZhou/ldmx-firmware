@@ -194,6 +194,7 @@ begin
                v.eventAxisMaster.tData(7 downto 0)    := r.burnCount;
                v.eventAxisMaster.tData(15 downto 8)   := SUBSYSTEM_ID_G;
                v.eventAxisMaster.tData(23 downto 16)  := CONTRIBUTOR_ID_G;
+               v.eventAxisMaster.tData(31 downto 24)  := X"A5";
                v.eventAxisMaster.tData(127 downto 64) := toSlv(rorFifoTimestamp);
 
                if (eventAxisCtrl.pause = '1' and r.burnCount /= X"FF") then
