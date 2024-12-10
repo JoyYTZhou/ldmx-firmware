@@ -204,32 +204,52 @@ begin
                v.state := INIT_S;
             end if;
          when WORD_1_S =>
-            v.waitCounter    := (others => '0');
-            v.tsRxMsg.adc(0) := tsRxData(7 downto 0);
-            v.tsRxMsg.adc(1) := tsRxData(15 downto 8);
-            v.state          := WORD_2_S;
+            if (tsRxDataK = "00") then
+               v.waitCounter    := (others => '0');
+               v.tsRxMsg.adc(0) := tsRxData(7 downto 0);
+               v.tsRxMsg.adc(1) := tsRxData(15 downto 8);
+               v.state          := WORD_2_S;
+            elsif (tsRxDataK /= "11") then
+               v.state := INIT_S;
+            end if;
          when WORD_2_S =>
-            v.tsRxMsg.adc(2) := tsRxData(7 downto 0);
-            v.tsRxMsg.adc(3) := tsRxData(15 downto 8);
-            v.state          := WORD_3_S;
+            if (tsRxDataK = "00") then
+               v.tsRxMsg.adc(2) := tsRxData(7 downto 0);
+               v.tsRxMsg.adc(3) := tsRxData(15 downto 8);
+               v.state          := WORD_3_S;
+            elsif (tsRxDataK /= "11") then
+               v.state := INIT_S;
+            end if;
          when WORD_3_S =>
-            v.tsRxMsg.adc(4) := tsRxData(7 downto 0);
-            v.tsRxMsg.adc(5) := tsRxData(15 downto 8);
-            v.state          := WORD_4_S;
+            if (tsRxDataK = "00") then
+               v.tsRxMsg.adc(4) := tsRxData(7 downto 0);
+               v.tsRxMsg.adc(5) := tsRxData(15 downto 8);
+               v.state          := WORD_4_S;
+            elsif (tsRxDataK /= "11") then
+               v.state := INIT_S;
+            end if;
          when WORD_4_S =>
-            v.tsRxMsg.tdc(0)(5 downto 4) := tsRxData(1 downto 0);
-            v.tsRxMsg.tdc(1)(5 downto 0) := tsRxData(7 downto 2);
-            v.tsRxMsg.tdc(2)(5 downto 0) := tsRxData(13 downto 8);
-            v.tsRxMsg.tdc(3)(1 downto 0) := tsRxData(15 downto 14);
-            v.state                      := WORD_5_S;
+            if (tsRxDataK = "00") then
+               v.tsRxMsg.tdc(0)(5 downto 4) := tsRxData(1 downto 0);
+               v.tsRxMsg.tdc(1)(5 downto 0) := tsRxData(7 downto 2);
+               v.tsRxMsg.tdc(2)(5 downto 0) := tsRxData(13 downto 8);
+               v.tsRxMsg.tdc(3)(1 downto 0) := tsRxData(15 downto 14);
+               v.state                      := WORD_5_S;
+            elsif (tsRxDataK /= "11") then
+               v.state := INIT_S;
+            end if;
          when WORD_5_S =>
-            v.tsRxMsg.tdc(3)(5 downto 2) := tsRxData(3 downto 0);
-            v.tsRxMsg.tdc(4)(3 downto 0) := tsRxData(7 downto 4);
-            v.tsRxMsg.tdc(4)(5 downto 4) := tsRxData(9 downto 8);
-            v.tsRxMsg.tdc(5)(5 downto 0) := tsRxData(15 downto 10);
-            v.tsRxMsg.strobe             := '1';
-            v.rxFrameCount               := r.rxFrameCount + 1;
-            v.state                      := WAIT_COMMA_S;
+            if (tsRxDataK = "00") then
+               v.tsRxMsg.tdc(3)(5 downto 2) := tsRxData(3 downto 0);
+               v.tsRxMsg.tdc(4)(3 downto 0) := tsRxData(7 downto 4);
+               v.tsRxMsg.tdc(4)(5 downto 4) := tsRxData(9 downto 8);
+               v.tsRxMsg.tdc(5)(5 downto 0) := tsRxData(15 downto 10);
+               v.tsRxMsg.strobe             := '1';
+               v.rxFrameCount               := r.rxFrameCount + 1;
+               v.state                      := WAIT_COMMA_S;
+            elsif (tsRxDataK /= "11") then
+               v.state := INIT_S;
+            end if;
       end case;
 
       if (r.tsRxMsg.strobe = '1' and r.tsRxMsg.bc0 = '1') then
