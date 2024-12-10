@@ -66,6 +66,6 @@ def print_custom_np_type(array):
                     print(f"  {name}:")
                     print_custom_array(value)  # Recursive call for nested structured dtype
                 else:
-                    print(f"  {name}: {value}")
+                    print(f"  {name}: 0x{value:02X}")
     else:
         print(array)  # Default printing for non-structured arrays
