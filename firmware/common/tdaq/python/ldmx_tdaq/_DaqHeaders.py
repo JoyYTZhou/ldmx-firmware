@@ -56,3 +56,16 @@ def print_dtype(array):
             print({name: row[name] for name in array.dtype.names})
     else:
         print(array)
+        
+def print_custom_np_type(array):
+    if isinstance(array, np.ndarray) and array.dtype.names:  # Check if it's a structured array
+        for row in array:
+            for name in array.dtype.names:
+                value = row[name]
+                if isinstance(value, np.ndarray) and value.dtype.names:
+                    print(f"  {name}:")
+                    print_custom_array(value)  # Recursive call for nested structured dtype
+                else:
+                    print(f"  {name}: {value}")
+    else:
+        print(array)  # Default printing for non-structured arrays
