@@ -68,9 +68,10 @@ architecture rtl of Lcls2TimingDaq is
 
    constant AXIS_CFG_C : AxiStreamConfigType := ssiAxiStreamConfig(dataBytes => 32, tDestBits => 0);
 
-   type StateType is (WAIT_ROR_S, DO_DATA_S, TAIL_S);
+   type StateType is (WAIT_ROR_S, SEND_DATA_S);
 
    type RegType is record
+      state       : StateType;
       rorFifoRdEn : sl;
       rorFifoRst  : sl;
       pulseIdSent : slv(15 downto 0);
@@ -79,6 +80,7 @@ architecture rtl of Lcls2TimingDaq is
    end record RegType;
 
    constant REG_INIT_C : RegType := (
+      state       => WAIT_ROR_S,
       rorFifoRdEn => '0',
       rorFifoRst  => '0',
       pulseIdSent => (others => '0'),
@@ -192,7 +194,7 @@ begin
          wrFull      => open,                  -- [out]
          wrTimestamp => fcBus.readoutRequest,  -- [in]
          rdClk       => lclsTimingClk,         -- [in]
-         rdEn        => r.rorFifoRdEn,         -- [in]
+         rdEn        => rin.rorFifoRdEn,       -- [in]
          rdTimestamp => rorFifoTimestamp,      -- [out]
          rdValid     => rorFifoValid);         -- [out]
 
@@ -218,7 +220,7 @@ begin
          dina   => timingMessageSlv,                           -- [in]
          clkb   => lclsTimingClk,                              -- [in]
          enb    => '1',                                        -- [in]
-         regceb => '1',                                        -- [in]
+         regceb => '0',                                        -- [in]
          rstb   => '0',                                        -- [in]
          addrb  => rorFifoTimestamp.pulseId(3 downto 0),       -- [in]
          doutb  => ramRdData);                                 -- [out]
@@ -237,34 +239,39 @@ begin
       -- Needed by DaqEventFormatter to reset the FIFO
       v.fcBus.runState := fcBus.runState;
 
-
       -- Incomming timing messages overwite any sent flags
       if (lclsTimingBus.strobe = '1') then
          v.pulseIdSent(conv_integer(lclsTimingBus.message.pulseId(3 downto 0))) := '0';
       end if;
 
-      -- Read RoRs from FIFO, associate with LCLS Timing Data
-      -- If LCLS Timing Data already sent, just burn the ROR
-      if (rorFifoValid = '1') then
-         v.rorFifoRdEn := '1';
-
-         if (r.pulseIdSent(conv_integer(rorFifoTimestamp.pulseId(3 downto 0))) = '0') then
-            -- Generate an AXI-Stream frame with LCLS Timing Data
-            v.axisMaster.tValid                                               := '1';
-            v.axisMaster.tData(255 downto 0)                                  := ramRdData;
-            v.axisMaster.tLast                                                := '1';
-            -- Pass readout request to DaqEventFormatter
-            v.fcBus.readoutRequest                                            := rorFifoTimestamp;
-            v.fcBus.readoutRequest.valid                                      := '1';
-            -- Mark this pulseID as sent
-            v.pulseIdSent(conv_integer(rorFifoTimestamp.pulseId(3 downto 0))) := '1';
-         end if;
-
-      end if;
+      case r.state is
+         when WAIT_ROR_S =>
+            if (rorFifoValid = '1') then
+               -- Need to wait 1 cycle for RAM lookup
+               v.state := SEND_DATA_S;
+            end if;
+         when SEND_DATA_S =>
+            -- Read RoRs from FIFO, associate with LCLS Timing Data
+            -- If LCLS Timing Data already sent, just burn the ROR
+            v.rorFifoRdEn := '1';
+            if (r.pulseIdSent(conv_integer(rorFifoTimestamp.pulseId(3 downto 0))) = '0') then
+               -- Generate an AXI-Stream frame with LCLS Timing Data
+               v.axisMaster.tValid                                               := '1';
+               v.axisMaster.tData(255 downto 0)                                  := ramRdData;
+               v.axisMaster.tLast                                                := '1';
+               -- Pass readout request to DaqEventFormatter
+               v.fcBus.readoutRequest                                            := rorFifoTimestamp;
+               v.fcBus.readoutRequest.valid                                      := '1';
+               -- Mark this pulseID as sent
+               v.pulseIdSent(conv_integer(rorFifoTimestamp.pulseId(3 downto 0))) := '1';
+            end if;
+            v.state := WAIT_ROR_S;
+      end case;
 
       -- Clear FIFO in reset state
       if (fcBus.runState = RUN_STATE_RESET_C) then
          v.rorFifoRst := '1';
+         v.state      := WAIT_ROR_S;
       end if;
 
 
