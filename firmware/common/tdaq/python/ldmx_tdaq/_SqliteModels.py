@@ -81,14 +81,16 @@ class LclsTimingEventSqlReceiver(SqlEventReceiver):
         rawNumpy = frame.getNumpy()
         print(f'Got LclsTimingEvent frame with size {len(rawNumpy)}')
         ldmx_tdaq.print_custom_np_type(rawNumpy[0:16].view(ldmx_tdaq.EventHeaderDType))
-        
         if len(rawNumpy) != 48:
             print(f'\nIncorrect LCLS Timing Frame size {len(rawNumpy)}\n')
             print(rawNumpy[16:])
             print('\n\n\n')
             return
+
+
         #print(f'Process Raw Event - {rawNumpy.view(ldmx_ts.TsS30xlRawDaqEventDType)}')
         ldmx_tdaq.print_custom_np_type(rawNumpy[16:].view(ldmx_tdaq.LclsTimingMsgDType))
+        print(rawNumpy[16:])        
         self.database.put(self.parser, rawNumpy)
         #return rawNumpy.view(ldmx_ts.TsS30xlRawDaqEventDType)
         #return ldmx_ts.TsRawDaqEvent.from_numpy(rawNumpy)
