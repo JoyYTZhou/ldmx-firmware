@@ -88,13 +88,13 @@ void ts_s30xl_threshold_trigger_hw(ap_uint<64> timestamp_in[1],
         ap_uint<14> ss    = 1 * (v1 > nbins_[1]) + 1 * (v1 > nbins_[2]) + 1 * (v1 > nbins_[3]);
         charge1           = edges_[4 * rr + ss] + (v1 - nbins_[ss]) * sense_[4 * rr + ss] + sense_[4 * rr + ss] / 2 - 1;
         ap_uint<1> helper = 0;
-        if (((charge1 - 36) * .00625) >= 10) { helper = 1; }
+        if (((charge1) * .00625) >= 10) { helper = 1; }
         if (ready == 0) {
             helper  = 0;
-            charge1 = 36;
+            charge1 = 0;
         }
         onflag[i]    = helper;
-        amplitude[i] = ((charge1 - 36) * .00625);
+        amplitude[i] = ((charge1) * .00625);
     }
     timestamp_out[0] = timestamp_in[0];
     bc0_out[0] = bc0_in[0];    
