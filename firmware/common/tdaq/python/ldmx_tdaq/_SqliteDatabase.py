@@ -23,7 +23,8 @@ import queue
 import json
 from collections import defaultdict
 import time
-
+import os
+from urllib.parse import quote
 
 
 class SqliteDatabase(pr.DataWriter):
@@ -77,11 +78,11 @@ class SqliteDatabase(pr.DataWriter):
                     self.table_insert_counts[k] = 0
                     
     def _open(self):
-#         datafile = self.DataFile.value()
-#         abs_path = os.path.abs_path(datafile)
-#         url_path = quote(abs_path)
-#         url = f'sqlite:///{url}'
-        url = self.DatabaseUrl.value()
+        datafile = self.DataFile.value()
+        abs_path = os.path.abspath(datafile)
+        url_path = quote(abs_path)
+        url = f'sqlite:///{url_path}'
+#        url = self.DatabaseUrl.value()
         self._engine = sqlalchemy.create_engine(url, connect_args={"check_same_thread": False})
         print(f'Opened engine {self._engine}')
         self.SqliteBase.metadata.create_all(self._engine)        
@@ -105,6 +106,10 @@ class SqliteDatabase(pr.DataWriter):
         self._thread.join()
         print('SQL Receiver finished')
         self._close()
+
+    def _genFileName(self):
+        dataFile = super()._genFileName().replace('.dat', '.db')
+        self.Datafile.set(dataFile)
 
         
     def _count_writes(self, conn, clauseelement, multiparams, params):
