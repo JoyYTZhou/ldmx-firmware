@@ -31,6 +31,7 @@ class LclsTimingDaqEventSql(ldmx_tdaq.SqliteDatabase.SqliteBase):
     ldmx_bunch_count: Mapped[int] = mapped_column(SmallInteger, Computed('ldmx_timestamp & 0x3F'))
     lcls_pulse_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     lcls_timestamp: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    beam_request: Mapped[int] = mapped_column(Integer, nullable=False)
     fixed_rates: Mapped[int] = mapped_column(Integer, nullable=False)
     control3: Mapped[int] = mapped_column(Integer, nullable=False)
 
@@ -72,6 +73,7 @@ class LclsTimingEventSqlReceiver(SqlEventReceiver):
             'ldmx_timestamp': int(event_view['header']['timestamp'][0]),
             'lcls_pulse_id': int(event_view['msg']['pulseId'][0]),
             'lcls_timestamp': int(event_view['msg']['timeStamp'][0]),
+            'beam_request': int(event_view['msg']['beam_request'][0]),
             'fixed_rates': int(event_view['msg']['fixedRates'][0]),
             'control3': int(event_view['msg']['control3'][0])}]
 
@@ -79,8 +81,8 @@ class LclsTimingEventSqlReceiver(SqlEventReceiver):
 
     def process(self, frame):
         rawNumpy = frame.getNumpy()
-        print(f'Got LclsTimingEvent frame with size {len(rawNumpy)}')
-        ldmx_tdaq.print_custom_np_type(rawNumpy[0:16].view(ldmx_tdaq.EventHeaderDType))
+        #print(f'Got LclsTimingEvent frame with size {len(rawNumpy)}')
+        #ldmx_tdaq.print_custom_np_type(rawNumpy[0:16].view(ldmx_tdaq.EventHeaderDType))
         if len(rawNumpy) != 48:
             print(f'\nIncorrect LCLS Timing Frame size {len(rawNumpy)}\n')
             print(rawNumpy[16:])
@@ -89,8 +91,8 @@ class LclsTimingEventSqlReceiver(SqlEventReceiver):
 
 
         #print(f'Process Raw Event - {rawNumpy.view(ldmx_ts.TsS30xlRawDaqEventDType)}')
-        ldmx_tdaq.print_custom_np_type(rawNumpy[16:].view(ldmx_tdaq.LclsTimingMsgDType))
-        print(rawNumpy[16:])        
+        #ldmx_tdaq.print_custom_np_type(rawNumpy[16:].view(ldmx_tdaq.LclsTimingMsgDType))
+        #print(rawNumpy[16:])        
         self.database.put(self.parser, rawNumpy)
         #return rawNumpy.view(ldmx_ts.TsS30xlRawDaqEventDType)
         #return ldmx_ts.TsRawDaqEvent.from_numpy(rawNumpy)
