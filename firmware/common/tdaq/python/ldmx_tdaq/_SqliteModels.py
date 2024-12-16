@@ -73,7 +73,7 @@ class LclsTimingEventSqlReceiver(SqlEventReceiver):
             'ldmx_timestamp': int(event_view['header']['timestamp'][0]),
             'lcls_pulse_id': int(event_view['msg']['pulseId'][0]),
             'lcls_timestamp': int(event_view['msg']['timeStamp'][0]),
-            'beam_request': int(event_view['msg']['beam_request'][0]),
+            'beam_request': int(event_view['msg']['beamRequest'][0]),
             'fixed_rates': int(event_view['msg']['fixedRates'][0]),
             'control3': int(event_view['msg']['control3'][0])}]
 
