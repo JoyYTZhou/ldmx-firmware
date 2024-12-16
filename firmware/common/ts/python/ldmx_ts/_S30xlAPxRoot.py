@@ -79,7 +79,7 @@ class S30xlAPxRoot(pr.Root):
         daqDebug = rogue.interfaces.stream.Slave()
         daqDebug.setDebug(1, 'Daq Debug')
         self.addInterface(daqDebug)
-        self.eventStream >> daqDebug        
+        #self.eventStream >> daqDebug        
         
 
         
