@@ -195,14 +195,16 @@ begin
             if (fcBus.bunchStrobePre = '1') then
                -- Burn data from the data fifos unless bc0 has arrived
                for i in CHANNELS_G-1 downto 0 loop
-                  v.dataFifoRdEn(i) := '1';
-                  if (dataFifoRdData(i).bc0 = '1') then
-                     v.dataFifoRdEn(i) := '0';
+                  if (dataFifoValid(i) = '1') then
+                     v.dataFifoRdEn(i) := '1';
+                     if (dataFifoRdData(i).bc0 = '1') then
+                        v.dataFifoRdEn(i) := '0';
+                     end if;
                   end if;
                end loop;
 
                -- If all channels have bc0 data, we are aligned
-               if (v.dataFifoRdEn = 0) then
+               if (uAnd(dataFifoValid) = '1' and  v.dataFifoRdEn = 0) then
                   -- Read from timestamp fifo and output trigger data and fc timestamp together
                   v.timestampFifoRdEn      := '1';
                   v.dataFifoRdEn           := (others => '1');
