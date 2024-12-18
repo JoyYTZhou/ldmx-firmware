@@ -1,5 +1,6 @@
 import pyrogue as pr
 import surf.axi
+import surf.protocols.batcher
 import ldmx_tdaq
 import ldmx_ts
 
@@ -26,3 +27,6 @@ class S30xlAPx(pr.Device):
 
         self.add(ldmx_ts.S30xlApxEthCore(
             offset = 0x1000_0000))
+
+        self.add(surf.protocols.batcher.AxiStreamBatcherAxil(
+            offset = 0x0001_0000))
