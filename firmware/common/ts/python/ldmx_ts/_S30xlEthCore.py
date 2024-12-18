@@ -16,16 +16,10 @@ class S30xlApxEthCore(pr.Device):
 
         self.add(surf.protocols.rssi.RssiCore(
             enabled = False,
-            name = "RawData_RSSI",
+            name = "EventData_RSSI",
             offset = 0x12000,
             expand = False))
 
-        self.add(surf.protocols.rssi.RssiCore(
-            enabled = False,
-            name = "TrigData_RSSI",
-            offset = 0x13000,
-            expand = False))
-        
         self.add(surf.ethernet.udp.UdpEngine(
             enabled = False,
             offset = 0x10000,
