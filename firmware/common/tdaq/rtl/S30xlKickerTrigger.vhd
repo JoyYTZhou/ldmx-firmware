@@ -112,7 +112,9 @@ begin
    begin
       v := r;
 
-      v.countReset := '0';
+      v.countReset        := '0';
+      v.triggerData.valid := '0';
+      v.triggerData.bc0   := '0';
 
       ----------------------------------------------------------------------------------------------
       -- Axi Lite
