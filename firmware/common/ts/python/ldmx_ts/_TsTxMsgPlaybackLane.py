@@ -49,6 +49,10 @@ class TsTxMsgPlaybackLane(pr.Device):
                 numValues = 2**8))
 
         @self.command()
+        def SingleHit(arg):
+            self.ADC[arg].set(2**6-1, index=0, write=True)
+
+        @self.command()
         def LoadNpy(arg):
             for sample in range(len(arg)):
                 for channel in range(6):
