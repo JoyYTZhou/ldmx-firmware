@@ -14,6 +14,10 @@ class S30xlGlobalTrigger(pr.Device):
             offset = 0x100,
             expand = True))
 
+        self.add(ldmx_tdaq.S30xlKickerTrigger(
+            offset = 0x400,
+            expand = True))
+
         self.add(ldmx_tdaq.S30xlGlobalTriggerLogic(
             offset = 0x300,
             expand = True))

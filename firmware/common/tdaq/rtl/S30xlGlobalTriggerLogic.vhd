@@ -45,6 +45,7 @@ entity S30xlGlobalTriggerLogic is
       lclsTimingRst          : in sl;
       tsThresholdTriggerData : in TriggerDataType;
       synTriggerData         : in TriggerDataType;
+      kickerTriggerData      : in TriggerDataType;
       triggerTimestamp       : in FcTimestampType;
       fcBus                  : in FcBusType;
 
@@ -71,6 +72,7 @@ architecture rtl of S30xlGlobalTriggerLogic is
 
    type RegType is record
       counter                   : slv(3 downto 0);
+      enableKickerTriggers      : sl;
       enableSynTriggers         : sl;
       enableTsThresholdTriggers : sl;
       gtRor                     : FcTimestampType;
@@ -80,6 +82,7 @@ architecture rtl of S30xlGlobalTriggerLogic is
 
    constant REG_INIT_C : RegType := (
       counter                   => (others => '0'),
+      enableKickerTriggers => '0',
       enableSynTriggers         => '0',
       enableTsThresholdTriggers => '0',
       gtRor                     => FC_TIMESTAMP_INIT_C,
@@ -111,13 +114,14 @@ begin
 
       axiSlaveRegister (axilEp, x"00", 0, v.enableSynTriggers);
       axiSlaveRegister (axilEp, x"00", 1, v.enableTsThresholdTriggers);
+      axiSlaveRegister (axilEp, x"00", 2, v.enableKickerTriggers);      
 
 
       -- Closeout the transaction
       axiSlaveDefault(axilEp, v.axilWriteSlave, v.axilReadSlave, AXI_RESP_DECERR_C);
 
 
-      v.gtRor.valid  := '0';
+      v.gtRor.valid := '0';
 
       -- Count down to achieve minimum ror spacing
       if (r.counter /= 0) then
@@ -129,9 +133,9 @@ begin
          -- Special case for bc0
          -- If BC0 seen send a ROR         
          if (synTriggerData.bc0 = '1') then
-            v.counter      := MIN_ROR_PERIOD_C;
-            v.gtRor        := triggerTimestamp;
-            v.gtRor.valid  := '1';
+            v.counter     := MIN_ROR_PERIOD_C;
+            v.gtRor       := triggerTimestamp;
+            v.gtRor.valid := '1';
          end if;
 
          -- Gate triggers unless in RUNNING state
@@ -140,18 +144,26 @@ begin
             -- TS Triggering
             if (r.enableTsThresholdTriggers = '1' and tsS30xlThresholdTriggerDaq.valid = '1') then
                if (tsS30xlThresholdTriggerDaq.hits /= 0) then
-                  v.counter      := MIN_ROR_PERIOD_C;
-                  v.gtRor        := triggerTimestamp;
-                  v.gtRor.valid  := '1';
+                  v.counter     := MIN_ROR_PERIOD_C;
+                  v.gtRor       := triggerTimestamp;
+                  v.gtRor.valid := '1';
                end if;
             end if;
 
             -- Synthetic triggering
             if (r.enableSynTriggers = '1' and synTriggerData.valid = '1' and synTriggerData.data(0) = '1') then
-               v.counter      := MIN_ROR_PERIOD_C;
-               v.gtRor        := triggerTimestamp;
-               v.gtRor.valid  := '1';
+               v.counter     := MIN_ROR_PERIOD_C;
+               v.gtRor       := triggerTimestamp;
+               v.gtRor.valid := '1';
             end if;
+
+            -- Kicker triggering
+            if (r.enableKickerTriggers = '1' and kickerTriggerData.valid = '1' and kickerTriggerData.data(1) = '1') then
+               v.counter     := MIN_ROR_PERIOD_C;
+               v.gtRor       := triggerTimestamp;
+               v.gtRor.valid := '1';
+            end if;
+            
 
          end if;
 
@@ -162,7 +174,7 @@ begin
       gtRor          <= r.gtRor;
       axilReadSlave  <= r.axilReadSlave;
       axilWriteSlave <= r.axilWriteSlave;
-      
+
    end process;
 
 

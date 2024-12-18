@@ -15,6 +15,14 @@ class S30xlGlobalTriggerLogic(pr.Device):
             base = pr.Bool))
 
         self.add(pr.RemoteVariable(
+            name = 'EnableKickerTriggers',
+            offset = 0,
+            bitOffset = 2,
+            bitSize = 1,
+            base = pr.Bool))
+        
+
+        self.add(pr.RemoteVariable(
             name = 'EnableTsThresholdTriggers',
             offset = 0,
             bitOffset = 1,

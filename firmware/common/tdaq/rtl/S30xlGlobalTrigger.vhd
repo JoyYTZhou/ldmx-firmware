@@ -79,12 +79,13 @@ end entity S30xlGlobalTrigger;
 architecture rtl of S30xlGlobalTrigger is
 
    -- AXI Lite
-   constant NUM_AXIL_MASTERS_C       : natural := 4;
+   constant NUM_AXIL_MASTERS_C       : natural := 5;
 --   constant PGP_FC_LANE_AXIL_C : natural := 0;
    constant FC_RX_LOGIC_AXIL_C       : natural := 0;
    constant SYNTHETIC_TRIGGER_AXIL_C : natural := 1;
    constant BC0_ALIGNER_AXIL_C       : natural := 2;
    constant TRIGGER_LOGIC_AXIL_C     : natural := 3;
+   constant KICKER_TRIGGER_AXIL_C    : natural := 4;
 
    constant AXIL_XBAR_CFG_C : AxiLiteCrossbarMasterConfigArray(NUM_AXIL_MASTERS_C-1 downto 0) := (
       FC_RX_LOGIC_AXIL_C       => (
@@ -93,6 +94,10 @@ architecture rtl of S30xlGlobalTrigger is
          connectivity          => X"FFFF"),
       SYNTHETIC_TRIGGER_AXIL_C => (
          baseAddr              => AXIL_BASE_ADDR_G + X"0100",
+         addrBits              => 8,
+         connectivity          => X"FFFF"),
+      KICKER_TRIGGER_AXIL_C    => (
+         baseAddr              => AXIL_BASE_ADDR_G + X"0400",
          addrBits              => 8,
          connectivity          => X"FFFF"),
       BC0_ALIGNER_AXIL_C       => (
@@ -114,11 +119,12 @@ architecture rtl of S30xlGlobalTrigger is
    signal locAxilReadMasters  : AxiLiteReadMasterArray(NUM_AXIL_MASTERS_C-1 downto 0);
    signal locAxilReadSlaves   : AxiLiteReadSlaveArray(NUM_AXIL_MASTERS_C-1 downto 0)  := (others => AXI_LITE_READ_SLAVE_EMPTY_DECERR_C);
 
-   signal synFcMsg       : FcMessageType;
-   signal synTriggerData : TriggerDataType;
-   signal fcBus          : FcBusType;
+   signal synFcMsg          : FcMessageType;
+   signal synTriggerData    : TriggerDataType;
+   signal kickerTriggerData : TriggerDataType;
+   signal fcBus             : FcBusType;
 
-   signal triggerData      : TriggerDataArray(1 downto 0);
+   signal triggerData      : TriggerDataArray(2 downto 0);
    signal triggerTimestamp : FcTimestampType;
 
 begin
@@ -194,20 +200,40 @@ begin
          axilWriteMaster => locAxilWriteMasters(SYNTHETIC_TRIGGER_AXIL_C),  -- [in]
          axilWriteSlave  => locAxilWriteSlaves(SYNTHETIC_TRIGGER_AXIL_C));  -- [out]
 
+   U_S30xlKickerTrigger_1 : entity ldmx_tdaq.S30xlKickerTrigger
+      generic map (
+         TPD_G                => TPD_G,
+         AXIL_CLK_IS_FC_CLK_G => true)
+      port map (
+         fcClk           => lclsTimingClk,                               -- [in]
+         fcRst           => lclsTimingRst,                               -- [in]
+         fcBus           => fcBus,                                       -- [in]
+         lclsTimingBus   => lclsTimingBus,                               -- [in]
+         triggerData     => kickerTriggerData,                           -- [out]
+         axilClk         => lclsTimingClk,                               -- [in]
+         axilRst         => lclsTimingRst,                               -- [in]
+         axilReadMaster  => locAxilReadMasters(KICKER_TRIGGER_AXIL_C),   -- [in]
+         axilReadSlave   => locAxilReadSlaves(KICKER_TRIGGER_AXIL_C),    -- [out]
+         axilWriteMaster => locAxilWriteMasters(KICKER_TRIGGER_AXIL_C),  -- [in]
+         axilWriteSlave  => locAxilWriteSlaves(KICKER_TRIGGER_AXIL_C));  -- [out]
+
 
    -- Align all the trigger data based on bc0
    U_Bc0Aligner_1 : entity ldmx_tdaq.Bc0Aligner
       generic map (
          TPD_G       => TPD_G,
-         CHANNELS_G  => 2,
+         CHANNELS_G  => 3,
          WORD_SIZE_G => TRIGGER_WORD_SIZE_C)
       port map (
          triggerClks(0)   => lclsTimingClk,                            -- [in]
          triggerClks(1)   => fcClk185,                                 -- [in]
+         triggerClks(2)   => lclsTimingClk,                            -- [in]
          triggerRsts(0)   => lclsTimingRst,                            --[in]
          triggerRsts(1)   => fcRst185,                                 -- [in]
+         triggerRsts(2)   => lclsTimingRst,                            -- [in]
          triggerDataIn(0) => synTriggerData,                           -- [in]
          triggerDataIn(1) => thresholdTriggerData,                     -- [in]
+         triggerDataIn(2) => kickerTriggerData,                        -- [in]
          fcClk185         => lclsTimingClk,                            -- [in]
          fcRst185         => lclsTimingRst,                            -- [in]
          fcBus            => fcBus,                                    -- [in]
@@ -228,6 +254,7 @@ begin
          lclsTimingRst          => lclsTimingRst,                              -- [in]
          tsThresholdTriggerData => triggerData(1),                             -- [in]
          synTriggerData         => triggerData(0),                             -- [in]
+         kickerTriggerData      => triggerData(2),                             -- [in]
          triggerTimestamp       => triggerTimestamp,                           -- [in]
          fcBus                  => fcBus,                                      -- [in]
          gtRor                  => gtRor,                                      -- [out]
