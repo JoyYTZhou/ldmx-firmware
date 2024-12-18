@@ -53,8 +53,8 @@ class S30xlAppCore(pr.Device):
             offset = 0x2000_0000,
             expand = True))
 
-        self.add(Delays(
-            offset = 0x100000))
+#         self.add(Delays(
+#             offset = 0x10_0000))
 
             
             
