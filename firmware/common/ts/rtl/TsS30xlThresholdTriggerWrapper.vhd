@@ -117,18 +117,18 @@ begin
    inputValid        <= fcMsgTimestamp.valid;
    fcMsgTimestampSlv <= toSlv(fcMsgTimestamp);
 
-   FifoIn(0)  <= fcTsMsg(0).tdc(0) & fcTsMsg(0).adc(0);  -- [IN]
-   FifoIn(1)  <= fcTsMsg(0).tdc(1) & fcTsMsg(0).adc(1);  -- [IN]
-   FifoIn(2)  <= fcTsMsg(0).tdc(2) & fcTsMsg(0).adc(2);  -- [IN]
-   FifoIn(3)  <= fcTsMsg(0).tdc(3) & fcTsMsg(0).adc(3);  -- [IN]
-   FifoIn(4)  <= fcTsMsg(0).tdc(4) & fcTsMsg(0).adc(4);  -- [IN]
-   FifoIn(5)  <= fcTsMsg(0).tdc(5) & fcTsMsg(0).adc(5);  -- [IN]
-   FifoIn(6)  <= fcTsMsg(1).tdc(0) & fcTsMsg(1).adc(0);  -- [IN]
-   FifoIn(7)  <= fcTsMsg(1).tdc(1) & fcTsMsg(1).adc(1);  -- [IN]
-   FifoIn(8)  <= fcTsMsg(1).tdc(2) & fcTsMsg(1).adc(2);  -- [IN]
-   FifoIn(9)  <= fcTsMsg(1).tdc(3) & fcTsMsg(1).adc(3);  -- [IN]
-   FifoIn(10) <= fcTsMsg(1).tdc(5) & fcTsMsg(1).adc(4);  -- [IN]
-   FifoIn(11) <= fcTsMsg(1).tdc(4) & fcTsMsg(1).adc(5);  -- [IN]
+   FifoIn(0)  <= fcTsMsg(0).adc(0) & fcTsMsg(0).tdc(0);  -- [IN]
+   FifoIn(1)  <= fcTsMsg(0).adc(1) & fcTsMsg(0).tdc(1);  -- [IN]
+   FifoIn(2)  <= fcTsMsg(0).adc(2) & fcTsMsg(0).tdc(2);  -- [IN]
+   FifoIn(3)  <= fcTsMsg(0).adc(3) & fcTsMsg(0).tdc(3);  -- [IN]
+   FifoIn(4)  <= fcTsMsg(0).adc(4) & fcTsMsg(0).tdc(4);  -- [IN]
+   FifoIn(5)  <= fcTsMsg(0).adc(5) & fcTsMsg(0).tdc(5);  -- [IN]
+   FifoIn(6)  <= fcTsMsg(1).adc(0) & fcTsMsg(1).tdc(0);  -- [IN]
+   FifoIn(7)  <= fcTsMsg(1).adc(1) & fcTsMsg(1).tdc(1);  -- [IN]
+   FifoIn(8)  <= fcTsMsg(1).adc(2) & fcTsMsg(1).tdc(2);  -- [IN]
+   FifoIn(9)  <= fcTsMsg(1).adc(3) & fcTsMsg(1).tdc(3);  -- [IN]
+   FifoIn(10) <= fcTsMsg(1).adc(5) & fcTsMsg(1).tdc(4);  -- [IN]
+   FifoIn(11) <= fcTsMsg(1).adc(4) & fcTsMsg(1).tdc(5);  -- [IN]
 
 
    U_ts_s30xl_threshold_trigger_hw_1 : ts_s30xl_threshold_trigger_hw
