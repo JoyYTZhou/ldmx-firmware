@@ -50,7 +50,7 @@ class TsTxMsgPlaybackLane(pr.Device):
 
         @self.command()
         def SingleHit(arg):
-            self.ADC[arg].set(2**6-1, index=0, write=True)
+            self.ADC[arg].set(2**8-1, index=0, write=True)
 
         @self.command()
         def LoadNpy(arg):
