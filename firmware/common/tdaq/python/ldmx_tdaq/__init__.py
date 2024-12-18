@@ -1,18 +1,20 @@
-import os
-import importlib
-
-# Get the current package name
-package_name = __name__
-
-# Loop through all files in the directory
-for filename in os.listdir(os.path.dirname(__file__)):
-    if filename.endswith(".py") and filename != "__init__.py":
-        module_name = filename[:-3]  # Remove the ".py" extension
-
-        # Import the module and retrieve all its attributes
-        module = importlib.import_module(f".{module_name}", package_name)
-
-        # Import everything (*) into the current namespace
-        for attr_name in dir(module):
-            if not attr_name.startswith("_"):  # Ignore private/internal attributes
-                globals()[attr_name] = getattr(module, attr_name)
+from ._FcEmu import *
+from ._FcHub import *
+from ._FcRxLogic import *
+from ._FcTxLogic import *
+from ._LdmxPgpFcLane import *
+from ._FcReceiver import *
+from ._Pgp2fcGtyCoreWrapper import *
+from ._Lcls2TimingRx import *
+from ._TimingGtCoreWrapper import *
+from ._S30xlGlobalTrigger import *
+from ._S30xlGlobalTriggerLogic import *
+from ._S30xlKickerTrigger import *
+from ._SyntheticTrigger import *
+from ._DaqEventFilter import *
+from ._DaqHeaders import *
+from ._Constants import *
+from ._SqliteDatabase import *
+from ._SqliteVariableLogger import *
+from ._SqliteModels import *
+from ._FrameParsers import *
