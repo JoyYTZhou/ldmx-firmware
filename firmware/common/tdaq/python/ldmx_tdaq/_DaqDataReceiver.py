@@ -13,8 +13,8 @@ def parseEventFrame(frame):
     subsystemId = raw[10]
 
     print('Got frame')
-        print(f'{subsystemId=}, {contributorId=}')
-        print(f'{pulseId=}, {bunchCount=}')
+    print(f'{subsystemId=}, {contributorId=}')
+    print(f'{pulseId=}, {bunchCount=}')
         
     
 
