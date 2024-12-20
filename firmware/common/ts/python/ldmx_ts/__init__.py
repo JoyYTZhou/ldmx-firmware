@@ -8,6 +8,8 @@ from ._S30xlAppCore import *
 from ._TsDataRxLane import *
 from ._TsDataRx import *
 from ._TsRxLogic import *
+from ._ZccmRoot import *
+from ._ZccmApplication import *
 from ._TsRxMsgAligner import *
 from ._FrameParsers import *
 from ._SqliteModels import *

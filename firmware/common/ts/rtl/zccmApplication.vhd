@@ -1,15 +1,15 @@
 ----------------------------------------------------------------------------------
 -- Company: FNAL
 -- Author: A. Whitbeck
--- 
--- Create Date: 08/6/2024 
--- Design Name: 
+--
+-- Create Date: 08/6/2024
+-- Design Name:
 -- Module Name: SoC PL application
--- Project Name: LDMX zCCM 
+-- Project Name: LDMX zCCM
 -- Target Devices: k26 on custom zCCM baseboard
 -- Revision 0.01 - File Created
 -- Additional Comments:
--- 
+--
 ----------------------------------------------------------------------------------
 
 library IEEE;
@@ -45,7 +45,7 @@ entity zccmApplication is
         RM2_i2c      : inout I2C_Signals;
         RM3_i2c      : inout I2C_Signals;
         RM4_i2c      : inout I2C_Signals;
-        RM5_i2c      : inout I2C_Signals;       
+        RM5_i2c      : inout I2C_Signals;
         Synth_i2c    : inout I2C_Signals;
         Jitter_i2c   : inout I2C_Signals;
         SFP0_i2c     : inout I2C_Signals;
@@ -59,7 +59,7 @@ entity zccmApplication is
         RM3_control  : in RM_Control;
         RM4_control  : in RM_Control;
         RM5_control  : in RM_Control;
-        
+
         RM0_control_out : out RM_Control_Out;
         RM1_control_out : out RM_Control_Out;
         RM2_control_out : out RM_Control_Out;
@@ -79,7 +79,7 @@ entity zccmApplication is
 
         Synth_control    : in Clock_Control;
         Jitter_control   : in Clock_Control;
-        
+
         Synth_control_out  : out Clock_Control_Out;
         Jitter_control_out : out Clock_Control_Out;
 
@@ -101,7 +101,7 @@ entity zccmApplication is
       fcRxN     : in  sl;
       fcTxP     : out sl;
       fcTxN     : out sl;
-          
+
       -- AXI-Lite Interface (axilClk domain)
       axilClk           : in    sl;
       axilRst           : in    sl;
@@ -115,185 +115,191 @@ end zccmApplication;
 architecture mapping of zccmApplication is
 
    constant DMA_SIZE_C           : positive := 1;
-   constant AXIL_CLK_FREQ_C      : real     := 1.0/AXIL_CLK_FREQ_G;  
+   constant AXIL_CLK_FREQ_C      : real     := 1.0/AXIL_CLK_FREQ_G;
 
-   constant MAIN_XBAR_MASTERS_C     : natural  := 27;
-   constant AXIL_VERSION_INDEX_C    : natural  := 0;
-   
-   constant AXIL_RM0_I2C_INDEX_C    : natural  := 1;
-   constant AXIL_RM1_I2C_INDEX_C    : natural  := 2;
-   constant AXIL_RM2_I2C_INDEX_C    : natural  := 3;
-   constant AXIL_RM3_I2C_INDEX_C    : natural  := 4;
-   constant AXIL_RM4_I2C_INDEX_C    : natural  := 5;
-   constant AXIL_RM5_I2C_INDEX_C    : natural  := 6;
+   constant MAIN_XBAR_MASTERS_C     : natural  := 14;
+   --constant AXIL_VERSION_INDEX_C    : natural  := 0;
 
-   constant AXIL_SYNTH_I2C_INDEX_C  : natural  := 7; 
-   constant AXIL_JITTER_I2C_INDEX_C : natural  := 8;    
-   
-   constant AXIL_TOP_REG_INDEX_C    : natural  := 9;
+   constant AXIL_RM0_I2C_INDEX_C    : natural  := 0;
+   constant AXIL_RM1_I2C_INDEX_C    : natural  := 1;
+   --constant AXIL_RM2_I2C_INDEX_C    : natural  := 2;
+   --constant AXIL_RM3_I2C_INDEX_C    : natural  := 3;
+   --constant AXIL_RM4_I2C_INDEX_C    : natural  := 4;
+   --constant AXIL_RM5_I2C_INDEX_C    : natural  := 5;
 
-   constant AXIL_SFP0_REG_INDEX_C   : natural  := 10;
-   constant AXIL_SFP1_REG_INDEX_C   : natural  := 11;
-   constant AXIL_SFP2_REG_INDEX_C   : natural  := 12;
-   constant AXIL_SFP3_REG_INDEX_C   : natural  := 13;
+   constant AXIL_SYNTH_I2C_INDEX_C  : natural  := 2;
+   constant AXIL_JITTER_I2C_INDEX_C : natural  := 3;
 
-   constant AXIL_SYNTH_REG_INDEX_C  : natural  := 14;
-   constant AXIL_JITTER_REG_INDEX_C : natural  := 15;
+   constant AXIL_TOP_REG_INDEX_C    : natural  := 4;
 
-   constant AXIL_RM0_REG_INDEX_C    : natural  := 16;
-   constant AXIL_RM1_REG_INDEX_C    : natural  := 17;
-   constant AXIL_RM2_REG_INDEX_C    : natural  := 18;
-   constant AXIL_RM3_REG_INDEX_C    : natural  := 19;
-   constant AXIL_RM4_REG_INDEX_C    : natural  := 20;
-   constant AXIL_RM5_REG_INDEX_C    : natural  := 21;
+   constant AXIL_SFP0_REG_INDEX_C   : natural  := 5;
+   -- constant AXIL_SFP1_REG_INDEX_C   : natural  := 8;
+   -- constant AXIL_SFP2_REG_INDEX_C   : natural  := 9;
+   -- constant AXIL_SFP3_REG_INDEX_C   : natural  := 10;
 
-   constant AXIL_FCREC_REG_INDEX_C  : natural  := 22;
-   constant AXIL_GTH_REG_INDEX_C    : natural  := 23;
-   constant AXIL_OUTPUT_REG_INDEX_C : natural  := 24;                
+   constant AXIL_SYNTH_REG_INDEX_C  : natural  := 6;
+   constant AXIL_JITTER_REG_INDEX_C : natural  := 7;
 
-   constant AXIL_SYNCHLED_REG_INDEX_C:natural  := 25;
-   constant AXIL_SYNCHBCR_REG_INDEX_C:natural  := 26;        
+   constant AXIL_RM0_REG_INDEX_C    : natural  := 8;
+   constant AXIL_RM1_REG_INDEX_C    : natural  := 9;
+   -- constant AXIL_RM2_REG_INDEX_C    : natural  := 15;
+   -- constant AXIL_RM3_REG_INDEX_C    : natural  := 16;
+   -- constant AXIL_RM4_REG_INDEX_C    : natural  := 17;
+   -- constant AXIL_RM5_REG_INDEX_C    : natural  := 18;
+
+   constant AXIL_OUTPUT_REG_INDEX_C : natural  := 10;
+
+   constant AXIL_SYNCHLED_REG_INDEX_C:natural  := 11;
+   constant AXIL_SYNCHBCR_REG_INDEX_C:natural  := 12;
    --constant AXIL_SFP0_I2C_INDEX_C    : natural  := 27;
    --constant AXIL_SFP1_I2C_INDEX_C    : natural  := 28;
    --constant AXIL_SFP2_I2C_INDEX_C    : natural  := 29;
-   --constant AXIL_SFP3_I2C_INDEX_C    : natural  := 30;        
-   
+   --constant AXIL_SFP3_I2C_INDEX_C    : natural  := 30;
+   constant AXIL_FCREC_REG_INDEX_C  : natural  := 13;
+
    constant MAIN_XBAR_CFG_C : AxiLiteCrossbarMasterConfigArray(MAIN_XBAR_MASTERS_C-1 downto 0) := (
-     AXIL_VERSION_INDEX_C             => (
-       baseAddr                       => AXIL_BASE_ADDR_G + X"0000",
-       addrBits                       => 16,
-       connectivity                   => X"0001"), 
+     -- AXIL_VERSION_INDEX_C             => (
+     --   baseAddr                       => AXIL_BASE_ADDR_G + X"0000",
+     --   addrBits                       => 16,
+     --   connectivity                   => X"0001"),
 
      AXIL_RM0_I2C_INDEX_C             => (    -- RM0 I2C Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"4_0500",
-         addrBits                     => 8,
+         baseAddr                     => AXIL_BASE_ADDR_G + X"1_0000",
+         addrBits                     => 16,
          connectivity                 => X"0001"),
      AXIL_RM1_I2C_INDEX_C             => (    -- RM1 I2C Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"4_1000",
-         addrBits                     => 8,
+         baseAddr                     => AXIL_BASE_ADDR_G + X"2_0000",
+         addrBits                     => 16,
          connectivity                 => X"0001"),
-     AXIL_RM2_I2C_INDEX_C             => (    -- RM2 I2C Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"4_1500",
-         addrBits                     => 8,
-         connectivity                 => X"0001"),
-     AXIL_RM3_I2C_INDEX_C             => (    -- RM3 I2C Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"4_2000",
-         addrBits                     => 8,
-         connectivity                 => X"0001"),
-     AXIL_RM4_I2C_INDEX_C             => (    -- RM4 I2C Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"4_2500",
-         addrBits                     => 8,
-         connectivity                 => X"0001"),
-     AXIL_RM5_I2C_INDEX_C             => (    -- RM5 I2C Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"4_3000",
-         addrBits                     => 8,
-         connectivity                 => X"0001"),
+     -- AXIL_RM2_I2C_INDEX_C             => (    -- RM2 I2C Interface
+     --     baseAddr                     => AXIL_BASE_ADDR_G + X"4_1500",
+     --     addrBits                     => 16,
+     --     connectivity                 => X"0001"),
+     -- AXIL_RM3_I2C_INDEX_C             => (    -- RM3 I2C Interface
+     --     baseAddr                     => AXIL_BASE_ADDR_G + X"4_2000",
+     --     addrBits                     => 16,
+     --     connectivity                 => X"0001"),
+     -- AXIL_RM4_I2C_INDEX_C             => (    -- RM4 I2C Interface
+     --     baseAddr                     => AXIL_BASE_ADDR_G + X"4_2500",
+     --     addrBits                     => 16,
+     --     connectivity                 => X"0001"),
+     -- AXIL_RM5_I2C_INDEX_C             => (    -- RM5 I2C Interface
+     --     baseAddr                     => AXIL_BASE_ADDR_G + X"4_3000",
+     --     addrBits                     => 16,
+     --     connectivity                 => X"0001"),
 
      AXIL_SYNTH_I2C_INDEX_C           => (    -- SYNTH I2C Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"4_3500",
-         addrBits                     => 8,
+         baseAddr                     => AXIL_BASE_ADDR_G + X"3_0000",
+         addrBits                     => 16,
          connectivity                 => X"0001"),
      AXIL_JITTER_I2C_INDEX_C          => (    -- JITTER I2C Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"4_4000",
-         addrBits                     => 8,
-         connectivity                 => X"0001"),
-
-     AXIL_SFP0_REG_INDEX_C            => (    -- SFP0 control Register Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"4_4500",
-         addrBits                     => 8,
-         connectivity                 => X"0001"),
-     AXIL_SFP1_REG_INDEX_C            => (    -- SFP1 control Register Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"4_5000",
-         addrBits                     => 8,
-         connectivity                 => X"0001"),
-     AXIL_SFP2_REG_INDEX_C            => (    -- SFP2 control Register Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"4_5500",
-         addrBits                     => 8,
-         connectivity                 => X"0001"),
-     AXIL_SFP3_REG_INDEX_C            => (    -- SFP3 control Register Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"4_6000",
-         addrBits                     => 8,
-         connectivity                 => X"0001"),
-
-     AXIL_SYNTH_REG_INDEX_C           => (    -- SYNTH Register Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"4_6500",
-         addrBits                     => 8,
-         connectivity                 => X"0001"),
-     AXIL_JITTER_REG_INDEX_C          => (    -- Jitter Register Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"4_7000",
-         addrBits                     => 8,
-         connectivity                 => X"0001"),
-
-     AXIL_RM0_REG_INDEX_C             => (    -- RM0 control Register Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"4_7500",
-         addrBits                     => 8,
-         connectivity                 => X"0001"),
-     AXIL_RM1_REG_INDEX_C             => (    -- RM1 control Register Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"4_8000",
-         addrBits                     => 8,
-         connectivity                 => X"0001"),
-     AXIL_RM2_REG_INDEX_C             => (    -- RM2 control Register Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"4_8500",
-         addrBits                     => 8,
-         connectivity                 => X"0001"),
-     AXIL_RM3_REG_INDEX_C             => (    -- RM3 control Register Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"4_9000",
-         addrBits                     => 8,
-         connectivity                 => X"0001"),
-     AXIL_RM4_REG_INDEX_C             => (    -- RM4 control Register Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"4_9500",
-         addrBits                     => 8,
-         connectivity                 => X"0001") ,    
-     AXIL_RM5_REG_INDEX_C             => (    -- RM5 control Register Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"5_0000",
-         addrBits                     => 8,
-         connectivity                 => X"0001"),
-
-     AXIL_FCREC_REG_INDEX_C           => (    -- FC Receiver Register Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"5_0500",
-         addrBits                     => 8,
-         connectivity                 => X"0001"),
-     AXIL_GTH_REG_INDEX_C             => (    -- GTH Register Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"5_1500",
-         addrBits                     => 8,
-         connectivity                 => X"0001"),
-
-     AXIL_OUTPUT_REG_INDEX_C          => (    -- Output Register Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"5_2000",
-         addrBits                     => 8,
+         baseAddr                     => AXIL_BASE_ADDR_G + X"4_0000",
+         addrBits                     => 16,
          connectivity                 => X"0001"),
 
      AXIL_TOP_REG_INDEX_C             => (    -- local axi interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"5_3000",
-         addrBits                     => 8,
+       baseAddr                     => AXIL_BASE_ADDR_G + X"5_0000",
+       addrBits                     => 16,
+       connectivity                 => X"0001"),
+
+     AXIL_SFP0_REG_INDEX_C            => (    -- SFP0 control Register Interface
+         baseAddr                     => AXIL_BASE_ADDR_G + X"6_0000",
+         addrBits                     => 16,
+         connectivity                 => X"0001"),
+     -- AXIL_SFP1_REG_INDEX_C            => (    -- SFP1 control Register Interface
+     --     baseAddr                     => AXIL_BASE_ADDR_G + X"4_5000",
+     --     addrBits                     => 8,
+     --     connectivity                 => X"0001"),
+     -- AXIL_SFP2_REG_INDEX_C            => (    -- SFP2 control Register Interface
+     --     baseAddr                     => AXIL_BASE_ADDR_G + X"4_5500",
+     --     addrBits                     => 8,
+     --     connectivity                 => X"0001"),
+     -- AXIL_SFP3_REG_INDEX_C            => (    -- SFP3 control Register Interface
+     --     baseAddr                     => AXIL_BASE_ADDR_G + X"4_6000",
+     --     addrBits                     => 8,
+     --     connectivity                 => X"0001"),
+
+     AXIL_SYNTH_REG_INDEX_C           => (    -- SYNTH Register Interface
+         baseAddr                     => AXIL_BASE_ADDR_G + X"7_0000",
+         addrBits                     => 16,
+         connectivity                 => X"0001"),
+     AXIL_JITTER_REG_INDEX_C          => (    -- Jitter Register Interface
+         baseAddr                     => AXIL_BASE_ADDR_G + X"8_0000",
+         addrBits                     => 16,
          connectivity                 => X"0001"),
 
+     AXIL_RM0_REG_INDEX_C             => (    -- RM0 control Register Interface
+         baseAddr                     => AXIL_BASE_ADDR_G + X"9_0000",
+         addrBits                     => 16,
+         connectivity                 => X"0001"),
+     AXIL_RM1_REG_INDEX_C             => (    -- RM1 control Register Interface
+         baseAddr                     => AXIL_BASE_ADDR_G + X"A_0000",
+         addrBits                     => 16,
+         connectivity                 => X"0001"),
+     -- AXIL_RM2_REG_INDEX_C             => (    -- RM2 control Register Interface
+     --     baseAddr                     => AXIL_BASE_ADDR_G + X"4_8500",
+     --     addrBits                     => 8,
+     --     connectivity                 => X"0001"),
+     -- AXIL_RM3_REG_INDEX_C             => (    -- RM3 control Register Interface
+     --     baseAddr                     => AXIL_BASE_ADDR_G + X"4_9000",
+     --     addrBits                     => 8,
+     --     connectivity                 => X"0001"),
+     -- AXIL_RM4_REG_INDEX_C             => (    -- RM4 control Register Interface
+     --     baseAddr                     => AXIL_BASE_ADDR_G + X"4_9500",
+     --     addrBits                     => 8,
+     --     connectivity                 => X"0001") ,
+     -- AXIL_RM5_REG_INDEX_C             => (    -- RM5 control Register Interface
+     --     baseAddr                     => AXIL_BASE_ADDR_G + X"5_0000",
+     --     addrBits                     => 8,
+     --     connectivity                 => X"0001"),
+
+     -- AXIL_GTH_REG_INDEX_C             => (    -- GTH Register Interface
+     --     baseAddr                     => AXIL_BASE_ADDR_G + X"5_1500",
+     --     addrBits                     => 8,
+     --     connectivity                 => X"0001"),
+
+      AXIL_OUTPUT_REG_INDEX_C          => (    -- Output Register Interface
+          baseAddr                     => AXIL_BASE_ADDR_G + X"B_0000",
+          addrBits                     => 16,
+          connectivity                 => X"0001"),
+
+
      AXIL_SYNCHLED_REG_INDEX_C        => (    -- local axi interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"5_3500",
-         addrBits                     => 8,
+         baseAddr                     => AXIL_BASE_ADDR_G + X"C_0000",
+         addrBits                     => 16,
          connectivity                 => X"0001"),
      AXIL_SYNCHBCR_REG_INDEX_C             => (    -- local axi interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"5_4000",
-         addrBits                     => 8,
+         baseAddr                     => AXIL_BASE_ADDR_G + X"D_0000",
+         addrBits                     => 16,
+         connectivity                 => X"0001"),
+     AXIL_FCREC_REG_INDEX_C           => (    -- FC Receiver Register Interface
+         baseAddr                     => AXIL_BASE_ADDR_G + X"E_0000",
+         addrBits                     => 16,
          connectivity                 => X"0001")
 
      );
 
-   constant RM_DEVICE_MAP_C : I2cAxiLiteDevArray(2 downto 0) := (
-    0              => MakeI2cAxiLiteDevType(                    -- GPIO (1000)
+   constant RM_DEVICE_MAP_C : I2cAxiLiteDevArray(3 downto 0) := (
+    0              => MakeI2cAxiLiteDevType(                    -- GPIO (10000)
       i2cAddress  => "1000001",
       dataSize    => 8,
       addrSize    => 8,
-      endianness  => '0'),
-    1              => MakeI2cAxiLiteDevType(                    -- EEPROM(1400)
+      endianness  => '1'),
+    1              => MakeI2cAxiLiteDevType(                    -- EEPROM(14000)
       i2cAddress  => "1010000",
       dataSize    => 8,
-      addrSize    => 16,
-      endianness  => '0',
+      addrSize    => 12,
+      endianness  => '1',
       repeatStart => '1'),
-    2              => MakeI2cAxiLiteDevType(                    -- UART-bridge(1800)
+    2              => MakeI2cAxiLiteDevType(                    -- I2C (18000)                                                                                                             --extenderv1
+      i2cAddress  => "0111110",                                 --0x3E
+      dataSize    => 8,
+      addrSize    => 8,
+      endianness  => '1',
+      repeatStart => '0'),
+    3              => MakeI2cAxiLiteDevType(                    -- UART-bridge(1C000)
       i2cAddress  => "1001101",
-      dataSize    => 8, 
+      dataSize    => 8,
       addrSize    => 8,
       endianness  => '1',
       repeatStart => '0') );
@@ -303,14 +309,16 @@ architecture mapping of zccmApplication is
       i2cAddress  => "1101000",  -- si5344
       dataSize    => 8,
       addrSize    => 8,
-      endianness  => '0'));
+      endianness  => '1',
+      repeatStart => '0'));
 
    constant JITTER_DEVICE_MAP_C : I2cAxiLiteDevArray(0 downto 0) := (
     0              => MakeI2cAxiLiteDevType(
-      i2cAddress  => "1101001",  -- si5344
+      i2cAddress  => "1101000",  -- si5344
       dataSize    => 8,
       addrSize    => 8,
-      endianness  => '0'));
+      endianness  => '1',
+      repeatStart => '0'));
 
    constant I2C_SCL_FREQ_C  : real := ite(SIMULATION_G, 2.0e6, 100.0E+3);
    constant I2C_MIN_PULSE_C : real := ite(SIMULATION_G, 50.0e-9, 100.0E-9);
@@ -321,34 +329,41 @@ architecture mapping of zccmApplication is
    signal mainAxilReadSlaves   : AxiLiteReadSlaveArray(MAIN_XBAR_MASTERS_C-1 downto 0)   := (others => AXI_LITE_READ_SLAVE_EMPTY_DECERR_C);
 
    constant INI_WRITE_REG_C : slv32array(1 downto 0) := (others => x"0000_0000");
-   signal output_register : slv32array(1 downto 0) := (others => x"0000_0000");
-   
+   signal output_register   : slv32array(1 downto 0) := (others => x"0000_0000");
+   signal read_register     : slv32array(0 downto 0) := (others => x"0000_0000");
+
    signal appRes_n : sl ;
-   
+
    signal reset : sl := '0';
    signal MCLK185  : sl := '0';
    signal reset185 : sl := '0';
+   signal MCLK37_sig  : sl := '0';
+   signal reset37_sig  : sl := '0';           
    signal fcBus: FcBusType := FC_BUS_INIT_C;
-   
-   signal RM_i2c_scl : slv(5 downto 0) := (
-     0 => RM0_i2c.SCL,
-     1 => RM1_i2c.SCL,
-     2 => RM2_i2c.SCL,
-     3 => RM3_i2c.SCL,
-     4 => RM4_i2c.SCL,
-     5 => RM5_i2c.SCL);
-   
-   signal RM_i2c_sda : slv(5 downto 0) := (
-     0 => RM0_i2c.SDA,
-     1 => RM1_i2c.SDA,
-     2 => RM2_i2c.SDA,
-     3 => RM3_i2c.SDA,
-     4 => RM4_i2c.SDA,
-     5 => RM5_i2c.SDA);
 
-     signal dummy_clock_output : STD_LOGIC := '0';    
+   signal RM_i2c_scl : slv(5 downto 0) := (others => '0');
+
+   signal RM_i2c_sda : slv(5 downto 0) := (others => '0');
+
+   signal dummy_clock_output : STD_LOGIC := '0';
 
 begin
+
+  MCLK37 <= MCLK37_sig;
+  
+  RM_i2c_scl(0) <= RM0_i2c.SCL;
+  RM_i2c_scl(1) <= RM1_i2c.SCL;
+  RM_i2c_scl(2) <= RM2_i2c.SCL;
+  RM_i2c_scl(3) <= RM3_i2c.SCL;
+  RM_i2c_scl(4) <= RM4_i2c.SCL;
+  RM_i2c_scl(5) <= RM5_i2c.SCL;
+
+  RM_i2c_sda(0) <= RM0_i2c.SDA;
+  RM_i2c_sda(1) <= RM1_i2c.SDA;
+  RM_i2c_sda(2) <= RM2_i2c.SDA;
+  RM_i2c_sda(3) <= RM3_i2c.SDA;
+  RM_i2c_sda(4) <= RM4_i2c.SDA;
+  RM_i2c_sda(5) <= RM5_i2c.SDA;
 
   appRes_n <= not appRes;
 
@@ -358,17 +373,17 @@ begin
   RM3_control_out.PEN     <= output_register(0)(3);
   RM4_control_out.PEN     <= output_register(0)(4);
   RM5_control_out.PEN     <= output_register(0)(5);
-  
+
   RM0_control_out.RESET   <= output_register(0)(6);
   RM1_control_out.RESET   <= output_register(0)(7);
   RM2_control_out.RESET   <= output_register(0)(8);
   RM3_control_out.RESET   <= output_register(0)(9);
   RM4_control_out.RESET   <= output_register(0)(10);
   RM5_control_out.RESET   <= output_register(0)(11);
-   
+
   Synth_Control_out.RST   <= output_register(0)(12);
   Jitter_Control_out.RST  <= output_register(0)(13);
-  
+
   SFP0_control_out.TX_DIS <= output_register(0)(14);
   SFP1_control_out.TX_DIS <= output_register(0)(15);
   SFP2_control_out.TX_DIS <= output_register(0)(16);
@@ -390,242 +405,279 @@ begin
          axiWriteSlave   => mainAxilWriteSlaves(AXIL_OUTPUT_REG_INDEX_C),
          -- User Read/Write registers
          writeRegister   => output_register,
-         readRegister    => open );
+         readRegister    => read_register );
 
   -------------------------------------------------------
   --synchronize LED and BCR with commands from FC Rec.
   -------------------------------------------------------
---   synch_led :  entity ldmx_ts.FastCommandSynch
---     Port Map ( 
---       fast_command => fcBus.fcMsg.msgType,
---       pulse => pulse_LED_rtl,
---       clk => appClk,
---       areset_n => appRes_n,
---       -- AXI-Lite Interface
---       axilClk => axilClk,
---       axilRst => axilRst,
---       mAxilWriteMaster=> mainAxilWriteMasters(AXIL_SYNCHLED_REG_INDEX_C), 
---       mAxilWriteSlave => mainAxilWriteSlaves(AXIL_SYNCHLED_REG_INDEX_C),  
---       mAxilReadMaster => mainAxilReadMasters(AXIL_SYNCHLED_REG_INDEX_C),
---       mAxilReadSlave  => mainAxilReadSlaves(AXIL_SYNCHLED_REG_INDEX_C) 
---       );
-  
---   synch_bcr : entity ldmx_ts.FastCommandSynch
---     Port Map ( 
---       fast_command => fcBus.fcMsg.msgType,
---       pulse => pulse_BCR_rtl,
---       clk => appClk,
---       areset_n => appRes_n,
---       -- AXI-Lite Interface
---       axilClk => axilClk,
---       axilRst => axilRst,
---       mAxilWriteMaster=> mainAxilWriteMasters(AXIL_SYNCHBCR_REG_INDEX_C),
---       mAxilWriteSlave => mainAxilWriteSlaves(AXIL_SYNCHBCR_REG_INDEX_C),
---       mAxilReadMaster => mainAxilReadMasters(AXIL_SYNCHBCR_REG_INDEX_C),
---       mAxilReadSlave  => mainAxilReadSlaves(AXIL_SYNCHBCR_REG_INDEX_C) 
---       );
+
+  test_bc0 : process(MCLK37_sig,reset37_sig)
+    variable count : INTEGER range 0 to 3564 := 0;
+  begin
+    if reset37_sig = '1' then
+      count := 0;
+      pulse_BCR_rtl <= '0';
+    elsif rising_edge(MCLK37_sig) then
+      if count = 3564 then
+        pulse_BCR_rtl <= '1';
+        count := 0;
+      else
+        pulse_BCR_rtl <= '0';
+        count := count + 1;
+      end if;
+    end if;
+  end process test_bc0;
+
+  test_led : process(MCLK37_sig,reset37_sig)
+    variable count : INTEGER range 0 to 17820 := 0;
+  begin
+    if reset37_sig = '1' then
+      count := 0;
+      pulse_LED_rtl <= '0';
+    elsif rising_edge(MCLK37_sig) then
+      if count = 17820 then
+        pulse_LED_rtl <= '1';
+        count := 0;
+      else
+        pulse_LED_rtl <= '0';
+        count := count + 1;
+      end if;
+    end if;
+  end process test_led;
+
+  -- synch_led :  entity ldmx_ts.FastCommandSynch
+  --   generic Map(
+  --     TPD_G => TPD_G)
+  --   Port Map (
+  --     fast_command => fcBus.fcMsg.msgType,
+  --     pulse => pulse_LED_rtl,
+  --     clk => appClk,
+  --     areset_n => appRes_n,
+  --     -- AXI-Lite Interface
+  --     axilClk => axilClk,
+  --     axilRst => axilRst,
+  --     mAxilWriteMaster=> mainAxilWriteMasters(AXIL_SYNCHLED_REG_INDEX_C),
+  --     mAxilWriteSlave => mainAxilWriteSlaves(AXIL_SYNCHLED_REG_INDEX_C),
+  --     mAxilReadMaster => mainAxilReadMasters(AXIL_SYNCHLED_REG_INDEX_C),
+  --     mAxilReadSlave  => mainAxilReadSlaves(AXIL_SYNCHLED_REG_INDEX_C)
+  --     );
+
+  -- synch_bcr : entity ldmx_ts.FastCommandSynch
+  --   generic Map(
+  --     TPD_G => TPD_G)
+  --   Port Map (
+  --     fast_command => fcBus.fcMsg.msgType,
+  --     pulse => pulse_BCR_rtl,
+  --     clk => appClk,
+  --     areset_n => appRes_n,
+  --     -- AXI-Lite Interface
+  --     axilClk => axilClk,
+  --     axilRst => axilRst,
+  --     mAxilWriteMaster=> mainAxilWriteMasters(AXIL_SYNCHBCR_REG_INDEX_C),
+  --     mAxilWriteSlave => mainAxilWriteSlaves(AXIL_SYNCHBCR_REG_INDEX_C),
+  --     mAxilReadMaster => mainAxilReadMasters(AXIL_SYNCHBCR_REG_INDEX_C),
+  --     mAxilReadSlave  => mainAxilReadSlaves(AXIL_SYNCHBCR_REG_INDEX_C)
+  --     );
 
   -- - - - - - - - - - - - - - - - - - - - - -
   -- components for managing state changes on SPFs
   -- - - - - - - - - - - - - - - - - - - - - -
-  
---   SFP0_mon : entity ldmx_ts.SFP_Monitor
---     generic map(
---       TPD_G          => TPD_G)
---     Port Map(
---       sfp_con => SFP0_control,
---       clk     => appClk,
---       reset_n => appRes_n,
---       -- Axil interface
---       axilClk        => axilClk,
---       axilRst        => axilRst,
---       axilReadMaster  => mainAxilReadMasters(AXIL_SFP0_REG_INDEX_C),   -- [in]
---       axilReadSlave   => mainAxilReadSlaves(AXIL_SFP0_REG_INDEX_C),    -- [out]
---       axilWriteMaster => mainAxilWriteMasters(AXIL_SFP0_REG_INDEX_C),  -- [in]
---       axilWriteSlave  => mainAxilWriteSlaves(AXIL_SFP0_REG_INDEX_C)    -- [out
---       );
-  
---   SFP1_mon : entity ldmx_ts.SFP_Monitor
---     generic map(
---       TPD_G          => TPD_G)
---     Port Map(
---       sfp_con => SFP1_control,
---       clk     => appClk,
---       reset_n => appRes_n,
---       -- Axil interface
---       axilClk        => axilClk,
---       axilRst        => axilRst,
---       axilReadMaster  => mainAxilReadMasters(AXIL_SFP1_REG_INDEX_C),   -- [in]
---       axilReadSlave   => mainAxilReadSlaves(AXIL_SFP1_REG_INDEX_C),    -- [out]
---       axilWriteMaster => mainAxilWriteMasters(AXIL_SFP1_REG_INDEX_C),  -- [in]
---       axilWriteSlave  => mainAxilWriteSlaves(AXIL_SFP1_REG_INDEX_C)    -- [out
---       );
-  
---   SFP2_mon : entity ldmx_ts.SFP_Monitor
---     generic map(
---       TPD_G          => TPD_G)
---     Port Map(
---       sfp_con => SFP2_control,
---       clk     => appClk,
---       reset_n => appRes_n,
---       -- Axil interface
---       axilClk        => axilClk,
---       axilRst        => axilRst,
---       axilReadMaster  => mainAxilReadMasters(AXIL_SFP2_REG_INDEX_C),   -- [in]
---       axilReadSlave   => mainAxilReadSlaves(AXIL_SFP2_REG_INDEX_C),    -- [out]
---       axilWriteMaster => mainAxilWriteMasters(AXIL_SFP2_REG_INDEX_C),  -- [in]
---       axilWriteSlave  => mainAxilWriteSlaves(AXIL_SFP2_REG_INDEX_C)    -- [out
---       );
-  
---   SFP3_mon : entity ldmx_ts.SFP_Monitor
---     generic map(
---       TPD_G          => TPD_G)
---     Port Map(
---       sfp_con => SFP3_control,
---       clk     => appClk,
---       reset_n => appRes_n,
---       -- Axil interface
---       axilClk        => axilClk,
---       axilRst        => axilRst,
---       axilReadMaster  => mainAxilReadMasters(AXIL_SFP3_REG_INDEX_C),   -- [in]
---       axilReadSlave   => mainAxilReadSlaves(AXIL_SFP3_REG_INDEX_C),    -- [out]
---       axilWriteMaster => mainAxilWriteMasters(AXIL_SFP3_REG_INDEX_C),  -- [in]
---       axilWriteSlave  => mainAxilWriteSlaves(AXIL_SFP3_REG_INDEX_C)    -- [out
---       );             
+ SFP0_mon : entity ldmx_ts.SFP_Monitor
+   generic map(
+     TPD_G          => TPD_G)
+   Port Map(
+     sfp_con => SFP0_control,
+     clk     => appClk,
+     reset_n => appRes_n,
+     -- Axil interface
+     axilClk        => axilClk,
+     axilRst        => axilRst,
+     axilReadMaster  => mainAxilReadMasters(AXIL_SFP0_REG_INDEX_C),   -- [in]
+     axilReadSlave   => mainAxilReadSlaves(AXIL_SFP0_REG_INDEX_C),    -- [out]
+     axilWriteMaster => mainAxilWriteMasters(AXIL_SFP0_REG_INDEX_C),  -- [in]
+     axilWriteSlave  => mainAxilWriteSlaves(AXIL_SFP0_REG_INDEX_C)    -- [out
+     );
+
+ -- SFP1_mon : entity ldmx_ts.SFP_Monitor
+ --   generic map(
+ --     TPD_G          => TPD_G)
+ --   Port Map(
+ --     sfp_con => SFP1_control,
+ --     clk     => appClk,
+ --     reset_n => appRes_n,
+ --     -- Axil interface
+ --     axilClk        => axilClk,
+ --     axilRst        => axilRst,
+ --     axilReadMaster  => mainAxilReadMasters(AXIL_SFP1_REG_INDEX_C),   -- [in]
+ --     axilReadSlave   => mainAxilReadSlaves(AXIL_SFP1_REG_INDEX_C),    -- [out]
+ --     axilWriteMaster => mainAxilWriteMasters(AXIL_SFP1_REG_INDEX_C),  -- [in]
+ --     axilWriteSlave  => mainAxilWriteSlaves(AXIL_SFP1_REG_INDEX_C)    -- [out
+ --     );
+
+ -- SFP2_mon : entity ldmx_ts.SFP_Monitor
+ --   generic map(
+ --     TPD_G          => TPD_G)
+ --   Port Map(
+ --     sfp_con => SFP2_control,
+ --     clk     => appClk,
+ --     reset_n => appRes_n,
+ --     -- Axil interface
+ --     axilClk        => axilClk,
+ --     axilRst        => axilRst,
+ --     axilReadMaster  => mainAxilReadMasters(AXIL_SFP2_REG_INDEX_C),   -- [in]
+ --     axilReadSlave   => mainAxilReadSlaves(AXIL_SFP2_REG_INDEX_C),    -- [out]
+ --     axilWriteMaster => mainAxilWriteMasters(AXIL_SFP2_REG_INDEX_C),  -- [in]
+ --     axilWriteSlave  => mainAxilWriteSlaves(AXIL_SFP2_REG_INDEX_C)    -- [out
+ --     );
+
+ -- SFP3_mon : entity ldmx_ts.SFP_Monitor
+ --   generic map(
+ --     TPD_G          => TPD_G)
+ --   Port Map(
+ --     sfp_con => SFP3_control,
+ --     clk     => appClk,
+ --     reset_n => appRes_n,
+ --     -- Axil interface
+ --     axilClk        => axilClk,
+ --     axilRst        => axilRst,
+ --     axilReadMaster  => mainAxilReadMasters(AXIL_SFP3_REG_INDEX_C),   -- [in]
+ --     axilReadSlave   => mainAxilReadSlaves(AXIL_SFP3_REG_INDEX_C),    -- [out]
+ --     axilWriteMaster => mainAxilWriteMasters(AXIL_SFP3_REG_INDEX_C),  -- [in]
+ --     axilWriteSlave  => mainAxilWriteSlaves(AXIL_SFP3_REG_INDEX_C)    -- [out
+ --     );
 
   -- - - - - - - - - - - - - - - - - - - - - -
   -- components for managing state changes on Clock chips
   -- - - - - - - - - - - - - - - - - - - - - -
---   synth_mon : entity ldmx_ts.Clock_Monitor
---     generic map(
---       TPD_G          => TPD_G)
---     Port Map(
---       clk_con => Synth_Control,
---       clk     => appClk,
---       reset_n => appRes_n,
---       -- Axil interface
---       axilClk        =>  axilClk,
---       axilRst        =>  axilRst,
---       axilReadMaster  => mainAxilReadMasters(AXIL_SYNTH_REG_INDEX_C),   -- [in]
---       axilReadSlave   => mainAxilReadSlaves(AXIL_SYNTH_REG_INDEX_C),    -- [out]
---       axilWriteMaster => mainAxilWriteMasters(AXIL_SYNTH_REG_INDEX_C),  -- [in]
---       axilWriteSlave  => mainAxilWriteSlaves(AXIL_SYNTH_REG_INDEX_C)    -- [out]
---       );    
+ synth_mon : entity ldmx_ts.Clock_Monitor
+   generic map(
+     TPD_G          => TPD_G)
+   Port Map(
+     clk_con => Synth_Control,
+     clk     => appClk,
+     reset_n => appRes_n,
+     -- Axil interface
+     axilClk        =>  axilClk,
+     axilRst        =>  axilRst,
+     axilReadMaster  => mainAxilReadMasters(AXIL_SYNTH_REG_INDEX_C),   -- [in]
+     axilReadSlave   => mainAxilReadSlaves(AXIL_SYNTH_REG_INDEX_C),    -- [out]
+     axilWriteMaster => mainAxilWriteMasters(AXIL_SYNTH_REG_INDEX_C),  -- [in]
+     axilWriteSlave  => mainAxilWriteSlaves(AXIL_SYNTH_REG_INDEX_C)    -- [out]
+     );
 
---   jitter_mon : entity ldmx_ts.Clock_Monitor
---     generic map(
---       TPD_G          => TPD_G)
---     Port Map(
---       clk_con => Jitter_Control,
---       clk     => appClk,
---       reset_n => appRes_n,
---       -- Axil interface
---       axilClk        => axilClk,
---       axilRst        => axilRst,
---       axilReadMaster  => mainAxilReadMasters(AXIL_JITTER_REG_INDEX_C),   -- [in]
---       axilReadSlave   => mainAxilReadSlaves(AXIL_JITTER_REG_INDEX_C),    -- [out]
---       axilWriteMaster => mainAxilWriteMasters(AXIL_JITTER_REG_INDEX_C),  -- [in]
---       axilWriteSlave  => mainAxilWriteSlaves(AXIL_JITTER_REG_INDEX_C)    -- [out
---       );
+ jitter_mon : entity ldmx_ts.Clock_Monitor
+   generic map(
+     TPD_G          => TPD_G)
+   Port Map(
+     clk_con => Jitter_Control,
+     clk     => appClk,
+     reset_n => appRes_n,
+     -- Axil interface
+     axilClk        => axilClk,
+     axilRst        => axilRst,
+     axilReadMaster  => mainAxilReadMasters(AXIL_JITTER_REG_INDEX_C),   -- [in]
+     axilReadSlave   => mainAxilReadSlaves(AXIL_JITTER_REG_INDEX_C),    -- [out]
+     axilWriteMaster => mainAxilWriteMasters(AXIL_JITTER_REG_INDEX_C),  -- [in]
+     axilWriteSlave  => mainAxilWriteSlaves(AXIL_JITTER_REG_INDEX_C)    -- [out
+     );
   -- - - - - - - - - - - - - - - - - - - - - -
   -- components for managing state changes on RMs
   -- - - - - - - - - - - - - - - - - - - - - -
+ rm0_mon : entity ldmx_ts.RM_Monitor
+   generic map(
+     TPD_G          => TPD_G)
+   Port Map(
+     rm_con => RM0_control,
+     clk    => appClk,
+     reset_n=> appRes_n,
+     -- Axil interface
+     axilClk        => axilClk,
+     axilRst        => axilRst,
+     axilReadMaster  => mainAxilReadMasters(AXIL_RM0_REG_INDEX_C),   -- [in]
+     axilReadSlave   => mainAxilReadSlaves(AXIL_RM0_REG_INDEX_C),    -- [out]
+     axilWriteMaster => mainAxilWriteMasters(AXIL_RM0_REG_INDEX_C),  -- [in]
+     axilWriteSlave  => mainAxilWriteSlaves(AXIL_RM0_REG_INDEX_C)    -- [out
+     );
 
---   rm0_mon : entity ldmx_ts.RM_Monitor
---     generic map(
---       TPD_G          => TPD_G)
---     Port Map(
---       rm_con => RM0_control,
---       clk    => appClk,
---       reset_n=> appRes_n,
---       -- Axil interface
---       axilClk        => axilClk,
---       axilRst        => axilRst,
---       axilReadMaster  => mainAxilReadMasters(AXIL_RM0_REG_INDEX_C),   -- [in]
---       axilReadSlave   => mainAxilReadSlaves(AXIL_RM0_REG_INDEX_C),    -- [out]
---       axilWriteMaster => mainAxilWriteMasters(AXIL_RM0_REG_INDEX_C),  -- [in]
---       axilWriteSlave  => mainAxilWriteSlaves(AXIL_RM0_REG_INDEX_C)    -- [out
---       );
-  
---   rm1_mon : entity ldmx_ts.RM_Monitor
---     generic map(
---       TPD_G          => TPD_G)
---     Port Map(
---       rm_con => RM1_control,
---       clk    => appClk,
---       reset_n=> appRes_n,
---       -- Axil interface
---       axilClk        => axilClk,
---       axilRst        => axilRst,
---       axilReadMaster  => mainAxilReadMasters(AXIL_RM1_REG_INDEX_C),   -- [in]
---       axilReadSlave   => mainAxilReadSlaves(AXIL_RM1_REG_INDEX_C),    -- [out]
---       axilWriteMaster => mainAxilWriteMasters(AXIL_RM1_REG_INDEX_C),  -- [in]
---       axilWriteSlave  => mainAxilWriteSlaves(AXIL_RM1_REG_INDEX_C)    -- [out
---       );
+ rm1_mon : entity ldmx_ts.RM_Monitor
+   generic map(
+     TPD_G          => TPD_G)
+   Port Map(
+     rm_con => RM1_control,
+     clk    => appClk,
+     reset_n=> appRes_n,
+     -- Axil interface
+     axilClk        => axilClk,
+     axilRst        => axilRst,
+     axilReadMaster  => mainAxilReadMasters(AXIL_RM1_REG_INDEX_C),   -- [in]
+     axilReadSlave   => mainAxilReadSlaves(AXIL_RM1_REG_INDEX_C),    -- [out]
+     axilWriteMaster => mainAxilWriteMasters(AXIL_RM1_REG_INDEX_C),  -- [in]
+     axilWriteSlave  => mainAxilWriteSlaves(AXIL_RM1_REG_INDEX_C)    -- [out
+     );
 
---   rm2_mon : entity ldmx_ts.RM_Monitor
---     generic map(
---       TPD_G          => TPD_G)
---     Port Map(
---       rm_con => RM2_control,
---       clk    => appClk,
---       reset_n=> appRes_n,
---       -- Axil interface
---       axilClk        => axilClk,
---       axilRst        => axilRst,
---       axilReadMaster  => mainAxilReadMasters(AXIL_RM2_REG_INDEX_C),   -- [in]
---       axilReadSlave   => mainAxilReadSlaves(AXIL_RM2_REG_INDEX_C),    -- [out]
---       axilWriteMaster => mainAxilWriteMasters(AXIL_RM2_REG_INDEX_C),  -- [in]
---       axilWriteSlave  => mainAxilWriteSlaves(AXIL_RM2_REG_INDEX_C)    -- [out
---       );
+ -- rm2_mon : entity ldmx_ts.RM_Monitor
+ --   generic map(
+ --     TPD_G          => TPD_G)
+ --   Port Map(
+ --     rm_con => RM2_control,
+ --     clk    => appClk,
+ --     reset_n=> appRes_n,
+ --     -- Axil interface
+ --     axilClk        => axilClk,
+ --     axilRst        => axilRst,
+ --     axilReadMaster  => mainAxilReadMasters(AXIL_RM2_REG_INDEX_C),   -- [in]
+ --     axilReadSlave   => mainAxilReadSlaves(AXIL_RM2_REG_INDEX_C),    -- [out]
+ --     axilWriteMaster => mainAxilWriteMasters(AXIL_RM2_REG_INDEX_C),  -- [in]
+ --     axilWriteSlave  => mainAxilWriteSlaves(AXIL_RM2_REG_INDEX_C)    -- [out
+ --     );
 
---   rm3_mon : entity ldmx_ts.RM_Monitor
---     generic map(
---       TPD_G          => TPD_G)
---     Port Map(
---       rm_con => RM3_control,
---       clk    => appClk,
---       reset_n=> appRes_n,
---       -- Axil interface
---       axilClk        => axilClk,
---       axilRst        => axilRst,
---       axilReadMaster  => mainAxilReadMasters(AXIL_RM3_REG_INDEX_C),   -- [in]
---       axilReadSlave   => mainAxilReadSlaves(AXIL_RM3_REG_INDEX_C),    -- [out]
---       axilWriteMaster => mainAxilWriteMasters(AXIL_RM3_REG_INDEX_C),  -- [in]
---       axilWriteSlave  => mainAxilWriteSlaves(AXIL_RM3_REG_INDEX_C)    -- [out
---       );
-  
---   rm4_mon : entity ldmx_ts.RM_Monitor
---     generic map(
---       TPD_G          => TPD_G)
---     Port Map(
---       rm_con => RM4_control,
---       clk    => appClk,
---       reset_n=> appRes_n,
---       -- Axil interface
---       axilClk        => axilClk,
---       axilRst        => axilRst,
---       axilReadMaster  => mainAxilReadMasters(AXIL_RM4_REG_INDEX_C),   -- [in]
---       axilReadSlave   => mainAxilReadSlaves(AXIL_RM4_REG_INDEX_C),    -- [out]
---       axilWriteMaster => mainAxilWriteMasters(AXIL_RM4_REG_INDEX_C),  -- [in]
---       axilWriteSlave  => mainAxilWriteSlaves(AXIL_RM4_REG_INDEX_C)    -- [out
---       );
+ -- rm3_mon : entity ldmx_ts.RM_Monitor
+ --   generic map(
+ --     TPD_G          => TPD_G)
+ --   Port Map(
+ --     rm_con => RM3_control,
+ --     clk    => appClk,
+ --     reset_n=> appRes_n,
+ --     -- Axil interface
+ --     axilClk        => axilClk,
+ --     axilRst        => axilRst,
+ --     axilReadMaster  => mainAxilReadMasters(AXIL_RM3_REG_INDEX_C),   -- [in]
+ --     axilReadSlave   => mainAxilReadSlaves(AXIL_RM3_REG_INDEX_C),    -- [out]
+ --     axilWriteMaster => mainAxilWriteMasters(AXIL_RM3_REG_INDEX_C),  -- [in]
+ --     axilWriteSlave  => mainAxilWriteSlaves(AXIL_RM3_REG_INDEX_C)    -- [out
+ --     );
 
---   rm5_mon : entity ldmx_ts.RM_Monitor 
---     generic map(
---       TPD_G          => TPD_G)
---     Port Map(
---       rm_con => RM5_control,
---       clk    => appClk,
---       reset_n=> appRes_n,
---       -- Axil interface
---       axilClk        => axilClk,
---       axilRst        => axilRst,
---       axilReadMaster  => mainAxilReadMasters(AXIL_RM4_REG_INDEX_C),   -- [in]
---       axilReadSlave   => mainAxilReadSlaves(AXIL_RM4_REG_INDEX_C),    -- [out]
---       axilWriteMaster => mainAxilWriteMasters(AXIL_RM4_REG_INDEX_C),  -- [in]
---       axilWriteSlave  => mainAxilWriteSlaves(AXIL_RM4_REG_INDEX_C)    -- [out
---       );
+ -- rm4_mon : entity ldmx_ts.RM_Monitor
+ --   generic map(
+ --     TPD_G          => TPD_G)
+ --   Port Map(
+ --     rm_con => RM4_control,
+ --     clk    => appClk,
+ --     reset_n=> appRes_n,
+ --     -- Axil interface
+ --     axilClk        => axilClk,
+ --     axilRst        => axilRst,
+ --     axilReadMaster  => mainAxilReadMasters(AXIL_RM4_REG_INDEX_C),   -- [in]
+ --     axilReadSlave   => mainAxilReadSlaves(AXIL_RM4_REG_INDEX_C),    -- [out]
+ --     axilWriteMaster => mainAxilWriteMasters(AXIL_RM4_REG_INDEX_C),  -- [in]
+ --     axilWriteSlave  => mainAxilWriteSlaves(AXIL_RM4_REG_INDEX_C)    -- [out
+ --     );
+
+ -- rm5_mon : entity ldmx_ts.RM_Monitor
+ --   generic map(
+ --     TPD_G          => TPD_G)
+ --   Port Map(
+ --     rm_con => RM5_control,
+ --     clk    => appClk,
+ --     reset_n=> appRes_n,
+ --     -- Axil interface
+ --     axilClk        => axilClk,
+ --     axilRst        => axilRst,
+ --     axilReadMaster  => mainAxilReadMasters(AXIL_RM5_REG_INDEX_C),   -- [in]
+ --     axilReadSlave   => mainAxilReadSlaves(AXIL_RM5_REG_INDEX_C),    -- [out]
+ --     axilWriteMaster => mainAxilWriteMasters(AXIL_RM5_REG_INDEX_C),  -- [in]
+ --     axilWriteSlave  => mainAxilWriteSlaves(AXIL_RM5_REG_INDEX_C)    -- [out
+ --     );
 
   -------------------------------------------------------------------------------------------------
   -- Main Axi Crossbar
@@ -672,7 +724,7 @@ begin
       scl            => Synth_i2c.SCL,                                     -- [inout]
       sda            => Synth_i2c.SDA);                                    -- [inout]
 
-  
+
   -------------------------------------------------------------------------------------------------
   -- synthesizer clock chip I2C
   -------------------------------------------------------------------------------------------------
@@ -704,27 +756,126 @@ begin
   -- -add RM slave
   -- -add peripheral devices on the RM
   -------------------------------------------------------------------------------------------------
-  GEN_VEC : for i in 5 downto 0 generate
-    U_AxiI2cRegMaster_RM : entity surf.AxiI2cRegMaster
-      generic map (
-        TPD_G             => TPD_G,
-        AXIL_PROXY_G      => false,
-        DEVICE_MAP_G      => RM_DEVICE_MAP_C,
-        I2C_SCL_FREQ_G    => I2C_SCL_FREQ_C,
-        I2C_MIN_PULSE_G   => I2C_MIN_PULSE_C,
-        AXI_CLK_FREQ_G    => AXIL_CLK_FREQ_G)
-      port map (
-        -- AXIL signals
-        axiClk         => axilClk,                                     -- [in]
-        axiRst         => axilRst,                                     -- [in]
-        axiReadMaster  => mainAxilReadMasters(AXIL_RM0_I2C_INDEX_C+i),   -- [in]
-        axiReadSlave   => mainAxilReadSlaves(AXIL_RM0_I2C_INDEX_C+i),    -- [out]
-        axiWriteMaster => mainAxilWriteMasters(AXIL_RM0_I2C_INDEX_C+i),  -- [in]
-        axiWriteSlave  => mainAxilWriteSlaves(AXIL_RM0_I2C_INDEX_C+i),   -- [out]
-        -- externals (these are buffered internal to AxiI2cRegMaster)
-        scl            => RM_i2c_scl(i),                                     -- [inout]
-        sda            => RM_i2c_sda(i));                                    -- [inout]
-  end generate GEN_VEC;
+  U_AxiI2cRegMaster_RM0 : entity surf.AxiI2cRegMaster
+    generic map (
+      TPD_G             => TPD_G,
+      AXIL_PROXY_G      => false,
+      DEVICE_MAP_G      => RM_DEVICE_MAP_C,
+      I2C_SCL_FREQ_G    => I2C_SCL_FREQ_C,
+      I2C_MIN_PULSE_G   => I2C_MIN_PULSE_C,
+      AXI_CLK_FREQ_G    => AXIL_CLK_FREQ_G)
+    port map (
+      -- AXIL signals
+      axiClk         => axilClk,                                     -- [in]
+      axiRst         => axilRst,                                     -- [in]
+      axiReadMaster  => mainAxilReadMasters(AXIL_RM0_I2C_INDEX_C),   -- [in]
+      axiReadSlave   => mainAxilReadSlaves(AXIL_RM0_I2C_INDEX_C),    -- [out]
+      axiWriteMaster => mainAxilWriteMasters(AXIL_RM0_I2C_INDEX_C),  -- [in]
+      axiWriteSlave  => mainAxilWriteSlaves(AXIL_RM0_I2C_INDEX_C),   -- [out]
+      -- externals (these are buffered internal to AxiI2cRegMaster)
+      scl            => RM0_i2c.SCL,                                     -- [inout]
+      sda            => RM0_i2c.SDA);                                    -- [inout]
+
+    U_AxiI2cRegMaster_RM1 : entity surf.AxiI2cRegMaster
+    generic map (
+      TPD_G             => TPD_G,
+      AXIL_PROXY_G      => false,
+      DEVICE_MAP_G      => RM_DEVICE_MAP_C,
+      I2C_SCL_FREQ_G    => I2C_SCL_FREQ_C,
+      I2C_MIN_PULSE_G   => I2C_MIN_PULSE_C,
+      AXI_CLK_FREQ_G    => AXIL_CLK_FREQ_G)
+    port map (
+      -- AXIL signals
+      axiClk         => axilClk,                                     -- [in]
+      axiRst         => axilRst,                                     -- [in]
+      axiReadMaster  => mainAxilReadMasters(AXIL_RM1_I2C_INDEX_C),   -- [in]
+      axiReadSlave   => mainAxilReadSlaves(AXIL_RM1_I2C_INDEX_C),    -- [out]
+      axiWriteMaster => mainAxilWriteMasters(AXIL_RM1_I2C_INDEX_C),  -- [in]
+      axiWriteSlave  => mainAxilWriteSlaves(AXIL_RM1_I2C_INDEX_C),   -- [out]
+      -- externals (these are buffered internal to AxiI2cRegMaster)
+      scl            => RM1_i2c.SCL,                                     -- [inout]
+      sda            => RM1_i2c.SDA);                                    -- [inout]
+
+    -- U_AxiI2cRegMaster_RM2 : entity surf.AxiI2cRegMaster
+    -- generic map (
+    --   TPD_G             => TPD_G,
+    --   AXIL_PROXY_G      => false,
+    --   DEVICE_MAP_G      => RM_DEVICE_MAP_C,
+    --   I2C_SCL_FREQ_G    => I2C_SCL_FREQ_C,
+    --   I2C_MIN_PULSE_G   => I2C_MIN_PULSE_C,
+    --   AXI_CLK_FREQ_G    => AXIL_CLK_FREQ_G)
+    -- port map (
+    --   -- AXIL signals
+    --   axiClk         => axilClk,                                     -- [in]
+    --   axiRst         => axilRst,                                     -- [in]
+    --   axiReadMaster  => mainAxilReadMasters(AXIL_RM2_I2C_INDEX_C),   -- [in]
+    --   axiReadSlave   => mainAxilReadSlaves(AXIL_RM2_I2C_INDEX_C),    -- [out]
+    --   axiWriteMaster => mainAxilWriteMasters(AXIL_RM2_I2C_INDEX_C),  -- [in]
+    --   axiWriteSlave  => mainAxilWriteSlaves(AXIL_RM2_I2C_INDEX_C),   -- [out]
+    --   -- externals (these are buffered internal to AxiI2cRegMaster)
+    --   scl            => RM2_i2c.SCL,                                     -- [inout]
+    --   sda            => RM2_i2c.SDA);                                    -- [inout]
+
+    -- U_AxiI2cRegMaster_RM3 : entity surf.AxiI2cRegMaster
+    -- generic map (
+    --   TPD_G             => TPD_G,
+    --   AXIL_PROXY_G      => false,
+    --   DEVICE_MAP_G      => RM_DEVICE_MAP_C,
+    --   I2C_SCL_FREQ_G    => I2C_SCL_FREQ_C,
+    --   I2C_MIN_PULSE_G   => I2C_MIN_PULSE_C,
+    --   AXI_CLK_FREQ_G    => AXIL_CLK_FREQ_G)
+    -- port map (
+    --   -- AXIL signals
+    --   axiClk         => axilClk,                                     -- [in]
+    --   axiRst         => axilRst,                                     -- [in]
+    --   axiReadMaster  => mainAxilReadMasters(AXIL_RM3_I2C_INDEX_C),   -- [in]
+    --   axiReadSlave   => mainAxilReadSlaves(AXIL_RM3_I2C_INDEX_C),    -- [out]
+    --   axiWriteMaster => mainAxilWriteMasters(AXIL_RM3_I2C_INDEX_C),  -- [in]
+    --   axiWriteSlave  => mainAxilWriteSlaves(AXIL_RM3_I2C_INDEX_C),   -- [out]
+    --   -- externals (these are buffered internal to AxiI2cRegMaster)
+    --   scl            => RM3_i2c.SCL,                                     -- [inout]
+    --   sda            => RM3_i2c.SDA);                                    -- [inout]
+
+--    U_AxiI2cRegMaster_RM4 : entity surf.AxiI2cRegMaster
+--    generic map (
+--      TPD_G             => TPD_G,
+--      AXIL_PROXY_G      => false,
+--      DEVICE_MAP_G      => RM_DEVICE_MAP_C,
+--      I2C_SCL_FREQ_G    => I2C_SCL_FREQ_C,
+--      I2C_MIN_PULSE_G   => I2C_MIN_PULSE_C,
+--      AXI_CLK_FREQ_G    => AXIL_CLK_FREQ_G)
+--    port map (
+--      -- AXIL signals
+--      axiClk         => axilClk,                                     -- [in]
+--      axiRst         => axilRst,                                     -- [in]
+--      axiReadMaster  => mainAxilReadMasters(AXIL_RM4_I2C_INDEX_C),   -- [in]
+--      axiReadSlave   => mainAxilReadSlaves(AXIL_RM4_I2C_INDEX_C),    -- [out]
+--      axiWriteMaster => mainAxilWriteMasters(AXIL_RM4_I2C_INDEX_C),  -- [in]
+--      axiWriteSlave  => mainAxilWriteSlaves(AXIL_RM4_I2C_INDEX_C),   -- [out]
+--      -- externals (these are buffered internal to AxiI2cRegMaster)
+--      scl            => RM4_i2c.SCL,                                     -- [inout]
+--      sda            => RM4_i2c.SDA);                                    -- [inout]
+
+--    U_AxiI2cRegMaster_RM5 : entity surf.AxiI2cRegMaster
+--    generic map (
+--      TPD_G             => TPD_G,
+--      AXIL_PROXY_G      => false,
+--      DEVICE_MAP_G      => RM_DEVICE_MAP_C,
+--      I2C_SCL_FREQ_G    => I2C_SCL_FREQ_C,
+--      I2C_MIN_PULSE_G   => I2C_MIN_PULSE_C,
+--      AXI_CLK_FREQ_G    => AXIL_CLK_FREQ_G)
+--    port map (
+--      -- AXIL signals
+--      axiClk         => axilClk,                                     -- [in]
+--      axiRst         => axilRst,                                     -- [in]
+--      axiReadMaster  => mainAxilReadMasters(AXIL_RM5_I2C_INDEX_C),   -- [in]
+--      axiReadSlave   => mainAxilReadSlaves(AXIL_RM5_I2C_INDEX_C),    -- [out]
+--      axiWriteMaster => mainAxilWriteMasters(AXIL_RM5_I2C_INDEX_C),  -- [in]
+--      axiWriteSlave  => mainAxilWriteSlaves(AXIL_RM5_I2C_INDEX_C),   -- [out]
+--      -- externals (these are buffered internal to AxiI2cRegMaster)
+--      scl            => RM5_i2c.SCL,                                     -- [inout]
+--      sda            => RM5_i2c.SDA);                                    -- [inout]
+
     -- - - - - - - - - - - - - - - - - - - - - -
     -- FC Receiver block...
     -- TODO:
@@ -743,8 +894,8 @@ begin
         fcRefClk185P =>  MGTREFCLK0_P,
         fcRefClk185N =>  MGTREFCLK0_N,
         -- Output Recovered Clock
---         fcRecClkP    =>  open,
---         fcRecClkN    =>  open,
+        --fcRecClkP    =>  open,
+        --fcRecClkN    =>  open,
         -- PGP serial IO
         fcTxP        => fcTxP,
         fcTxN        => fcTxN,
@@ -754,15 +905,15 @@ begin
         fcClk185     => MCLK185,
         fcRst185     => reset185,
         fcBus        => fcBus,
-        fcBunchClk37 => MCLK37,
-        fcBunchRst37 => open,
+        fcBunchClk37 => MCLK37_sig,
+        fcBunchRst37 => reset37_sig,
         -- Axil inteface
-        axilClk         => axilClk,                                     -- [in] 
-        axilRst         => axilRst,                                     -- [in] 
-        axilReadMaster  => mainAxilReadMasters(AXIL_FCREC_REG_INDEX_C),   -- [in] 
+        axilClk         => axilClk,                                     -- [in]
+        axilRst         => axilRst,                                     -- [in]
+        axilReadMaster  => mainAxilReadMasters(AXIL_FCREC_REG_INDEX_C),   -- [in]
         axilReadSlave   => mainAxilReadSlaves(AXIL_FCREC_REG_INDEX_C),    -- [out]
-        axilWriteMaster => mainAxilWriteMasters(AXIL_FCREC_REG_INDEX_C),  -- [in] 
+        axilWriteMaster => mainAxilWriteMasters(AXIL_FCREC_REG_INDEX_C),  -- [in]
         axilWriteSlave  => mainAxilWriteSlaves(AXIL_FCREC_REG_INDEX_C)    -- [out]
         );
-            
+
 end mapping;
