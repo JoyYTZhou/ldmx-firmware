@@ -411,16 +411,16 @@ begin
   --synchronize LED and BCR with commands from FC Rec.
   -------------------------------------------------------
 
-  test_bc0 : process(axilClk,axilRst)
-    variable count : INTEGER range 0 to 10692 := 0;
+  test_bc0 : process(MCLK37_sig,reset37_sig)
+    variable count : INTEGER range 0 to 3564 := 0;
     variable ticks : unsigned(15 downto 0) := (others => '0');
   begin
-    if axilRst = '1' then
+    if reset37_sig = '1' then
       count := 0;
       ticks := (others => '0');
       pulse_BCR_rtl <= '0' ;
-    elsif rising_edge(axilClk) then
-      if count = 10692 then
+    elsif rising_edge(MCLK37_sig) then
+      if count = 3564 then
         pulse_BCR_rtl <= '1';
         count := 0;
         ticks := ticks+ 1;
@@ -448,7 +448,7 @@ begin
       else
         pulse_LED_rtl <= '0';
         count := count + 1;
-        --read_register(0)(15 downto 0) <= std_logic_vector(ticks);
+        read_register(0)(15 downto 0) <= std_logic_vector(ticks);
       end if;
     end if;
   end process test_led;
