@@ -273,8 +273,8 @@ architecture mapping of zccmApplication is
          addrBits                     => 16,
          connectivity                 => X"0001"),
      AXIL_FCREC_REG_INDEX_C           => (    -- FC Receiver Register Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"E_0000",
-         addrBits                     => 16,
+         baseAddr                     => AXIL_BASE_ADDR_G + X"10_0000",
+         addrBits                     => 20,
          connectivity                 => X"0001")
 
      );
@@ -310,7 +310,7 @@ architecture mapping of zccmApplication is
       dataSize    => 8,
       addrSize    => 8,
       endianness  => '1',
-      repeatStart => '0'));
+      repeatStart => '1'));
 
    constant JITTER_DEVICE_MAP_C : I2cAxiLiteDevArray(0 downto 0) := (
     0              => MakeI2cAxiLiteDevType(
@@ -318,7 +318,7 @@ architecture mapping of zccmApplication is
       dataSize    => 8,
       addrSize    => 8,
       endianness  => '1',
-      repeatStart => '0'));
+      repeatStart => '1'));
 
    constant I2C_SCL_FREQ_C  : real := ite(SIMULATION_G, 2.0e6, 100.0E+3);
    constant I2C_MIN_PULSE_C : real := ite(SIMULATION_G, 50.0e-9, 100.0E-9);
