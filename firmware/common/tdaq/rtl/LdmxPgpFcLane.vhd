@@ -392,11 +392,34 @@ begin
             rstOut    => open,
             locked    => pgpRxMmcmLocked);
 
+      U_RstSync_1: entity surf.RstSync
+         generic map (
+            TPD_G           => TPD_G,
+            IN_POLARITY_G   => '0',
+            OUT_POLARITY_G  => '1')
+--            OUT_REG_RST_G   => OUT_REG_RST_G)
+         port map (
+            clk      => pgpRxUsrClk,            -- [in]
+            asyncRst => pgpRxMmcmLocked,       -- [in]
+            syncRst  => pgpRxRstOut);       -- [out]
+
    end generate RX_CLK_MMCM_GEN;
 
    NO_RX_CLK_MMCM_GEN : if (not RX_CLK_MMCM_G) generate
       pgpRxUsrClk     <= pgpRxOutClkGt;
       pgpRxMmcmLocked <= '1';
+
+      U_RstSync_1: entity surf.RstSync
+         generic map (
+            TPD_G           => TPD_G,
+            IN_POLARITY_G   => '0',
+            OUT_POLARITY_G  => '1')
+--            OUT_REG_RST_G   => OUT_REG_RST_G)
+         port map (
+            clk      => pgpRxUsrClk,            -- [in]
+            asyncRst => pgpRxPmaResetDone,       -- [in]
+            syncRst  => pgpRxRstOut);       -- [out]
+      
    end generate NO_RX_CLK_MMCM_GEN;
 
    -- Output the recovered clock
@@ -527,6 +550,6 @@ begin
 --          asyncRst => pgpRxResetDone,    -- [in]
 --          syncRst  => pgpRxRst);         -- [out]
 
-   pgpRxRstOut <= pgpRxRst;
+--   pgpRxRstOut <= pgpRxRst;
 
 end rtl;
