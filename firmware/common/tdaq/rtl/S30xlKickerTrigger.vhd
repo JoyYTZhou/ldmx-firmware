@@ -106,7 +106,7 @@ begin
 
 
 
-   comb : process (fcBus, lclsTimingBus, r, syncAxilReadMaster, syncAxilWriteMaster) is
+   comb : process (fcBus, fcRst, lclsTimingBus, r, syncAxilReadMaster, syncAxilWriteMaster) is
       variable v      : RegType;
       variable axilEp : AxiLiteEndPointType;
    begin
