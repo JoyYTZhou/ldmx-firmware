@@ -20,6 +20,7 @@ int main() {
 
     ap_uint<17> outHit[NHITS];
     ap_uint<1> outflag[NHITS];
+    ap_uint<16> threshold;
 
     int H = 0;
     std::ifstream TestVec("TestVec.dat", std::ifstream::in);
@@ -74,7 +75,7 @@ int main() {
                     std::cout << "odd" << std::endl;
                     dataReady_in[0] = 1;
                 }
-                ts_s30xl_threshold_trigger_hw(timestamp_in,
+                ts_s30xl_threshold_trigger_hw(threshold, timestamp_in,
                                               bc0_in,
                                               timestamp_out,
                                               bc0_out,

@@ -85,29 +85,34 @@ end entity S30xlAppCore;
 architecture rtl of S30xlAppCore is
 
    -- AXI Lite
-   constant AXIL_NUM_C     : integer := 4;
-   constant AXIL_FC_RX_C   : integer := 0;
-   constant AXIL_TS_RX_C   : integer := 1;
-   constant AXIL_TS_DAQ_C  : integer := 2;
-   constant AXIL_TS_TRIG_C : integer := 3;
+   constant AXIL_NUM_C          : integer := 5;
+   constant AXIL_FC_RX_C        : integer := 0;
+   constant AXIL_TS_RX_C        : integer := 1;
+   constant AXIL_TS_DAQ_C       : integer := 2;
+   constant AXIL_TS_TRIG_C      : integer := 3;
+   constant AXIL_TS_THRESHOLD_C : integer := 4;
 
    constant AXIL_XBAR_CFG_C : AxiLiteCrossbarMasterConfigArray(AXIL_NUM_C-1 downto 0) := (
-      AXIL_FC_RX_C    => (
-         baseAddr     => AXIL_BASE_ADDR_G + X"0000_0000",
-         addrBits     => 20,
-         connectivity => X"FFFF"),
-      AXIL_TS_RX_C    => (
-         baseAddr     => AXIL_BASE_ADDR_G + X"2000_0000",
-         addrBits     => 29,
-         connectivity => X"FFFF"),
-      AXIL_TS_DAQ_C   => (
-         baseAddr     => AXIL_BASE_ADDR_G + X"00100000",
-         addrBits     => 12,
-         connectivity => X"FFFF"),
-      AXIL_TS_TRIG_C  => (
-         baseAddr     => AXIL_BASE_ADDR_G + X"00101000",
-         addrBits     => 12,
-         connectivity => X"FFFF"));
+      AXIL_FC_RX_C        => (
+         baseAddr         => AXIL_BASE_ADDR_G + X"0000_0000",
+         addrBits         => 20,
+         connectivity     => X"FFFF"),
+      AXIL_TS_RX_C        => (
+         baseAddr         => AXIL_BASE_ADDR_G + X"2000_0000",
+         addrBits         => 29,
+         connectivity     => X"FFFF"),
+      AXIL_TS_DAQ_C       => (
+         baseAddr         => AXIL_BASE_ADDR_G + X"0010_0000",
+         addrBits         => 12,
+         connectivity     => X"FFFF"),
+      AXIL_TS_TRIG_C      => (
+         baseAddr         => AXIL_BASE_ADDR_G + X"0010_1000",
+         addrBits         => 12,
+         connectivity     => X"FFFF"),
+      AXIL_TS_THRESHOLD_C => (
+         baseAddr         => AXIL_BASE_ADDR_G + X"0010_2000",
+         addrBits         => 8,
+         connectivity     => X"FFFF"));
 
    signal locAxilReadMasters  : AxiLiteReadMasterArray(AXIL_NUM_C-1 downto 0);
    signal locAxilReadSlaves   : AxiLiteReadSlaveArray(AXIL_NUM_C-1 downto 0)  := (others => AXI_LITE_READ_SLAVE_EMPTY_DECERR_C);
@@ -255,12 +260,18 @@ begin
       generic map (
          TPD_G => TPD_G)
       port map (
-         fcClk185       => fcClk185,               -- [in]
-         fcRst185       => fcRst185,               -- [in]
-         fcTsMsg        => fcTsRxMsgs,             -- [in]
-         fcMsgTimestamp => fcMsgTimestamp,         -- [in]
-         daqData        => tsTrigDaqData,          -- [out]
-         gtData         => thresholdTriggerData);  -- [out]
+         fcClk185        => fcClk185,                                  -- [in]
+         fcRst185        => fcRst185,                                  -- [in]
+         fcTsMsg         => fcTsRxMsgs,                                -- [in]
+         fcMsgTimestamp  => fcMsgTimestamp,                            -- [in]
+         daqData         => tsTrigDaqData,                             -- [out]
+         gtData          => thresholdTriggerData,                      -- [out]
+         axilClk         => axilClk,                                   -- [in]
+         axilRst         => axilRst,                                   -- [in]
+         axilReadMaster  => locAxilReadMasters(AXIL_TS_THRESHOLD_C),   -- [in]
+         axilReadSlave   => locAxilReadSlaves(AXIL_TS_THRESHOLD_C),    -- [out]
+         axilWriteMaster => locAxilWriteMasters(AXIL_TS_THRESHOLD_C),  -- [in]
+         axilWriteSlave  => locAxilWriteSlaves(AXIL_TS_THRESHOLD_C));  -- [out]         
 
    -------------------------------------------------------------------------------------------------
    -- Trigger DAQ block
