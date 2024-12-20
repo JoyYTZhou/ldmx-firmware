@@ -387,7 +387,7 @@ begin
   SFP0_control_out.TX_DIS <= output_register(0)(14);
   SFP1_control_out.TX_DIS <= output_register(0)(15);
   SFP2_control_out.TX_DIS <= output_register(0)(16);
-  SFP3_control_out.TX_DIS <= output_register(0)(17);
+  SFP3_control_out.TX_DIS <= ouTput_register(0)(17);
 
     U_AxiLiteRegs : entity surf.AxiLiteRegs
       generic map (
@@ -411,36 +411,44 @@ begin
   --synchronize LED and BCR with commands from FC Rec.
   -------------------------------------------------------
 
-  test_bc0 : process(MCLK37_sig,reset37_sig)
-    variable count : INTEGER range 0 to 3564 := 0;
+  test_bc0 : process(axilClk,axilRst)
+    variable count : INTEGER range 0 to 10692 := 0;
+    variable ticks : unsigned(15 downto 0) := (others => '0');
   begin
-    if reset37_sig = '1' then
+    if axilRst = '1' then
       count := 0;
-      pulse_BCR_rtl <= '0';
-    elsif rising_edge(MCLK37_sig) then
-      if count = 3564 then
+      ticks := (others => '0');
+      pulse_BCR_rtl <= '0' ;
+    elsif rising_edge(axilClk) then
+      if count = 10692 then
         pulse_BCR_rtl <= '1';
         count := 0;
+        ticks := ticks+ 1;
       else
         pulse_BCR_rtl <= '0';
         count := count + 1;
+        read_register(0)(31 downto 16) <= std_logic_vector(ticks);
       end if;
     end if;
   end process test_bc0;
 
   test_led : process(MCLK37_sig,reset37_sig)
-    variable count : INTEGER range 0 to 17820 := 0;
+    variable count : INTEGER range 0 to 53460 := 0;
+    variable ticks : unsigned(15 downto 0) := (others => '0');
   begin
     if reset37_sig = '1' then
       count := 0;
+      ticks := (others => '0');
       pulse_LED_rtl <= '0';
     elsif rising_edge(MCLK37_sig) then
-      if count = 17820 then
+      if count = 53460 then
         pulse_LED_rtl <= '1';
         count := 0;
+        ticks := ticks+1; 
       else
         pulse_LED_rtl <= '0';
         count := count + 1;
+        --read_register(0)(15 downto 0) <= std_logic_vector(ticks);
       end if;
     end if;
   end process test_led;
