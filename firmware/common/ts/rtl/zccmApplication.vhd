@@ -337,6 +337,8 @@ architecture mapping of zccmApplication is
    signal reset : sl := '0';
    signal MCLK185  : sl := '0';
    signal reset185 : sl := '0';
+   signal MCLK37_sig  : sl := '0';
+   signal reset37_sig  : sl := '0';           
    signal fcBus: FcBusType := FC_BUS_INIT_C;
 
    signal RM_i2c_scl : slv(5 downto 0) := (others => '0');
@@ -347,6 +349,8 @@ architecture mapping of zccmApplication is
 
 begin
 
+  MCLK37 <= MCLK37_sig;
+  
   RM_i2c_scl(0) <= RM0_i2c.SCL;
   RM_i2c_scl(1) <= RM1_i2c.SCL;
   RM_i2c_scl(2) <= RM2_i2c.SCL;
@@ -407,14 +411,14 @@ begin
   --synchronize LED and BCR with commands from FC Rec.
   -------------------------------------------------------
 
-  test_bc0 : process(axilClk,axilRst)
-    variable count : INTEGER range 0 to 2 := 0;
+  test_bc0 : process(MCLK37_sig,reset37_sig)
+    variable count : INTEGER range 0 to 3564 := 0;
   begin
-    if axilRst = '1' then
+    if reset37_sig = '1' then
       count := 0;
       pulse_BCR_rtl <= '0';
-    elsif rising_edge(axilClk) then
-      if count = 2 then
+    elsif rising_edge(MCLK37_sig) then
+      if count = 3564 then
         pulse_BCR_rtl <= '1';
         count := 0;
       else
@@ -424,14 +428,14 @@ begin
     end if;
   end process test_bc0;
 
-  test_led : process(axilClk,axilRst)
-    variable count : INTEGER range 0 to 5 := 0;
+  test_led : process(MCLK37_sig,reset37_sig)
+    variable count : INTEGER range 0 to 17820 := 0;
   begin
-    if axilRst = '1' then
+    if reset37_sig = '1' then
       count := 0;
       pulse_LED_rtl <= '0';
-    elsif rising_edge(axilClk) then
-      if count = 2 then
+    elsif rising_edge(MCLK37_sig) then
+      if count = 17820 then
         pulse_LED_rtl <= '1';
         count := 0;
       else
@@ -901,8 +905,8 @@ begin
         fcClk185     => MCLK185,
         fcRst185     => reset185,
         fcBus        => fcBus,
-        fcBunchClk37 => MCLK37,
-        fcBunchRst37 => open,
+        fcBunchClk37 => MCLK37_sig,
+        fcBunchRst37 => reset37_sig,
         -- Axil inteface
         axilClk         => axilClk,                                     -- [in]
         axilRst         => axilRst,                                     -- [in]
