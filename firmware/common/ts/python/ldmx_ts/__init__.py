@@ -15,3 +15,4 @@ from ._FrameParsers import *
 from ._SqliteModels import *
 from ._Constants import *
 from ._TsDataRxRingBuffer import *
+from ._TsS30xlThresholdTrigger import *

@@ -53,11 +53,9 @@ class S30xlAppCore(pr.Device):
             offset = 0x2000_0000,
             expand = True))
 
-        self.add(pr.RemoteVariable(
-            name = 'Threshold',
-            offset = 0x102010,
-            valueBits = 32,
-            base = pr.UInt))
+        self.add(ldmx_ts.TsS30xlThresholdTrigger(
+            name = 'ThresholdTrigger',
+            offset = 0x102000))
 
 #         self.add(Delays(
 #             offset = 0x10_0000))
