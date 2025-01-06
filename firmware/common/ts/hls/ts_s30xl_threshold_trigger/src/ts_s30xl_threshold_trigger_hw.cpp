@@ -19,17 +19,14 @@ void ts_s30xl_threshold_trigger_hw(ap_uint<16> threshold,
 #pragma HLS ARRAY_PARTITION variable = FIFO complete
 #pragma HLS ARRAY_PARTITION variable = amplitude complete
 #pragma HLS ARRAY_PARTITION variable = onflag complete
+    
+#pragma HLS interface ap_ctrl_none port = return    
 
 // AXI-Lite interface pragmas
 #pragma HLS INTERFACE s_axilite port=threshold bundle=CTRL_BUS
-    //#pragma HLS INTERFACE s_axilite port=return bundle=CTRL_BUS
 
 #pragma HLS RESET signal=ap_rst active_high
-    #pragma HLS INTERFACE ap_ctrl_hs port=return // Handshake protocol    
-    #pragma HLS RESET variable=state active_high // Explicit active high reset
 
-
-    //#pragma HLS interface ap_ctrl_none port = return
 #pragma HLS INTERFACE ap_none port      = dataReady_in[0]
 #pragma HLS INTERFACE ap_none port      = dataReady_out[0]
 #pragma HLS INTERFACE ap_none port      = timestamp_in[0]
