@@ -20,7 +20,7 @@ int main() {
 
     ap_uint<17> outHit[NHITS];
     ap_uint<1> outflag[NHITS];
-    ap_uint<16> threshold;
+    ap_uint<16> threshold = 80;
 
     int H = 0;
     std::ifstream TestVec("TestVec.dat", std::ifstream::in);

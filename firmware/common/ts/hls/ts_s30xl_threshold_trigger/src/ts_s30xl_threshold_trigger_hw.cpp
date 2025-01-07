@@ -6,7 +6,7 @@
 
 #include "objdef.h"
 
-void ts_s30xl_threshold_trigger_hw(ap_uint<16> threshold,
+void ts_s30xl_threshold_trigger_hw(ap_uint<16> threshold_in,
                                    ap_uint<64> timestamp_in[1],
                                    ap_uint<1> bc0_in[1],
                                    ap_uint<64> timestamp_out[1],
@@ -23,7 +23,7 @@ void ts_s30xl_threshold_trigger_hw(ap_uint<16> threshold,
 #pragma HLS interface ap_ctrl_none port = return
 
 // AXI-Lite interface pragmas
-#pragma HLS INTERFACE s_axilite port = threshold bundle = CTRL_BUS
+#pragma HLS INTERFACE s_axilite port = threshold_in bundle = CTRL_BUS
 
 #pragma HLS RESET signal = ap_rst active_high
 
@@ -73,6 +73,10 @@ void ts_s30xl_threshold_trigger_hw(ap_uint<16> threshold,
 
 #pragma HLS PIPELINE
 
+    static ap_uint<16> threshold_reg = 80; // Default value at hardware reset
+
+    threshold_reg = threshold_in;
+
     ap_uint<14> nbins_[5] = {0, 16, 36, 57, 64};
 
     /// Charge lower limit of all the 16 subranges
@@ -95,7 +99,7 @@ void ts_s30xl_threshold_trigger_hw(ap_uint<16> threshold,
         ap_uint<14> ss    = 1 * (v1 > nbins_[1]) + 1 * (v1 > nbins_[2]) + 1 * (v1 > nbins_[3]);
         charge1           = edges_[4 * rr + ss] + (v1 - nbins_[ss]) * sense_[4 * rr + ss] + sense_[4 * rr + ss] / 2 - 1;
         ap_uint<1> helper = 0;
-        if (((charge1)*.00625) >= threshold) { helper = 1; }
+        if (((charge1)*.00625) >= threshold_reg) { helper = 1; }
         if (ready == 0) {
             helper  = 0;
             charge1 = 0;
