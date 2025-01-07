@@ -273,8 +273,8 @@ architecture mapping of zccmApplication is
          addrBits                     => 16,
          connectivity                 => X"0001"),
      AXIL_FCREC_REG_INDEX_C           => (    -- FC Receiver Register Interface
-         baseAddr                     => AXIL_BASE_ADDR_G + X"E_0000",
-         addrBits                     => 16,
+         baseAddr                     => AXIL_BASE_ADDR_G + X"10_0000",
+         addrBits                     => 20,
          connectivity                 => X"0001")
 
      );
@@ -310,7 +310,7 @@ architecture mapping of zccmApplication is
       dataSize    => 8,
       addrSize    => 8,
       endianness  => '1',
-      repeatStart => '0'));
+      repeatStart => '1'));
 
    constant JITTER_DEVICE_MAP_C : I2cAxiLiteDevArray(0 downto 0) := (
     0              => MakeI2cAxiLiteDevType(
@@ -318,7 +318,7 @@ architecture mapping of zccmApplication is
       dataSize    => 8,
       addrSize    => 8,
       endianness  => '1',
-      repeatStart => '0'));
+      repeatStart => '1'));
 
    constant I2C_SCL_FREQ_C  : real := ite(SIMULATION_G, 2.0e6, 100.0E+3);
    constant I2C_MIN_PULSE_C : real := ite(SIMULATION_G, 50.0e-9, 100.0E-9);
@@ -387,7 +387,7 @@ begin
   SFP0_control_out.TX_DIS <= output_register(0)(14);
   SFP1_control_out.TX_DIS <= output_register(0)(15);
   SFP2_control_out.TX_DIS <= output_register(0)(16);
-  SFP3_control_out.TX_DIS <= output_register(0)(17);
+  SFP3_control_out.TX_DIS <= ouTput_register(0)(17);
 
     U_AxiLiteRegs : entity surf.AxiLiteRegs
       generic map (
@@ -413,34 +413,42 @@ begin
 
   test_bc0 : process(MCLK37_sig,reset37_sig)
     variable count : INTEGER range 0 to 3564 := 0;
+    variable ticks : unsigned(15 downto 0) := (others => '0');
   begin
     if reset37_sig = '1' then
       count := 0;
-      pulse_BCR_rtl <= '0';
+      ticks := (others => '0');
+      pulse_BCR_rtl <= '0' ;
     elsif rising_edge(MCLK37_sig) then
       if count = 3564 then
         pulse_BCR_rtl <= '1';
         count := 0;
+        ticks := ticks+ 1;
       else
         pulse_BCR_rtl <= '0';
         count := count + 1;
+        read_register(0)(31 downto 16) <= std_logic_vector(ticks);
       end if;
     end if;
   end process test_bc0;
 
   test_led : process(MCLK37_sig,reset37_sig)
-    variable count : INTEGER range 0 to 17820 := 0;
+    variable count : INTEGER range 0 to 53460 := 0;
+    variable ticks : unsigned(15 downto 0) := (others => '0');
   begin
     if reset37_sig = '1' then
       count := 0;
+      ticks := (others => '0');
       pulse_LED_rtl <= '0';
     elsif rising_edge(MCLK37_sig) then
-      if count = 17820 then
+      if count = 53460 then
         pulse_LED_rtl <= '1';
         count := 0;
+        ticks := ticks+1; 
       else
         pulse_LED_rtl <= '0';
         count := count + 1;
+        read_register(0)(15 downto 0) <= std_logic_vector(ticks);
       end if;
     end if;
   end process test_led;
