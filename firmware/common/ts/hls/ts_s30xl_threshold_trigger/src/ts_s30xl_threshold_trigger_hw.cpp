@@ -25,51 +25,18 @@ void ts_s30xl_threshold_trigger_hw(ap_uint<16> threshold_in,
 // AXI-Lite interface pragmas
 #pragma HLS INTERFACE s_axilite port = threshold_in bundle = CTRL_BUS
 
-#pragma HLS RESET signal = ap_rst active_high
-
+#pragma HLS INTERFACE ap_none port = bc0_in[0]
+#pragma HLS INTERFACE ap_none port = bc0_out[0]
 #pragma HLS INTERFACE ap_none port = dataReady_in[0]
 #pragma HLS INTERFACE ap_none port = dataReady_out[0]
 #pragma HLS INTERFACE ap_none port = timestamp_in[0]
 #pragma HLS INTERFACE ap_none port = timestamp_out[0]
 
-#pragma HLS INTERFACE ap_none port = FIFO[0]
-#pragma HLS INTERFACE ap_none port = FIFO[1]
-#pragma HLS INTERFACE ap_none port = FIFO[2]
-#pragma HLS INTERFACE ap_none port = FIFO[3]
-#pragma HLS INTERFACE ap_none port = FIFO[4]
-#pragma HLS INTERFACE ap_none port = FIFO[5]
-#pragma HLS INTERFACE ap_none port = FIFO[6]
-#pragma HLS INTERFACE ap_none port = FIFO[7]
-#pragma HLS INTERFACE ap_none port = FIFO[8]
-#pragma HLS INTERFACE ap_none port = FIFO[9]
-#pragma HLS INTERFACE ap_none port = FIFO[10]
-#pragma HLS INTERFACE ap_none port = FIFO[11]
+#pragma HLS INTERFACE ap_none port = FIFO
 
-#pragma HLS INTERFACE ap_none port = amplitude[0]
-#pragma HLS INTERFACE ap_none port = amplitude[1]
-#pragma HLS INTERFACE ap_none port = amplitude[2]
-#pragma HLS INTERFACE ap_none port = amplitude[3]
-#pragma HLS INTERFACE ap_none port = amplitude[4]
-#pragma HLS INTERFACE ap_none port = amplitude[5]
-#pragma HLS INTERFACE ap_none port = amplitude[6]
-#pragma HLS INTERFACE ap_none port = amplitude[7]
-#pragma HLS INTERFACE ap_none port = amplitude[8]
-#pragma HLS INTERFACE ap_none port = amplitude[9]
-#pragma HLS INTERFACE ap_none port = amplitude[10]
-#pragma HLS INTERFACE ap_none port = amplitude[11]
+#pragma HLS INTERFACE ap_none port = amplitude
 
-#pragma HLS INTERFACE ap_none port = onflag[0]
-#pragma HLS INTERFACE ap_none port = onflag[1]
-#pragma HLS INTERFACE ap_none port = onflag[2]
-#pragma HLS INTERFACE ap_none port = onflag[3]
-#pragma HLS INTERFACE ap_none port = onflag[4]
-#pragma HLS INTERFACE ap_none port = onflag[5]
-#pragma HLS INTERFACE ap_none port = onflag[6]
-#pragma HLS INTERFACE ap_none port = onflag[7]
-#pragma HLS INTERFACE ap_none port = onflag[8]
-#pragma HLS INTERFACE ap_none port = onflag[9]
-#pragma HLS INTERFACE ap_none port = onflag[10]
-#pragma HLS INTERFACE ap_none port = onflag[11]
+#pragma HLS INTERFACE ap_none port = onflag
 
 #pragma HLS PIPELINE
 
