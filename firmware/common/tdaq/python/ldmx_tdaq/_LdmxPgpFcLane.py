@@ -33,3 +33,16 @@ class LdmxPgpFcLane(pr.Device):
                 numberLanes = numVc,
                 hideConfig = False,
                 chName = None))
+
+            def _linkUp(var, read):
+                return all([dep.get(read=read) for dep in var.dependencies])
+                    
+            self.add(pr.LinkVariable(
+                name = 'LinkUp',
+                dependencies = [
+                    self.Pgp2Fc.RxPhyReady,
+                    self.Pgp2Fc.TxPhyReady,
+                    self.Pgp2Fc.RxLocalLinkReady,
+                    self.Pgp2Fc.RxRemLinkReady,
+                    self.Pgp2Fc.TxLinkReady],
+                linkedGet = _linkUp))

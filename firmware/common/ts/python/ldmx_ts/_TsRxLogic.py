@@ -107,3 +107,7 @@ class TsRxLogic(pr.Device):
             bitOffset = 16,
             base = pr.UInt,
             mode = 'RO'))
+
+        @self.command()
+        def CheckLink():
+            
