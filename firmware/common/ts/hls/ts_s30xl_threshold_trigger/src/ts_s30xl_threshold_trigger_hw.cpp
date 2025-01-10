@@ -6,8 +6,8 @@
 
 #include "objdef.h"
 
-void ts_s30xl_threshold_trigger_hw(ap_uint<16> threshold,
-    ap_uint<64> timestamp_in[1],
+void ts_s30xl_threshold_trigger_hw(ap_uint<16> threshold_in,
+                                   ap_uint<64> timestamp_in[1],
                                    ap_uint<1> bc0_in[1],
                                    ap_uint<64> timestamp_out[1],
                                    ap_uint<1> bc0_out[1],
@@ -19,59 +19,30 @@ void ts_s30xl_threshold_trigger_hw(ap_uint<16> threshold,
 #pragma HLS ARRAY_PARTITION variable = FIFO complete
 #pragma HLS ARRAY_PARTITION variable = amplitude complete
 #pragma HLS ARRAY_PARTITION variable = onflag complete
-    
-#pragma HLS interface ap_ctrl_none port = return    
+
+#pragma HLS interface ap_ctrl_none port = return
 
 // AXI-Lite interface pragmas
-#pragma HLS INTERFACE s_axilite port=threshold bundle=CTRL_BUS
+#pragma HLS INTERFACE s_axilite port = threshold_in bundle = CTRL_BUS
 
-#pragma HLS RESET signal=ap_rst active_high
+#pragma HLS INTERFACE ap_none port = bc0_in[0]
+#pragma HLS INTERFACE ap_none port = bc0_out[0]
+#pragma HLS INTERFACE ap_none port = dataReady_in[0]
+#pragma HLS INTERFACE ap_none port = dataReady_out[0]
+#pragma HLS INTERFACE ap_none port = timestamp_in[0]
+#pragma HLS INTERFACE ap_none port = timestamp_out[0]
 
-#pragma HLS INTERFACE ap_none port      = dataReady_in[0]
-#pragma HLS INTERFACE ap_none port      = dataReady_out[0]
-#pragma HLS INTERFACE ap_none port      = timestamp_in[0]
-#pragma HLS INTERFACE ap_none port      = timestamp_out[0]
+#pragma HLS INTERFACE ap_none port = FIFO
 
-#pragma HLS INTERFACE ap_none port = FIFO[0]
-#pragma HLS INTERFACE ap_none port = FIFO[1]
-#pragma HLS INTERFACE ap_none port = FIFO[2]
-#pragma HLS INTERFACE ap_none port = FIFO[3]
-#pragma HLS INTERFACE ap_none port = FIFO[4]
-#pragma HLS INTERFACE ap_none port = FIFO[5]
-#pragma HLS INTERFACE ap_none port = FIFO[6]
-#pragma HLS INTERFACE ap_none port = FIFO[7]
-#pragma HLS INTERFACE ap_none port = FIFO[8]
-#pragma HLS INTERFACE ap_none port = FIFO[9]
-#pragma HLS INTERFACE ap_none port = FIFO[10]
-#pragma HLS INTERFACE ap_none port = FIFO[11]
+#pragma HLS INTERFACE ap_none port = amplitude
 
-#pragma HLS INTERFACE ap_none port = amplitude[0]
-#pragma HLS INTERFACE ap_none port = amplitude[1]
-#pragma HLS INTERFACE ap_none port = amplitude[2]
-#pragma HLS INTERFACE ap_none port = amplitude[3]
-#pragma HLS INTERFACE ap_none port = amplitude[4]
-#pragma HLS INTERFACE ap_none port = amplitude[5]
-#pragma HLS INTERFACE ap_none port = amplitude[6]
-#pragma HLS INTERFACE ap_none port = amplitude[7]
-#pragma HLS INTERFACE ap_none port = amplitude[8]
-#pragma HLS INTERFACE ap_none port = amplitude[9]
-#pragma HLS INTERFACE ap_none port = amplitude[10]
-#pragma HLS INTERFACE ap_none port = amplitude[11]
-
-#pragma HLS INTERFACE ap_none port = onflag[0]
-#pragma HLS INTERFACE ap_none port = onflag[1]
-#pragma HLS INTERFACE ap_none port = onflag[2]
-#pragma HLS INTERFACE ap_none port = onflag[3]
-#pragma HLS INTERFACE ap_none port = onflag[4]
-#pragma HLS INTERFACE ap_none port = onflag[5]
-#pragma HLS INTERFACE ap_none port = onflag[6]
-#pragma HLS INTERFACE ap_none port = onflag[7]
-#pragma HLS INTERFACE ap_none port = onflag[8]
-#pragma HLS INTERFACE ap_none port = onflag[9]
-#pragma HLS INTERFACE ap_none port = onflag[10]
-#pragma HLS INTERFACE ap_none port = onflag[11]
+#pragma HLS INTERFACE ap_none port = onflag
 
 #pragma HLS PIPELINE
+
+    static ap_uint<16> threshold_reg = 80; // Default value at hardware reset
+
+    threshold_reg = threshold_in;
 
     ap_uint<14> nbins_[5] = {0, 16, 36, 57, 64};
 
@@ -80,7 +51,7 @@ void ts_s30xl_threshold_trigger_hw(ap_uint<16> threshold,
         {0, 34, 158, 419, 517, 915, 1910, 3990, 4780, 7960, 15900, 32600, 38900, 64300, 128000, 261000, 350000};
     /// sensitivity of the subranges (Total charge/no. of bins)
     ap_uint<14> sense_[16] = {3, 6, 12, 25, 25, 50, 99, 198, 198, 397, 794, 1587, 1587, 3174, 6349, 12700};
-    ap_uint <1> ready       = 0;
+    ap_uint<1> ready       = 0;
     /// Indices of first bin of each subrange
     if (dataReady_in[0] == 1) { ready = 1; }
     dataReady_out[0] = ready;
@@ -95,15 +66,15 @@ void ts_s30xl_threshold_trigger_hw(ap_uint<16> threshold,
         ap_uint<14> ss    = 1 * (v1 > nbins_[1]) + 1 * (v1 > nbins_[2]) + 1 * (v1 > nbins_[3]);
         charge1           = edges_[4 * rr + ss] + (v1 - nbins_[ss]) * sense_[4 * rr + ss] + sense_[4 * rr + ss] / 2 - 1;
         ap_uint<1> helper = 0;
-        if (((charge1) * .00625) >= threshold) { helper = 1; }
+        if (((charge1)*.00625) >= threshold_reg) { helper = 1; }
         if (ready == 0) {
             helper  = 0;
             charge1 = 0;
         }
         onflag[i]    = helper;
-        amplitude[i] = ((charge1) * .00625);
+        amplitude[i] = ((charge1)*.00625);
     }
     timestamp_out[0] = timestamp_in[0];
-    bc0_out[0] = bc0_in[0];    
+    bc0_out[0]       = bc0_in[0];
     return;
 }

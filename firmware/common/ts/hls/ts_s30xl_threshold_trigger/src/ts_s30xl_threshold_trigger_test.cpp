@@ -20,7 +20,7 @@ int main() {
 
     ap_uint<17> outHit[NHITS];
     ap_uint<1> outflag[NHITS];
-    ap_uint<16> threshold;
+    ap_uint<16> threshold = 80;
 
     int H = 0;
     std::ifstream TestVec("TestVec.dat", std::ifstream::in);
@@ -65,8 +65,8 @@ int main() {
                 ap_uint<1> dataReady_out[1]  = {0.0};
                 ap_uint<64> timestamp_out[1] = {0.0};
                 ap_uint<64> timestamp_in[1]  = {globalCount};
-                ap_uint<1> bc0_in[1] = {0.0};
-                ap_uint<1> bc0_out[1] = {0.0};                
+                ap_uint<1> bc0_in[1]         = {0.0};
+                ap_uint<1> bc0_out[1]        = {0.0};
                 ap_uint<1> dataReady_in[1]   = {1};
                 if (globalCount % 2 == 0) {
                     std::cout << "even" << std::endl;
@@ -75,7 +75,8 @@ int main() {
                     std::cout << "odd" << std::endl;
                     dataReady_in[0] = 1;
                 }
-                ts_s30xl_threshold_trigger_hw(threshold, timestamp_in,
+                ts_s30xl_threshold_trigger_hw(threshold,
+                                              timestamp_in,
                                               bc0_in,
                                               timestamp_out,
                                               bc0_out,
@@ -147,6 +148,6 @@ endloop:
     std::cout << "I READ TO END OF FILE" << std::endl;
     TestVec.close();
     std::cout << counterErr << std::endl;
-    return 0; // Just pass
+    return 0;  // Just pass
     return 1 * (counterErr > 110);
 }
