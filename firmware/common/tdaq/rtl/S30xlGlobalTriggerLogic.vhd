@@ -75,6 +75,8 @@ architecture rtl of S30xlGlobalTriggerLogic is
       enableKickerTriggers      : sl;
       enableSynTriggers         : sl;
       enableTsThresholdTriggers : sl;
+      thresholdRorPattern       : slv(63 downto 0);
+      thresholdRorQueue         : slv(63 downto 0);
       gtRor                     : FcTimestampType;
       axilReadSlave             : AxiLiteReadSlaveType;
       axilWriteSlave            : AxiLiteWriteSlaveType;
@@ -82,9 +84,11 @@ architecture rtl of S30xlGlobalTriggerLogic is
 
    constant REG_INIT_C : RegType := (
       counter                   => (others => '0'),
-      enableKickerTriggers => '0',
+      enableKickerTriggers      => '0',
       enableSynTriggers         => '0',
       enableTsThresholdTriggers => '0',
+      thresholdRorPattern       => (others => '0'),
+      thresholdRorQueue         => (others => '0'),
       gtRor                     => FC_TIMESTAMP_INIT_C,
       axilReadSlave             => AXI_LITE_READ_SLAVE_INIT_C,
       axilWriteSlave            => AXI_LITE_WRITE_SLAVE_INIT_C);
@@ -114,7 +118,8 @@ begin
 
       axiSlaveRegister (axilEp, x"00", 0, v.enableSynTriggers);
       axiSlaveRegister (axilEp, x"00", 1, v.enableTsThresholdTriggers);
-      axiSlaveRegister (axilEp, x"00", 2, v.enableKickerTriggers);      
+      axiSlaveRegister (axilEp, x"00", 2, v.enableKickerTriggers);
+      axiSlaveRegister(axilEp, X"10", 0, v.thresholdRorPattern);
 
 
       -- Closeout the transaction
@@ -143,10 +148,16 @@ begin
 
             -- TS Triggering
             if (r.enableTsThresholdTriggers = '1' and tsS30xlThresholdTriggerDaq.valid = '1') then
-               if (tsS30xlThresholdTriggerDaq.hits /= 0) then
-                  v.counter     := MIN_ROR_PERIOD_C;
-                  v.gtRor       := triggerTimestamp;
-                  v.gtRor.valid := '1';
+               if (tsS30xlThresholdTriggerDaq.hits /= 0 or tsS30xlThresholdTriggerDaq.bc0 = '1') then
+                  v.counter           := MIN_ROR_PERIOD_C;
+                  v.gtRor             := triggerTimestamp;
+                  v.gtRor.valid       := '1';
+                  v.thresholdRorQueue := r.thresholdRorPattern;
+               elsif (r.thresholdRorQueue /= 0) then
+                  v.counter           := MIN_ROR_PERIOD_C;
+                  v.gtRor             := triggerTimestamp;
+                  v.gtRor.valid       := r.thresholdRorQueue(0);
+                  v.thresholdRorQueue := '0' & r.thresholdRorQueue(63 downto 1);
                end if;
             end if;
 
@@ -163,7 +174,7 @@ begin
                v.gtRor       := triggerTimestamp;
                v.gtRor.valid := '1';
             end if;
-            
+
 
          end if;
 
