@@ -20,3 +20,11 @@ class FcHub(pr.Device):
                 name   = f'FcSenderLane[{i}]',
                 numVc  = 0,
                 offset = 0x200000 + 0x10000*i))
+
+#         def _linksUp(var, read):
+#             return all([lane.LinkUp.get(read=read) for lane in self.FcSenderLane.values()]
+        
+#             self.add(pr.LinkVariable(
+#                 name = 'LinksUp',
+#                 dependencies = [self.FcSenderLane[i] for i in numQuads*4],
+#                 linkedGet = _linksUp))

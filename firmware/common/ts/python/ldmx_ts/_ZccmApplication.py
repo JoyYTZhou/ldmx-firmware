@@ -229,6 +229,7 @@ class ZccmApplication(pr.Device):
         self.add(ldmx_tdaq.FcReceiver(
             name         = 'FCReceiver',
             offset       = 0x10_0000,
+            gtType       = 'GTH',
             hidden       = False
         ))
 

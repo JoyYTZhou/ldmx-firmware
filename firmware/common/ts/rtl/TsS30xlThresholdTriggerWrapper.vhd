@@ -176,8 +176,8 @@ begin
    FifoIn(7)  <= fcTsMsg(1).adc(1) & fcTsMsg(1).tdc(1);  -- [IN]
    FifoIn(8)  <= fcTsMsg(1).adc(2) & fcTsMsg(1).tdc(2);  -- [IN]
    FifoIn(9)  <= fcTsMsg(1).adc(3) & fcTsMsg(1).tdc(3);  -- [IN]
-   FifoIn(10) <= fcTsMsg(1).adc(5) & fcTsMsg(1).tdc(4);  -- [IN]
-   FifoIn(11) <= fcTsMsg(1).adc(4) & fcTsMsg(1).tdc(5);  -- [IN]
+   FifoIn(10) <= fcTsMsg(1).adc(4) & fcTsMsg(1).tdc(4);  -- [IN]
+   FifoIn(11) <= fcTsMsg(1).adc(5) & fcTsMsg(1).tdc(5);  -- [IN]
 
    rstL <= not fcRst185;
 

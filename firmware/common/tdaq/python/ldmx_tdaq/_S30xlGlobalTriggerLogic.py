@@ -29,3 +29,10 @@ class S30xlGlobalTriggerLogic(pr.Device):
             bitSize = 1,
             base = pr.Bool))
 
+        self.add(pr.RemoteVariable(
+            name = 'ThresholdRorPattern',
+            offset = 0x10,
+            bitOffset = 0,
+            bitSize = 64,
+            base = pr.UInt,
+            mode = 'RW'))
