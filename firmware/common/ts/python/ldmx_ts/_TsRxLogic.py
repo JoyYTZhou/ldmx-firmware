@@ -110,4 +110,5 @@ class TsRxLogic(pr.Device):
 
         @self.command()
         def CheckLink():
+            pass
             
