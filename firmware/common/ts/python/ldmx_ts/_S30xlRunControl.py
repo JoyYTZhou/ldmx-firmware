@@ -40,6 +40,11 @@ class S30xlRunControl(pr.RunControl):
             bad = True
             
         #fcHubzccmLink = fcHub.FcSenderLane[1].LinkUp.get()
+
+        appFcHubLink = self.apx.S30xlAppCore.FcReceiver.PgpFcLane.LinkUp.get()
+        if not appFcHubLink:
+            print('Bad S30xlApp FC Link to Hub')
+            bad = True
         
         
         print('Creating Run in DB')
