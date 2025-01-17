@@ -3,12 +3,13 @@ import pyrogue as pr
 import ldmx_tdaq
 
 class FcReceiver(pr.Device):
-    def __init__(self, numVc=0, **kwargs):
+    def __init__(self, numVc=0, gtType='GTY', **kwargs):
         super().__init__(**kwargs)
 
         self.add(ldmx_tdaq.LdmxPgpFcLane(
             name = f'PgpFcLane',
             numVc = numVc,
+            gtType = gtType,
             offset = 0x0_0000))
 
         self.add(ldmx_tdaq.FcRxLogic(

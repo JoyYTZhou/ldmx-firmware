@@ -5,6 +5,7 @@ from ._FcTxLogic import *
 from ._LdmxPgpFcLane import *
 from ._FcReceiver import *
 from ._Pgp2fcGtyCoreWrapper import *
+from ._Pgp2fcGthCoreWrapper import *
 from ._Lcls2TimingRx import *
 from ._TimingGtCoreWrapper import *
 from ._S30xlGlobalTrigger import *

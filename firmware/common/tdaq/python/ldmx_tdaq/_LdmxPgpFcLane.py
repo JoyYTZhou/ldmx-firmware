@@ -5,7 +5,7 @@ import surf.protocols.pgp
 import ldmx_tdaq
 
 class LdmxPgpFcLane(pr.Device):
-    def __init__(self, numVc, **kwargs):
+    def __init__(self, numVc, gtType='GTY', **kwargs):
         super().__init__(**kwargs)
 
 
@@ -15,9 +15,16 @@ class LdmxPgpFcLane(pr.Device):
             errorCountBits  = 32,
             offset = 0x4000))
 
-        self.add(ldmx_tdaq.Pgp2fcGtyCoreWrapper(
-            name   = "GTY",
-            offset = 0x0000))
+        if gtType == 'GTY':
+            self.add(ldmx_tdaq.Pgp2fcGtyCoreWrapper(
+                name   = "GTY",
+                offset = 0x0000))
+
+        if gtType == 'GTH':
+            self.add(ldmx_tdaq.Pgp2fcGthCoreWrapper(
+                name   = "GTH",
+                offset = 0x0000))
+            
 
         if numVc > 0:
             self.add(surf.axi.AxiStreamMonAxiL(
