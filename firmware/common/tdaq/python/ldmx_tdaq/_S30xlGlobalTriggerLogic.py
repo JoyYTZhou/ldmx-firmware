@@ -36,3 +36,12 @@ class S30xlGlobalTriggerLogic(pr.Device):
             bitSize = 64,
             base = pr.UInt,
             mode = 'RW'))
+
+        self.add(pr.RemoteVariable(
+            name = 'ThresholdRorQueue',
+            offset = 0x20,
+            bitOffset = 0,
+            bitSize = 64,
+            base = pr.UInt,
+            mode = 'RW'))
+        
