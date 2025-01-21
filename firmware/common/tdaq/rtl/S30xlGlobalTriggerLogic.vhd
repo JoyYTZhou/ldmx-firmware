@@ -149,16 +149,10 @@ begin
 
             -- TS Triggering
             if (r.enableTsThresholdTriggers = '1' and tsS30xlThresholdTriggerDaq.valid = '1') then
-               if (tsS30xlThresholdTriggerDaq.hits /= 0 or tsS30xlThresholdTriggerDaq.bc0 = '1') then
+               if (tsS30xlThresholdTriggerDaq.hits /= 0) then
                   v.counter           := MIN_ROR_PERIOD_C;
                   v.gtRor             := triggerTimestamp;
                   v.gtRor.valid       := '1';
---                   v.thresholdRorQueue := r.thresholdRorPattern;
---                elsif (r.thresholdRorQueue /= 0) then
---                   v.counter           := MIN_ROR_PERIOD_C;
---                   v.gtRor             := triggerTimestamp;
---                   v.gtRor.valid       := r.thresholdRorQueue(0);
---                   v.thresholdRorQueue := '0' & r.thresholdRorQueue(63 downto 1);
                end if;
             end if;
 
