@@ -68,8 +68,8 @@ entity FcHub is
       -- DAQ stream
       axisClk                 : in  sl;
       axisRst                 : in  sl;
-      lclsTimingDaqAxisMaster : out AxiStreamMasterType;
-      lclsTimingDaqAxisSlave  : in  AxiStreamSlaveType;
+      lclsTimingDaqAxisMaster : out AxiStreamMasterType := AXI_STREAM_MASTER_INIT_C;
+      lclsTimingDaqAxisSlave  : in  AxiStreamSlaveType  := AXI_STREAM_SLAVE_INIT_C;
 
 
       ----------------------------------------------------------------------------------------------
