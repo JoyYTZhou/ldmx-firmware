@@ -255,25 +255,25 @@ begin
    -------------------------------------------------------------------------------------------------
    -- LCLS-II Timing DAQ
    -------------------------------------------------------------------------------------------------
-   U_Lcls2TimingDaq_1 : entity ldmx_tdaq.Lcls2TimingDaq
-      generic map (
-         TPD_G            => TPD_G,
-         AXIL_BASE_ADDR_G => AXIL_XBAR_CONFIG_C(AXIL_TIMING_DAQ_C).baseAddr)
-      port map (
-         lclsTimingClk   => lclsTimingClk,                           -- [in]
-         lclsTimingRst   => lclsTimingRst,                           -- [in]
-         lclsTimingBus   => lclsTimingBusLoc,                        -- [in]
-         fcBus           => fcBus,                                   -- [in]
-         axilClk         => axilClk,                                 -- [in]
-         axilRst         => axilRst,                                 -- [in]
-         axilReadMaster  => locAxilReadMasters(AXIL_TIMING_DAQ_C),   -- [in]
-         axilReadSlave   => locAxilReadSlaves(AXIL_TIMING_DAQ_C),    -- [out]
-         axilWriteMaster => locAxilWriteMasters(AXIL_TIMING_DAQ_C),  -- [in]
-         axilWriteSlave  => locAxilWriteSlaves(AXIL_TIMING_DAQ_C),   -- [out]
-         axisClk         => axisClk,                                 -- [in]
-         axisRst         => axisRst,                                 -- [in]
-         eventAxisMaster => lclsTimingDaqAxisMaster,                 -- [out]
-         eventAxisSlave  => lclsTimingDaqAxisSlave);                 -- [in]   
+--    U_Lcls2TimingDaq_1 : entity ldmx_tdaq.Lcls2TimingDaq
+--       generic map (
+--          TPD_G            => TPD_G,
+--          AXIL_BASE_ADDR_G => AXIL_XBAR_CONFIG_C(AXIL_TIMING_DAQ_C).baseAddr)
+--       port map (
+--          lclsTimingClk   => lclsTimingClk,                           -- [in]
+--          lclsTimingRst   => lclsTimingRst,                           -- [in]
+--          lclsTimingBus   => lclsTimingBusLoc,                        -- [in]
+--          fcBus           => fcBus,                                   -- [in]
+--          axilClk         => axilClk,                                 -- [in]
+--          axilRst         => axilRst,                                 -- [in]
+--          axilReadMaster  => locAxilReadMasters(AXIL_TIMING_DAQ_C),   -- [in]
+--          axilReadSlave   => locAxilReadSlaves(AXIL_TIMING_DAQ_C),    -- [out]
+--          axilWriteMaster => locAxilWriteMasters(AXIL_TIMING_DAQ_C),  -- [in]
+--          axilWriteSlave  => locAxilWriteSlaves(AXIL_TIMING_DAQ_C),   -- [out]
+--          axisClk         => axisClk,                                 -- [in]
+--          axisRst         => axisRst,                                 -- [in]
+--          eventAxisMaster => lclsTimingDaqAxisMaster,                 -- [out]
+--          eventAxisSlave  => lclsTimingDaqAxisSlave);                 -- [in]   
 
    -------------------------------------------------------------------------------------------------
    -- Stable Clock and Reset from LCLS Timing Reference Clock
