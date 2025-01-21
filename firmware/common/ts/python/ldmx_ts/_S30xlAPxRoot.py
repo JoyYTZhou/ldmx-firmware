@@ -115,10 +115,10 @@ class S30xlAPxRoot(pr.Root):
         self.addInterface(self.tsS30xlThresholdTriggerEventSqlReceiver)
         self.tsS30xlThresholdTriggerEventFilter >> fifo3 >> self.tsS30xlThresholdTriggerEventSqlReceiver
 
-        self.lclsTimingEventSqlReceiver = ldmx_tdaq.LclsTimingEventSqlReceiver(database=self.SqliteDatabase)
-        self.add(self.lclsTimingEventSqlReceiver)
-        self.addInterface(self.lclsTimingEventSqlReceiver)
-        self.lclsTimingEventFilter >> fifo4 >> self.lclsTimingEventSqlReceiver 
+#         self.lclsTimingEventSqlReceiver = ldmx_tdaq.LclsTimingEventSqlReceiver(database=self.SqliteDatabase)
+#         self.add(self.lclsTimingEventSqlReceiver)
+#         self.addInterface(self.lclsTimingEventSqlReceiver)
+#         self.lclsTimingEventFilter >> fifo4 >> self.lclsTimingEventSqlReceiver 
         
 
         configStream = pyrogue.interfaces.stream.Variable(root=self)
