@@ -104,8 +104,8 @@ begin
    tsS30xlThresholdTriggerDaq <= toThresholdTriggerDaq(tsThresholdTriggerData, triggerTimestamp);
    synTriggerMessage          <= toFcMessage(synTriggerData.data(FC_LEN_C-1 downto 0), synTriggerData.valid);
 
-   comb : process (axilReadMaster, axilWriteMaster, fcBus, r, synTriggerData, triggerTimestamp,
-                   tsS30xlThresholdTriggerDaq) is
+   comb : process (axilReadMaster, axilWriteMaster, fcBus, kickerTriggerData, r, synTriggerData,
+                   triggerTimestamp, tsS30xlThresholdTriggerDaq) is
       variable v      : RegType;
       variable axilEp : AxiLiteEndpointType;
    begin
@@ -120,6 +120,7 @@ begin
       axiSlaveRegister (axilEp, x"00", 1, v.enableTsThresholdTriggers);
       axiSlaveRegister (axilEp, x"00", 2, v.enableKickerTriggers);
       axiSlaveRegister(axilEp, X"10", 0, v.thresholdRorPattern);
+      axiSlaveRegisterR(axilEp, X"20", 0, r.thresholdRorQueue);
 
 
       -- Closeout the transaction
