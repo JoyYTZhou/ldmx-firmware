@@ -1,0 +1,110 @@
+.\" Manpage for Build for MATHUSLA
+.\" Contact russell@slac.stanford.edu to correct errors or typos.
+
+.TH MATHUSLA 1 "6 Jam 2020" "1.0" "Build"
+
+.SH NAME
+Build \- Wrapper to drive a building of the MATHUSLA software and associated utilities
+
+.SH SYNOPSIS
+Build [OPTIONS]
+
+.SH DESCRIPTION
+Script to simplify the multiplatform builds. The actions, \fBcmake\fR, \fBmake\FR and
+\fBinstall\fR, may be specified separately or in any combination. They are always exectuted in the logical order.
+
+\fBbuild\fR is a short hand for all three actions. The target platform be specified for
+any or all the actions. If it is not specified, it is taken from the \fBplatforms\fR
+option.
+
+.SH OPTIONS
+.TP
+.BR -p ", " \-\-platforms=< x86_64-linux " | " arm_CA9-linux " | " all>
+Sets the default platform list for the cmake, make, install and build optios.
+Default is \fBx86_64-linux\fR.
+.SS NOTE
+Currently only this package only builds for x86_64-linux, so accepting the default is
+is acceptable.  In the future, this set may expand to support different x86 processors,
+e.g. processors with SSE3,SSE4,AVX2 vector capabiities.
+
+
+.TP
+.BR  \-c ", " \-\-cmake=< x86_64-linux " | " arm_CA9-linux " | " all>
+Runs cmake for the defined platforms. If not specified, uses value from \fBplatforms\fR
+
+.TP
+.BR \-m ", " \-\-make=< x86_64-linux " | " arm_CA9-linux " | " all>
+Runs make for the defined platforms. If not specified, uses value from \fBplatforms\fR
+
+.TP
+.BR \-i ", " \-\-install=< x86_64-linux " | " arm_CA9-linux " | " all>
+Runs install for the defined platforms. If no specified, uses value from \fBplatforms\fR
+
+.TP
+.BR \-b ", " \-\-build=< x86_64-linux " | " arm_CA9-linux " | " all>
+Runs cmake,make,install for the defined platforms. If not specified, uses value from \fBplatforms\fR
+
+.TP
+.BR \-t ", " \-\-type=< Release " | " Debug " | " MinSizeRel " | " RelWithDebInfo>
+Selects the build type from the standard CMAKE types. Default is \fBRelease\fR.
+.br
+\fBRelease\fR and \fBDebug\fR are the most common. 
+
+.TP
+.BR \-j ", " \-\-jobs=< number-of-make-jobs-to-run>
+This gets passed on as -j, --jobs qualifier for make. Default is set by \fBmake\fR
+
+.TP
+.BR \-h ", " \-\-help
+
+.TP
+.BR \-v ", " \-\-verbose
+Adds the VERBOSE=1 to the make step.
+
+
+.SH EXAMPLES
+.TP
+$ Build
+Runs build using the default platform and build type,
+i.e. \fBx86_64-linuxs\fR and \fBRelease\fR.
+This is an easy short-hand when checking out and installing a new version.
+
+.TP
+$ Build \-\-cmake
+Runs cmake using the default platform and build type, i.e. \fBx86_64-linux\fR
+and \fBRelease\fR.
+
+.TP
+$ Build \-\-type=Debug \-\-make
+Runs make, building a \fBDebug\fR type for the \fBx86_64-linux\fR platform.
+This is a common form used during development.
+
+.TP
+$ Build \-\-platforms=x86_64-linux \-\-cmake \-\-make \-\-jobs=4
+Runs cmake and then make with 4 jobs, creating a \fBRelease\fR type for the
+\fBx86_64-linux\fR platform.
+
+.SH NOTE
+As per the usual, but obscure, command line parsing rules for parameters with
+optional values:
+.RS 5
+\-\- Values of  long options must include an '=', i.e make=all
+.br
+\-\- Values of short options must not have a space, i.e. -mall
+.RE 5
+
+.SH ""
+Accepted best practice is
+.RS 5
+\-\- When scripting
+.RS 3
+\-  use long options to help readbility
+.br
+\-  specify defaults where logical as these may change in the future.
+.RE
+\-\- When using interactively
+.RS 3
+\-Long or short options as per your taste
+.RE
+.RE
+
