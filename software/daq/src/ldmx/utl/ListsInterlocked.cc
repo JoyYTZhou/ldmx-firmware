@@ -1753,7 +1753,13 @@ ListsInterlocked::Lcb::appendW (ldmx::utl::List      *lists,
       if (status == ETIMEDOUT)
       {
          // Return what is available
-         ldmx::utl::append (this, lists, active);
+
+         // --------------------------------------------
+         // 2025/02/11 -- jjr
+         // -----------------
+         // Had last argument as active, but this was not
+         // initialized, seems it should be m_active
+         ldmx::utl::append (this, lists, m_active);
          break;
       }
    }

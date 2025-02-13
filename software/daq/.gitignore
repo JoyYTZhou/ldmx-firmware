@@ -1,0 +1,5 @@
+# CMake temporary files
+CMakeCache.txt
+CMakeFiles
+
+!/builder/**/*

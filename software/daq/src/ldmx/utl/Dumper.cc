@@ -38,6 +38,7 @@
 
 
 #include "ldmx/utl/Dumper.hh"
+#include <cstddef>
 #include <iostream>
 #include <iomanip>
 

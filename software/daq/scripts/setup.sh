@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------
 #
-# LDMX one-time setup script
+# LDMX one-time setup script for software/daq
 #
 # USAGE:
 # $ source <root>/setup.sh
@@ -9,7 +9,7 @@
 # jjrussell
 #
 # DATE:
-# 2020.04.06
+# 2025.01.29
 #
 #
 # METHOD:
@@ -21,8 +21,8 @@
 #
 #       When  Who   What
 # ----------  ---   -----------------------------------------------------
-# 2020.04.06  jjr   Cloned from ~/mathusla/daq/scripts/setup.sh
-# ----------------------------------------------------------------------
+# 2025.01.29  jjr   Modified to target /u1/russell/Packages/ldmx-firmware
+# -----------------------------------------------------------------------
 called=${BASH_SOURCE[0]}
 
 os=`uname -s`
@@ -83,7 +83,7 @@ export EUDAQ_MODULE_IGNORE_DEFALUT=YES
 # The correct solution is to fix the version of libtinfo in conda rogue.
 # 
 # ------------------------------------------------------------------------------
-export LD_LIBRARY_PATH_RUN=/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}:${root_dir}/install/x86_64-linux/lib:/afs/slac.stanford.edu/g/reseng/vol26/anaconda/miniconda3/envs/rogue_v5.6.4/lib
+export LD_LIBRARY_PATH_RUN=${CONDA_PREFIX}/lib:${root_dir}/install/x86_64-linux/lib:/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}
 
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH_RUN}
 source $root_dir/src/scripts/setup_ldmx.sh
