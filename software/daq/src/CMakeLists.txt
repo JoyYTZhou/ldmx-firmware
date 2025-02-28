@@ -31,6 +31,7 @@
 #
 # DATE        WHO  WHAT
 # ----------  ---  --------------------------------------------------------
+# 2025.02.28  jjr  Remove EUDAQ references
 # 2021.03.19  jjr  Only install if DO_INSTALL is defined
 #                  Suppress up-to-date installation messages
 # 2019.05.10  jjr  Added support for the standard CMake build types
@@ -410,13 +411,9 @@ setup_rogue ()
 # Set global compile options + include path
 # -----------------------------------------
 
-  set     (eudaq_root $ENV{EUDAQ})
-  #message ("EUDAQ_ROOT = ${eudaq_root}")
-  set     (EUDAQ_INCLUDES     "${eudaq_root}/include")
-  set     (EUDAQ_CORE_LIBRARY "${eudaq_root}/lib/libeudaq_core.so")
-
+ 
   include_directories(${PROJECT_BINARY_DIR})
-  include_directories (${project_root}/include ${EUDAQ_INCLUDES})
+  include_directories (${project_root}/include)
 
 
 

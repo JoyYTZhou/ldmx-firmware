@@ -28,6 +28,7 @@
 #
 # DATE        WHO  WHAT
 # ----------  ---  --------------------------------------------------------
+# 2025.02.28  jjr  Remove build of eudaq
 # 2021.04.20  jjr  Created to drive the building of the ldmx subdirectories
 # -------------------------------------------------------------------------
 
@@ -39,7 +40,6 @@ announce ()
 # Start the build tree
 # --------------------
 
-  add_subdirectory (eudaq)
   add_subdirectory (utl)
   add_subdirectory (ptd)
   add_subdirectory (data)
