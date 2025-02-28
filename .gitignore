@@ -31,7 +31,7 @@ Thumps.db
 build.info
 
 # Vivado Build
-build
+build*
 release*
 install*
 
@@ -42,6 +42,3 @@ install*
 *.ltx
 *.hdf
 *.xsa
-
-!software/daq/include/ldmx/builder/**/*
-!software/daq/src/ldmx/ldmx/builder/**/*
