@@ -1,14 +1,14 @@
 // -*-Mode: C++;-*-
 
-#ifndef __LDMX_BUILDER_SERVER_TRIGGERSERVER_HH__
-#define __LDMX_BUILDER_SERVER_TRIGGERSERVER_HH__
+#ifndef __LDMX_BUILDER_SERVER_TRACKERSERVER_HH__
+#define __LDMX_BUILDER_SERVER_TRACKERSERVER_HH__
 
 /* ---------------------------------------------------------------------- *//*!
 
-  \file   ldmx/builder/server/TriggerServer.hh
-  \brief  Composes and sends trigger batches for the builder server
+  \file   ldmx/builder/server/TrackerServer.hh
+  \brief  Composes and sends tracker batches for the builder server
           emulator
-  \author JJRussell - russell@slac.stanford.edu
+  \author Sophie Middleton
 
   \par
    This file is part of the LDMX software platform. It is subject to
@@ -25,20 +25,6 @@
 
 \* ---------------------------------------------------------------------- */
 
-
-
-
-/* ---------------------------------------------------------------------- *\
- *
- * HISTORY
- * -------
- *
- * DATE       WHO WHAT
- * ---------- --- ---------------------------------------------------------
- * 2021.04.21 jjr Adapted from HPS version
- * 2019.03.19 jjr Created
- *
-\* ---------------------------------------------------------------------- */
 
 
 #include <cstdint>
@@ -62,14 +48,14 @@ namespace server  {
 
 /* ---------------------------------------------------------------------- *//*!
 
-  \class TriggerServer
-  \brief Composes and sends a trigger message
+  \class TrackerServer
+  \brief Composes and sends a tracker message
                                                                           */
 /* ---------------------------------------------------------------------- */
-class TriggerServer
+class TrackerServer
 {
 public:
-   TriggerServer (ldmx::builder::server::Configuration const &cfg);
+   TrackerServer (ldmx::builder::server::Configuration const &cfg);
 
 public:
    void  composeHeader ();
@@ -80,14 +66,14 @@ public:
    void  reconnect     ();
 
 public:
-   const char      *m_path;  /*!< The trigger pipe name                   */
-   int                m_fd;  /*!< FD to send trigger messages             */
-   int        m_ntrgEvents;  /*!< # of trigger events/message             */
+   const char      *m_path;  /*!< The tracker pipe name                   */
+   int                m_fd;  /*!< FD to send tracker messages             */
+   int        m_ntrkEvents;  /*!< # of tracker events/message             */
    int           m_nevents;  /*!< # events in the current message         */
-   uint32_t  m_blockNumber;  /*!< # of trigger messages                   */
-   uint32_t  m_eventNumber;  /*!< # of trigger events                     */
+   uint32_t  m_blockNumber;  /*!< # of tracker messages                   */
+   uint32_t  m_eventNumber;  /*!< # of tracker events                     */
    uint8_t          *m_cur;  /*!< Current pointer                         */
-   uint8_t m_buffer[8*256];  /*!< Buffer to hold the triggers             */
+   uint8_t m_buffer[8*256];  /*!< Buffer to hold the trackers             */
 };
 /* ---------------------------------------------------------------------- */
 

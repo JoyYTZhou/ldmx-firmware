@@ -1,14 +1,14 @@
 // -*-Mode: C++;-*-
 
-#ifndef __LDMX_BUILDER_SERVER_TRIGGERSERVER_HH__
-#define __LDMX_BUILDER_SERVER_TRIGGERSERVER_HH__
+#ifndef __LDMX_BUILDER_SERVER_ECALSERVER_HH__
+#define __LDMX_BUILDER_SERVER_ECALSERVER_HH__
 
 /* ---------------------------------------------------------------------- *//*!
 
-  \file   ldmx/builder/server/TriggerServer.hh
-  \brief  Composes and sends trigger batches for the builder server
+  \file   ldmx/builder/server/ECALServer.hh
+  \brief  Composes and sends ECAL batches for the builder server
           emulator
-  \author JJRussell - russell@slac.stanford.edu
+  \author Sophie Middleton
 
   \par
    This file is part of the LDMX software platform. It is subject to
@@ -24,22 +24,6 @@
    ontained in the LICENSE.txt file.
 
 \* ---------------------------------------------------------------------- */
-
-
-
-
-/* ---------------------------------------------------------------------- *\
- *
- * HISTORY
- * -------
- *
- * DATE       WHO WHAT
- * ---------- --- ---------------------------------------------------------
- * 2021.04.21 jjr Adapted from HPS version
- * 2019.03.19 jjr Created
- *
-\* ---------------------------------------------------------------------- */
-
 
 #include <cstdint>
 
@@ -62,14 +46,14 @@ namespace server  {
 
 /* ---------------------------------------------------------------------- *//*!
 
-  \class TriggerServer
-  \brief Composes and sends a trigger message
+  \class ECALServer
+  \brief Composes and sends a ECAL message
                                                                           */
 /* ---------------------------------------------------------------------- */
-class TriggerServer
+class ECALServer
 {
 public:
-   TriggerServer (ldmx::builder::server::Configuration const &cfg);
+   ECALServer (ldmx::builder::server::Configuration const &cfg);
 
 public:
    void  composeHeader ();
@@ -80,14 +64,14 @@ public:
    void  reconnect     ();
 
 public:
-   const char      *m_path;  /*!< The trigger pipe name                   */
-   int                m_fd;  /*!< FD to send trigger messages             */
-   int        m_ntrgEvents;  /*!< # of trigger events/message             */
+   const char      *m_path;  /*!< The ECAL pipe name                   */
+   int                m_fd;  /*!< FD to send ECAL messages             */
+   int        m_ntrgEvents;  /*!< # of ECAL events/message             */
    int           m_nevents;  /*!< # events in the current message         */
-   uint32_t  m_blockNumber;  /*!< # of trigger messages                   */
-   uint32_t  m_eventNumber;  /*!< # of trigger events                     */
+   uint32_t  m_blockNumber;  /*!< # of ECAL messages                   */
+   uint32_t  m_eventNumber;  /*!< # of ECAL events                     */
    uint8_t          *m_cur;  /*!< Current pointer                         */
-   uint8_t m_buffer[8*256];  /*!< Buffer to hold the triggers             */
+   uint8_t m_buffer[8*256];  /*!< Buffer to hold the ECALs             */
 };
 /* ---------------------------------------------------------------------- */
 
