@@ -7,16 +7,16 @@
   \author JJRussell - russell@slac.stanford.edu
 
   \par
-   This file is part of the LDMX software platform. It is subject to 
-   the license terms in the LICENSE.txt file found in the top-level directory 
-   of this distribution and at: 
+   This file is part of the LDMX software platform. It is subject to
+   the license terms in the LICENSE.txt file found in the top-level directory
+   of this distribution and at:
 
    \verbatim
-     https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html. 
+     https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html.
    \endverbatim
 
-   No part of the LDMX software platform, including this file, may be 
-   copied, modified, propagated, or distributed except according to the terms 
+   No part of the LDMX software platform, including this file, may be
+   copied, modified, propagated, or distributed except according to the terms
    ontained in the LICENSE.txt file.
 
 \* ---------------------------------------------------------------------- */
@@ -25,7 +25,7 @@
 
 
 /* ---------------------------------------------------------------------- *\
- * 
+ *
  * HISTORY
  * -------
  *
@@ -44,6 +44,7 @@
 #include "Parameters.hh"
 #include "Contributions.hh"
 #include "TriggerReceiver.hh"
+#include "TrackerReceiver.hh"
 #include "RssiReceiver.hh"
 #include "Builder.hh"
 
@@ -84,7 +85,7 @@ int main (int argc, char *const argv[])
 
    else
    {
-      fprintf (stderr, 
+      fprintf (stderr,
                "LdmxBuilder: unrecognized transport protocol %d\n",
                static_cast<int>(prms.m_type));
       return -1;
@@ -146,12 +147,12 @@ namespace client { namespace contribution { class Contribution; }}
 
 namespace ldmx_builder
 {
-   
+
    #if REPORT_LDMX_BUILDER
 
    inline static void report (uint32_t valid, uint32_t needed)
    {
-      printf ("LdmxBuilder::Valid set = %8.8" PRIx32 " %8.8" PRIx32 "\n", 
+      printf ("LdmxBuilder::Valid set = %8.8" PRIx32 " %8.8" PRIx32 "\n",
               valid, needed);
       return;
    }
@@ -163,7 +164,7 @@ namespace ldmx_builder
    }
 
    inline static void reportTimedout (uint32_t inHand)
-   {   
+   {
       printf ("LdmxBuilder::promote  promoting %8.8" PRIx32 "\n", inHand);
       return;
    }
@@ -178,8 +179,8 @@ namespace ldmx_builder
 
    inline static void reportSeeding (uint32_t needed, uint32_t inHand)
    {
-      printf ("LdmxBuilder::Contribution set needed = %8.8" PRIx32 
-                                         ": inHand = %8.8" PRIx32 "\n", 
+      printf ("LdmxBuilder::Contribution set needed = %8.8" PRIx32
+                                         ": inHand = %8.8" PRIx32 "\n",
               needed, inHand);
       return;
    }
@@ -226,17 +227,17 @@ namespace post
 
    #if REPORT_POST
 
-   inline static void reportTiming (int id, 
+   inline static void reportTiming (int id,
                                     int ctbId,
                                     uint32_t sequence,
                                     uint64_t timestamp,
                                     uint64_t earliest,
                                     uint64_t lastest)
    {
-      
+
       printf ("Timestamp[%d:%d.%5.5" PRIx32 "] = "
               "%16.16" PRIx64 " earliest:latest = %16.16" PRIx64 ":"
-              "%16.16" PRIx64 " detla = %" PRId64 "\n", 
+              "%16.16" PRIx64 " detla = %" PRId64 "\n",
               id, ctbId, sequence, timestamp, earliest, latest, latest - earliest);
       return;
    }
@@ -251,7 +252,7 @@ namespace post
 
    #else
 
-   inline static void reportTiming (int             id, 
+   inline static void reportTiming (int             id,
                                     int          ctbId,
                                     uint32_t  sequence,
                                     uint64_t timestamp,
@@ -277,8 +278,8 @@ public:
    MyBuilder (uint32_t expected, int nfragments, Contributions *ctbs) :
       Builder   (expected, nfragments, ctbs),
       m_timeout (100 * 1000 * 1000)
-   { 
-      return; 
+   {
+      return;
    }
 
 public:
@@ -291,7 +292,7 @@ public:
 
 
 /* ---------------------------------------------------------------------- */
-int MyBuilder::post (Fragment *fragment) 
+int MyBuilder::post (Fragment *fragment)
 {
    post::announce (fragment->m_sequence);
 
@@ -303,7 +304,7 @@ int MyBuilder::post (Fragment *fragment)
    {
       int id = __builtin_ctz (set);
       auto const *ctb = fragment->m_ctbs[id];
-      
+
       uint64_t timestamp = ctb->m_rcvTime;
 
       if (timestamp <= earliest) earliest = timestamp;
@@ -317,7 +318,7 @@ int MyBuilder::post (Fragment *fragment)
 
       set &= ~(1 << id);
    }
- 
+
    uint64_t delta = latest - earliest;
 
 
@@ -342,8 +343,9 @@ static int launch_rssi_builder (ldmx::builder::client::Configuration const &cfg)
    // Total up the number of contributions
    int ncontributions = 1                             //  Control contribution
                       + 1                           //  Trigger contribution
+                      + 1                           //  Tracker contribution
                       + cfg.m_contributors.size (); //  SVT     contributions
-                      
+
 
    // Construct the synchonization class for incoming messages and data
    Contributions ctbs (ncontributions);
@@ -356,15 +358,20 @@ static int launch_rssi_builder (ldmx::builder::client::Configuration const &cfg)
    // Construct the trigger receiver at contribution = 1
    TriggerReceiver trgReceiver (cfg, &ctbs, 1);
 
+   // Construct the tracker receiver at contribution = 2
+   TrackerReceiver trkReceiver (cfg, &ctbs, 2);
 
-   // Construct the SVT    receivers at contribuion = 2 - 2 + nSVT receivers
-   RssiReceiver    svtReceiver (cfg, &ctbs, 2);
+   // Construct the SVT    receivers at contribuion = 3 - 3 + nSVT receivers
+   RssiReceiver    svtReceiver (cfg, &ctbs, 3);
 
 
    // Start/Enable the trigger receiver
    trgReceiver.start ();
    printf ("Trigger started\n");
 
+   // Start/Enable the tracker receiver
+   trkReceiver.start ();
+   printf ("Tracker started\n");
 
    // Start/Enable the SVT contributor's connections
    svtReceiver.start  ();
@@ -377,8 +384,8 @@ static int launch_rssi_builder (ldmx::builder::client::Configuration const &cfg)
    // Report any missing contributors and abort if any
    if (missing)
    {
-      fprintf (stderr, 
-               "Aborting::missing contributors = %8.8" PRIx32 "\n", 
+      fprintf (stderr,
+               "Aborting::missing contributors = %8.8" PRIx32 "\n",
                missing);
       return -1;
    }
@@ -408,10 +415,10 @@ static int launch_rssi_builder (ldmx::builder::client::Configuration const &cfg)
          // ---------------------------------------------------
          // If looking for all contributors, no timeout
          // Note that the arrival of the next event is entirely
-         // dependent on the trigger rate, so there is no 
+         // dependent on the trigger rate, so there is no
          // sensible timeout until some contribution arrives
          //
-         // Eventually will add control lists so the 0 will 
+         // Eventually will add control lists so the 0 will
          // no longer be 0.  Therefore, need to trim the inHand
          // so only the list expected.
          // ---------------------------------------------------
@@ -503,7 +510,7 @@ static void dump (uint64_t const *d, int n)
    for (int idx = 0; idx < n; idx++)
    {
       if ( (idx & 0x3) == 0) printf ("%2x:", idx);
-      
+
       printf (" %16.16" PRIx64 ,  d[idx]);
 
       if ((idx & 0x3) == 3) putchar ('\n');
@@ -515,13 +522,3 @@ static void dump (uint64_t const *d, int n)
 }
 /* ---------------------------------------------------------------------- */
 #endif
-
-
-
-
-
-
-
-
-
-

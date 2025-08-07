@@ -3,7 +3,7 @@
 # -------------------------------------------------------------------------
 #
 # \file   ldmx/builder/client/CMakeLists.txt
-# \brief  Drives the building of the LDMX Event Builder client software 
+# \brief  Drives the building of the LDMX Event Builder client software
 # \author JJRussell - russell@slac.stanford.edu
 #
 # \par
@@ -17,18 +17,18 @@
 #      file to fill in a LDMX Event Builder configuration class
 #
 # \par
-#  This file is part of the LDMX software platform. It is subject to 
-#  the license terms in the LICENSE.txt file found in the top-level directory 
-#  of this distribution and at: 
+#  This file is part of the LDMX software platform. It is subject to
+#  the license terms in the LICENSE.txt file found in the top-level directory
+#  of this distribution and at:
 #
 # \verbatim
-#    https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html. 
+#    https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html.
 #  \endverbatim
 #
-#  No part of the LDMX software platform, including this file, may be 
-#  copied, modified, propagated, or distributed except according to the terms 
+#  No part of the LDMX software platform, including this file, may be
+#  copied, modified, propagated, or distributed except according to the terms
 #  ontained in the LICENSE.txt file.
-# 
+#
 # -------------------------------------------------------------------------
 
 
@@ -56,6 +56,7 @@ announce ()
                                                        Fragment.cc
                                                        Builder.cc
                                                        TriggerReceiver.cc
+                                                       TrackerReceiver.cc
                                                        RssiReceiver.cc
                                                        RssiContributor.cc
                                                        RssiConnection.cc)
@@ -68,11 +69,11 @@ announce ()
 
 
 # -------------------------------------------------------------------------
-# LIBRARY: LDMX event builder  
+# LIBRARY: LDMX event builder
 # -----------------------------
 
   add_library              (ldmx-builder-client SHARED RogueCodaGw.cc)
-                                                      
+
   target_compile_options   (ldmx-builder-client PRIVATE -DLDMX_EMULATION)
   set_target_soversion     (ldmx-builder-client 0 0 0)
   target_rogue_compilation (ldmx-builder-client)
@@ -88,7 +89,7 @@ announce ()
 
 
 # -------------------------------------------------------------------------
-# LIBRARY: LDMX Rouge event builder  
+# LIBRARY: LDMX Rouge event builder
 # ---------------------------------
 
   ##add_library              (ldmx-builder-client-real SHARED RogueCodaGw-Real.cc
@@ -107,7 +108,7 @@ announce ()
 
 
 # -------------------------------------------------------------------------
-# EXECUTABLE: LDMX event builder 
+# EXECUTABLE: LDMX event builder
 # -----------------------------
 
   add_executable           (LdmxBuilder  LdmxBuilder.cc
@@ -124,7 +125,7 @@ announce ()
 
 
 # -------------------------------------------------------------------------
-# EXECUTABLE: Rouge event builder 
+# EXECUTABLE: Rouge event builder
 # -------------------------------
 
 #  add_executable           (RogueBuilder  RogueBuilder.cc

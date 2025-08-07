@@ -10,15 +10,15 @@
   \author JJRussell - russell@slac.stanford.edu
 
   \par
-   This file is part of the LDMX software platform. It is subject to 
-   the license terms in the LICENSE.txt file found in the top-level directory 
-   of this distribution and at: 
+   This file is part of the LDMX software platform. It is subject to
+   the license terms in the LICENSE.txt file found in the top-level directory
+   of this distribution and at:
 
    \verbatim
-     https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html. 
+     https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html.
    \endverbatim
 
-   No part of the LDMX software platform, including this file, may be 
+   No part of the LDMX software platform, including this file, may be
    copied, modified, propagated, or distributed except according to the
    terms contained in the LICENSE.txt file.
 
@@ -27,7 +27,7 @@
 
 
 /* ---------------------------------------------------------------------- *\
- * 
+ *
  * HISTORY
  * -------
  *
@@ -73,13 +73,13 @@ public:
    Configuration (int type, int nfragments);
 
 public:
-   void addContributor (char const                        *name, 
-                        int                                 len,  
+   void addContributor (char const                        *name,
+                        int                                 len,
                         uint16_t                           port,
                         int                             timeout,
                         int                         nrssiFrames,
                         int                             nevents);
-   
+
 public:
    void print () const;
    void print (std::string const &name) const;
@@ -96,12 +96,16 @@ public:
    unsigned short int                                  m_ntrgBatches;
    unsigned short int                                   m_ntrgEvents;
 
+   unsigned short int                           m_ntrkEventsPerBatch;
+   unsigned short int                                  m_ntrkBatches;
+   unsigned short int                                   m_ntrkEvents;
+
    unsigned short int                           m_nsvtEventsPerBatch;
    unsigned short int                                  m_nsvtBatches;
    unsigned short int                                   m_nsvtEvents;
-   
+
    unsigned short int                                  m_nrssiFrames;
-   
+
    ldmx::builder::Logging::Level                             m_level;
 
 };
@@ -112,5 +116,4 @@ public:
 /* ====================================================================== */
 
 
-#endif 
-
+#endif
