@@ -10,16 +10,16 @@
   \author JJRussell - russell@slac.stanford.edu
 
   \par
-   This file is part of the LDMX software platform. It is subject to 
-   the license terms in the LICENSE.txt file found in the top-level directory 
-   of this distribution and at: 
+   This file is part of the LDMX software platform. It is subject to
+   the license terms in the LICENSE.txt file found in the top-level directory
+   of this distribution and at:
 
    \verbatim
-     https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html. 
+     https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html.
    \endverbatim
 
-   No part of the rogue software platform, including this file, may be 
-   copied, modified, propagated, or distributed except according to the terms 
+   No part of the rogue software platform, including this file, may be
+   copied, modified, propagated, or distributed except according to the terms
    ontained in the LICENSE.txt file.
 
 \* ---------------------------------------------------------------------- */
@@ -27,12 +27,13 @@
 
 
 /* ---------------------------------------------------------------------- *\
- * 
+ *
  * HISTORY
  * -------
  *
  * DATE       WHO WHAT
  * ---------- --- ---------------------------------------------------------
+ * 2025 S Middleton edits
  * 2021.04.21 jjr Adapted from HPS version
  * 2019.03.18 jjr Added # of events/batch, # multisample records/event
  * 2019.01.11 jjr Created
@@ -75,7 +76,9 @@ public:
    unsigned short int       m_ntrgEvents;
    ldmx::builder::Logging::Level m_level;
    unsigned short int       m_nsvtEvents; /*!< # of events/SVT batch      */
-   unsigned short int         m_nsvtMsdr; /*!< # of multisample recs/event*/       
+   unsigned short int         m_nsvtMsdr; /*!< # of multisample recs/event*/
+   unsigned short int       m_ntrkEvents; /*!< # of events/trk batch      */
+   unsigned short int         m_ntrkMsdr; /*!< # of multisample recs/event*/
 
 };
 /* ---------------------------------------------------------------------- */

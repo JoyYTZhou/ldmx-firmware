@@ -1,5 +1,5 @@
 // -*-Mode: C++;-*-
-
+fswfwr
 /* ---------------------------------------------------------------------- *//*!
 
   \file   ldmx/builder/server/Parameters.cc
@@ -8,15 +8,15 @@
   \author JJRussell - russell@slac.stanford.edu
 
   \par
-   This file is part of the LDMX software platform. It is subject to 
-   the license terms in the LICENSE.txt file found in the top-level directory 
-   of this distribution and at: 
+   This file is part of the LDMX software platform. It is subject to
+   the license terms in the LICENSE.txt file found in the top-level directory
+   of this distribution and at:
 
    \verbatim
-     https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html. 
+     https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html.
    \endverbatim
 
-   No part of the LDMX software platform, including this file, may be 
+   No part of the LDMX software platform, including this file, may be
    copied, modified, propagated, or distributed except according to the
    terms contained in the LICENSE.txt file.
 
@@ -26,7 +26,7 @@
 
 
 /* ---------------------------------------------------------------------- *\
- * 
+ *
  * HISTORY
  * -------
  *
@@ -57,7 +57,7 @@
 \* ---------------------------------------------------------------------- */
 Parameters::Parameters (int argc, char *const argv[])
 {
-   static struct option options[] = 
+   static struct option options[] =
    {
       { "none"    , no_argument, 0, 0x80 | static_cast<int>(ConnectionType::None) },
       { "rssi"    , no_argument, 0, 0x80 | static_cast<int>(ConnectionType::Rssi) },
@@ -79,6 +79,9 @@ Parameters::Parameters (int argc, char *const argv[])
 
    unsigned short int nsvtEvents  = 16;  /* # SVT events/batch            */
    unsigned short int nsvtMsdr    =  4;  /* # Multisample records/event   */
+
+   unsigned short int ntrkEvents  = 16;  /* # TRK events/batch            */
+   unsigned short int ntrkMsdr    =  4;  /* # Multisample records/event   */
 
 
    char const           *trgPipe  = "/tmp/ldmxTriggerPipe";
@@ -107,6 +110,8 @@ Parameters::Parameters (int argc, char *const argv[])
 
          case 'e': {  nsvtEvents  = strtol (optarg, 0, 0); break; }
          case 'm': {  nsvtMsdr    = strtol (optarg, 0, 0); break; }
+         case 'a': {  nsvtEvents  = strtol (optarg, 0, 0); break; }
+         case 'b': {  nsvtMsdr    = strtol (optarg, 0, 0); break; }
          case 'p': {  ports       = optarg;                break; }
          case 's': {  server      = optarg;                break; }
          }
@@ -121,6 +126,8 @@ Parameters::Parameters (int argc, char *const argv[])
    m_ntrgEvents    = ntrgEvents;
    m_nsvtEvents    = nsvtEvents;
    m_nsvtMsdr      = nsvtMsdr;
+   m_ntrkEvents    = ntrkEvents;
+   m_ntrkMsdr      = ntrkMsdr;
    m_level         = ldmx::builder::Logging::Level::Error;
    m_period        = rate ? 1000*1000/rate : 1000*1000;
 
@@ -133,7 +140,8 @@ Parameters::Parameters (int argc, char *const argv[])
    printf ("TriggerBatch = %4u\n", m_ntrgEvents);
    printf ("SvtBatch     = %4u SVT events/batch)\n",              m_nsvtEvents);
    printf ("SvtNms       = %4u Multisample data records/event\n", m_nsvtMsdr);
-
+   printf ("TrkBatch     = %4u Trk events/batch)\n",              m_ntrkEvents);
+   printf ("TrkNms       = %4u Multisample data records/event\n", m_ntrkMsdr);
 
    return;
 }
@@ -145,7 +153,7 @@ Parameters::Parameters (int argc, char *const argv[])
 
   \brief Construct the LDMX Event Builder server emulator configuration
 
-  \param[out] cfg  The LDMX Event Builder server emulator configuration 
+  \param[out] cfg  The LDMX Event Builder server emulator configuration
                    to complete
 
 \* ---------------------------------------------------------------------- */
@@ -159,6 +167,8 @@ int Parameters::configure (ldmx::builder::server::Configuration *cfg) const
    cfg->m_period        = m_period;
    cfg->m_nsvtEvents    = m_nsvtEvents;
    cfg->m_nsvtMsdr      = m_nsvtMsdr;
+   cfg->m_ntrkEvents    = m_ntrkEvents;
+   cfg->m_ntrkMsdr      = m_ntrkMsdr;
 
    return 0;
 }
@@ -171,8 +181,8 @@ int Parameters::configure (ldmx::builder::server::Configuration *cfg) const
 
   \brief  Extracts the ports from a comma separated list
   \return The number of extracted ports
-  
-  \param[out] cfg  The LDMX Event Builder server emulator configuration 
+
+  \param[out] cfg  The LDMX Event Builder server emulator configuration
                    to complete
                                                                           */
 /* ---------------------------------------------------------------------- */
@@ -199,5 +209,3 @@ int Parameters::extract_ports (ldmx::builder::server::Configuration *cfg) const
    return cfg->m_ports.size ();
 }
 /* ---------------------------------------------------------------------- */
-
-

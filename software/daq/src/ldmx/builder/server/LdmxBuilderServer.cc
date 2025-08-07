@@ -8,15 +8,15 @@
   \author JJRussell - russell@slac.stanford.edu
 
   \par
-   This file is part of the LDMX software platform. It is subject to 
-   the license terms in the LICENSE.txt file found in the top-level directory 
-   of this distribution and at: 
+   This file is part of the LDMX software platform. It is subject to
+   the license terms in the LICENSE.txt file found in the top-level directory
+   of this distribution and at:
 
    \verbatim
-     https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html. 
+     https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html.
    \endverbatim
 
-   No part of the LDMX software platform, including this file, may be 
+   No part of the LDMX software platform, including this file, may be
    copied, modified, propagated, or distributed except according to the
    terms contained in the LICENSE.txt file.
 
@@ -26,12 +26,13 @@
 
 
 /* ---------------------------------------------------------------------- *\
- * 
+ *
  * HISTORY
  * -------
  *
  * DATE       WHO WHAT
  * ---------- --- ---------------------------------------------------------
+ * 2025 - S. Middleton , updating for LDMX
  * 2021.04.21 jjr Adapted from HPS version
  * 2019.01.11 jjr Created
  *
@@ -68,7 +69,7 @@ static  inline uint64_t waitTill(uint64_t tgtTime, int nsecs);
   \param[in] argv  The vector of command line parameters
 
 \* ---------------------------------------------------------------------- */
-int main (int argc, char **argv) 
+int main (int argc, char **argv)
 {
    // -----------------------------------------------------------------
    // Extract the command line parameters and fill in the configuration
@@ -77,7 +78,7 @@ int main (int argc, char **argv)
    ldmx::builder::server::Configuration cfg (static_cast<int>(prms.m_type));
    prms.configure  (&cfg);
 
-   
+
    // -----------------------------------------
    // Dispatch to the proper transport protocal
    // -----------------------------------------
@@ -95,7 +96,7 @@ int main (int argc, char **argv)
 
    else
    {
-      fprintf (stderr, 
+      fprintf (stderr,
                "LdmxBuilderServer: unrecognized transport protocol %d\n",
                static_cast<int>(prms.m_type));
       return -1;
@@ -129,6 +130,7 @@ static int launch_rssi_servers (ldmx::builder::server::Configuration const &cfg)
 
    RssiServers   servers   (cfg);
    TriggerServer trigger   (cfg);
+   TrackerServer tracker   (cfg);
 
    servers.start              ();
    servers.waitForConnections ();
@@ -138,7 +140,7 @@ static int launch_rssi_servers (ldmx::builder::server::Configuration const &cfg)
    uint64_t nxtTimestamp = curTimestamp;
    int            nsecs = usecs * 1000;
 
-   
+
    int d[20];
    for (int idx = 0; idx < 20; idx++)
    {
@@ -201,9 +203,54 @@ static int launch_rssi_servers (ldmx::builder::server::Configuration const &cfg)
       // ----------------------------------------------------------
       // Send the batch of events from contributors that are ready
       // ---------------------------------------------------------
-      if (ctbs) 
+      if (ctbs)
       {
-         servers.sendBatch (ctbs); 
+         servers.sendBatch (ctbs);
+         ctbs = 0;
+      }
+   }
+
+   while (1)
+   {
+      // --------------------
+      // Generate one tracker
+      // --------------------
+      uint64_t trkTimestamp = ldmx::utl::Timestamp::current ();
+      bool sendTrackerBatch = tracker.addEvent (trkTimestamp);
+
+
+      // ------------------
+      // Generate one event
+      // ------------------
+      uint32_t         ctbs = servers.generateEvent (cfg.m_ntrkMsdr);
+
+
+      nxtTimestamp = waitTill (nxtTimestamp, nsecs);
+
+
+
+      // ----------------------------------------------
+      // Send this batch of trigger if it is ready to go
+      // ----------------------------------------------
+      if (sendTrackerBatch)
+      {
+         printf ("Sending tracker batch  ---> ");
+         int err = tracker.sendBatch ();
+         if (err)
+         {
+            tracker.reconnect ();
+         }
+
+         printf ("Sent\n");
+      }
+
+
+      // ----------------------------------------------------------
+      // Send the batch of events from contributors that are ready
+      // ---------------------------------------------------------
+      if (ctbs)
+      {
+         servers.sendBatch (ctbs);
          ctbs = 0;
       }
    }
@@ -225,7 +272,7 @@ static int launch_rssi_servers (ldmx::builder::server::Configuration const &cfg)
 
   \note
    This is an attempt to make the actual rate match the requested trigger
-   rate by accounting for overheads.  It works better than just waiting 
+   rate by accounting for overheads.  It works better than just waiting
    'nsecs' between triggers, but, given this is UNIX and not an RTOS,
    there are limits to how well this can work.
                                                                           */
@@ -236,11 +283,11 @@ static inline uint64_t waitTill (uint64_t tgtTime, int nsecs)
    uint64_t curTime   = ldmx::utl::Timestamp::current ();
    int32_t  over      = (curTime - tgtTime);
    int32_t  sleepTime = (over > 0 ? (nsecs - over) : nsecs) / 1000;
-      
+
    ///printf ("SleepTime = %d:%d\n", (int)sleepTime, (int)over);
 
 
-   if (sleepTime > 0) 
+   if (sleepTime > 0)
    {
       // Positve time to sleep wait and set the next trigger time
       usleep (sleepTime);
@@ -251,7 +298,7 @@ static inline uint64_t waitTill (uint64_t tgtTime, int nsecs)
       // If got too far behind, reset wait to cur + period
       tgtTime = curTime + nsecs;
    }
-   
+
    return tgtTime;
 }
 /* ---------------------------------------------------------------------- */

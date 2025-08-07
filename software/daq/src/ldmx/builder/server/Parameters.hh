@@ -6,21 +6,21 @@
 /* ---------------------------------------------------------------------- *//*!
 
   \file   ldmx/builder/server/Parameters.hh
-  \brief  Class to contain the command line parameters for the LDMX builder 
+  \brief  Class to contain the command line parameters for the LDMX builder
           server emulator
   \author JJRussell - russell@slac.stanford.edu
 
   \par
-   This file is part of the LDMX software platform. It is subject to 
-   the license terms in the LICENSE.txt file found in the top-level directory 
-   of this distribution and at: 
+   This file is part of the LDMX software platform. It is subject to
+   the license terms in the LICENSE.txt file found in the top-level directory
+   of this distribution and at:
 
    \verbatim
-     https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html. 
+     https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html.
    \endverbatim
 
-   No part of the LDMX software platform, including this file, may be 
-   copied, modified, propagated, or distributed except according to the 
+   No part of the LDMX software platform, including this file, may be
+   copied, modified, propagated, or distributed except according to the
    terms contained in the LICENSE.txt file.
 
 \* ---------------------------------------------------------------------- */
@@ -29,7 +29,7 @@
 
 
 /* ---------------------------------------------------------------------- *\
- * 
+ *
  * HISTORY
  * -------
  *
@@ -95,9 +95,12 @@ public:
    int                     m_period; /*!< The trigger period (usecs)      */
    unsigned short int  m_ntrgEvents; /*!< # trigger events/batch          */
    unsigned short int  m_nsvtEvents; /*!< Number of events in an SVT batch*/
-   unsigned short int    m_nsvtMsdr;  /*!< Number of multisample data 
+   unsigned short int    m_nsvtMsdr;  /*!< Number of multisample data
                                            records in an SVT event        */
-   ldmx::builder::Logging::Level 
+   unsigned short int  m_ntrkEvents; /*!< Number of events in an TRK batch*/
+   unsigned short int    m_ntrkMsdr;  /*!< Number of multisample data
+                                                                                   records in an SVT event        */
+   ldmx::builder::Logging::Level
                            m_level;  /*!< The logging level               */
 };
 /* ---------------------------------------------------------------------- */
