@@ -123,7 +123,9 @@ Parameters::Parameters (int argc, char *const argv[])
    m_server        = server;
    m_ports         = ports;
    m_trgPipe       = trgPipe;
+   m_trkPipe       = trkPipe;
    m_ntrgEvents    = ntrgEvents;
+   m_ntrkEvents    = ntrkEvents;
    m_nsvtEvents    = nsvtEvents;
    m_nsvtMsdr      = nsvtMsdr;
    m_ntrkEvents    = ntrkEvents;
@@ -135,9 +137,10 @@ Parameters::Parameters (int argc, char *const argv[])
    printf ("Type         = %d\n", type);
    printf ("Srcs         = %s\n", server);
    printf ("Port         = %s\n", ports);
-
    printf ("TriggerPipe  = %s\n",  m_trgPipe);
    printf ("TriggerBatch = %4u\n", m_ntrgEvents);
+   printf ("TrackerPipe  = %s\n",  m_trkPipe);
+   printf ("TrackerBatch = %4u\n", m_ntrkEvents);
    printf ("SvtBatch     = %4u SVT events/batch)\n",              m_nsvtEvents);
    printf ("SvtNms       = %4u Multisample data records/event\n", m_nsvtMsdr);
    printf ("TrkBatch     = %4u Trk events/batch)\n",              m_ntrkEvents);
@@ -162,7 +165,9 @@ int Parameters::configure (ldmx::builder::server::Configuration *cfg) const
    cfg->setServerIp (m_server);
    extract_ports    (cfg);
    cfg->m_trgPipe       = m_trgPipe;
+   cfg->m_trkPipe       = m_trkPipe;
    cfg->m_ntrgEvents    = m_ntrgEvents;
+   cfg->m_ntrkEvents    = m_ntrkEvents;
    cfg->m_level         = m_level;
    cfg->m_period        = m_period;
    cfg->m_nsvtEvents    = m_nsvtEvents;

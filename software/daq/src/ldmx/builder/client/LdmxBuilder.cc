@@ -490,6 +490,7 @@ static int launch_rssi_builder (ldmx::builder::client::Configuration const &cfg)
 
 
    trgReceiver.m_thread.join ();
+   trkReceiver.m_thread.join ();
    return 0;
 }
 /* ---------------------------------------------------------------------- */

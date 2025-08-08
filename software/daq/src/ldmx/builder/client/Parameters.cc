@@ -7,15 +7,15 @@
   \author JJRussell - russell@slac.stanford.edu
 
   \par
-   This file is part of the LDMX software platform. It is subject to 
-   the license terms in the LICENSE.txt file found in the top-level directory 
-   of this distribution and at: 
+   This file is part of the LDMX software platform. It is subject to
+   the license terms in the LICENSE.txt file found in the top-level directory
+   of this distribution and at:
 
    \verbatim
-     https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html. 
+     https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html.
    \endverbatim
 
-   No part of the LDMX software platform, including this file, may be 
+   No part of the LDMX software platform, including this file, may be
    copied, modified, propagated, or distributed except according to the
    terms contained in the LICENSE.txt file.
 
@@ -25,7 +25,7 @@
 
 
 /* ---------------------------------------------------------------------- *\
- * 
+ *
  * HISTORY
  * -------
  *
@@ -56,7 +56,7 @@
 #include <cinttypes>
 
 
-/* ---------------------------------------------------------------------- */  
+/* ---------------------------------------------------------------------- */
 static uint16_t getPort (const char *src, int *len, uint16_t port);
 
 
@@ -67,7 +67,7 @@ static uint16_t getPort (const char *src, int *len, uint16_t port);
 \* ---------------------------------------------------------------------- */
 Parameters::Parameters (int argc, char *const argv[])
 {
-   static struct option options[] = 
+   static struct option options[] =
    {
       { "none",      no_argument, 0, static_cast<int>(ConnectionType::None)  },
       { "rssi",      no_argument, 0, static_cast<int>(ConnectionType::Rssi)  },
@@ -81,6 +81,9 @@ Parameters::Parameters (int argc, char *const argv[])
       { "triggerBatches",required_argument, 0, 'T' },
       { "triggerEvents", required_argument, 0, 't' },
       { "triggerPipe",   required_argument, 0, 'P' },
+      { "trackerBatches",required_argument, 0, 'A' },
+      { "trackerEvents", required_argument, 0, 'k' },
+      { "trackerPipe",   required_argument, 0, 'g' },
       { "timeout",       required_argument, 0,  1  },
       { 0, 0, 0, 0}
    };
@@ -88,25 +91,27 @@ Parameters::Parameters (int argc, char *const argv[])
    int      type          = static_cast<int>(ConnectionType::None);
    char    *srcs          = NULL;
    uint16_t port          = 8090;
-   int nfragments         =   10; /* Number of output events to buffer     */ 
+   int nfragments         =   10; /* Number of output events to buffer     */
 
    int timeout            =    2;
 
    int ntrgBatches        =    8; /* Nubmer of trigger batches             */
    int ntrgEventsPerBatch =  128; /* NUmber of trigger events per batch    */
+   int ntrkBatches        =    8; /* Nubmer of tracker batches             */
+   int ntrkEventsPerBatch =  128; /* NUmber of tracker events per batch    */
    int nrssiFrames        =   16; /* Number input RSSI frames to buffer    */
 
    int nsvtBatches        =    8;
    int nsvtEventsPerBatch =   64;
-   int nsvtEvents         =   nsvtBatches*nsvtEventsPerBatch; 
-   char const 
-          *triggerPipe = "/tmp/ldmxTriggerPipe";
+   int nsvtEvents         =   nsvtBatches*nsvtEventsPerBatch;
+   char const  *triggerPipe = "/tmp/ldmxTriggerPipe";
+   char const        *trackerPipe = "/tmp/ldmxTrackerPipe";
 
    while (1)
    {
       int option_index = 0;
       int c = getopt_long (argc, argv,
-                           "e:E:t:T:p:P:f:r:s:", 
+                           "e:E:t:T:p:P:f:r:s:",
                            options, &option_index);
 
       if (c == -1)
@@ -122,12 +127,15 @@ Parameters::Parameters (int argc, char *const argv[])
          case  0 : {                                               break; }
          case  1 : {  timeout            = strtoul (optarg, 0, 0); break; }
          case 'e': {  nsvtEvents         = strtoul (optarg, 0, 0); break; }
-         case 'f': {  nfragments         = strtoul (optarg, 0, 0); break; } 
+         case 'f': {  nfragments         = strtoul (optarg, 0, 0); break; }
          case 'p': {  port               = strtoul (optarg, 0, 0); break; }
          case 'r': {  nrssiFrames        = strtoul (optarg, 0, 0); break; }
          case 'T': {  ntrgBatches        = strtoul (optarg, 0, 0); break; }
          case 't': {  ntrgEventsPerBatch = strtoul (optarg, 0, 0); break; }
          case 'P': {  triggerPipe        = optarg;                 break; }
+         case 'A': {  ntrkBatches        = strtoul (optarg, 0, 0); break; }
+         case 'k': {  ntrkEventsPerBatch = strtoul (optarg, 0, 0); break; }
+         case 'g': {  trackerPipe        = optarg;                 break; }
          case 's': {  srcs               = optarg;                 break; }
          }
       }
@@ -135,6 +143,7 @@ Parameters::Parameters (int argc, char *const argv[])
 
    m_type               = static_cast<decltype(m_type)>(type);
    m_triggerPipe        = triggerPipe;
+   m_trackerPipe        = trackerPipe;
    m_srcs               = srcs;
    m_port               = port;
    m_toConnection       = timeout;
@@ -142,6 +151,8 @@ Parameters::Parameters (int argc, char *const argv[])
    m_nfragments         = nfragments;
    m_ntrgBatches        = ntrgBatches;
    m_ntrgEventsPerBatch = ntrgEventsPerBatch;
+   m_ntrkBatches        = ntrkBatches;
+   m_ntrkEventsPerBatch = ntrkEventsPerBatch;
    m_nsvtEvents         = nsvtEvents;
    m_nrssiFrames        = nrssiFrames;
 
@@ -175,10 +186,13 @@ int Parameters::configure (ldmx::builder::client::Configuration *cfg) const
    // ------------------------------------------------------------------
    translate_srcs (cfg);
    cfg->m_triggerPipe       = m_triggerPipe;
+   cfg->m_trackerPipe       = m_trackerPipe;
    cfg->m_connectionTimeout = m_toConnection;
    cfg->m_level             = m_level;
    cfg->m_ntrgBatches       = m_ntrgBatches;
-   cfg->m_ntrgEvents        = m_ntrgEventsPerBatch * m_ntrgBatches;
+   cfg->m_ntrgEvents        = m_ntrgEventsPerBatch * m_ntrkBatches;
+   cfg->m_ntrkBatches       = m_ntrkBatches;
+   cfg->m_ntrkEvents        = m_ntrkEventsPerBatch * m_ntrkBatches;
    cfg->m_nrssiFrames       = m_nrssiFrames;
    cfg->m_nsvtEvents        = m_nsvtEvents;
    cfg->m_nfragments        = m_nfragments;
@@ -191,11 +205,11 @@ int Parameters::configure (ldmx::builder::client::Configuration *cfg) const
 
 /* ---------------------------------------------------------------------- *//*!
 
-  \brief  Parses the list of IP sources, forming a vector of IP pairs, 
-          where a pair is the original name plus the binary IP 
+  \brief  Parses the list of IP sources, forming a vector of IP pairs,
+          where a pair is the original name plus the binary IP
           representation
   \return The number of IP pairs
-  
+
   \param[in] ips The vector of IP pairs to fill
                                                                           */
 /* ---------------------------------------------------------------------- */
@@ -213,12 +227,12 @@ int Parameters::translate_srcs (ldmx::builder::client::Configuration *cfg) const
       if (len)
       {
          uint16_t lclPort = getPort (src, &len, port);
-         cfg->addContributor 
-             (src, 
+         cfg->addContributor
+             (src,
               len,
-              lclPort, 
+              lclPort,
               m_toConnection,
-              m_nrssiFrames, 
+              m_nrssiFrames,
               m_nsvtEvents);
       }
 
@@ -228,12 +242,12 @@ int Parameters::translate_srcs (ldmx::builder::client::Configuration *cfg) const
 
 
    /*
-   std::vector<ldmx::builder::client::ConnectionDsc> const 
+   std::vector<ldmx::builder::client::ConnectionDsc> const
         *dscs = &cfg->m_connectionDscs;
 
-   for (std::vector<ldmx::builder::client::ConnectionDsc>::const_iterator 
-        it = dscs->begin(); 
-        it != dscs->end(); 
+   for (std::vector<ldmx::builder::client::ConnectionDsc>::const_iterator
+        it = dscs->begin();
+        it != dscs->end();
       ++it)
    {
       std::cout << ' ' << it->m_name << " -> " << std::hex << it->m_ip << std::endl;
@@ -256,7 +270,7 @@ int Parameters::translate_srcs (ldmx::builder::client::Configuration *cfg) const
 
   \param[in]     src The IP source string
   \param[inout]  *len The length of the IP source string
-  \param[in] port The default port number to use if the IP source string 
+  \param[in] port The default port number to use if the IP source string
                   does not contain its own port number
 
 \* ---------------------------------------------------------------------- */
@@ -264,7 +278,7 @@ static uint16_t getPort (const char *src, int *len, uint16_t port)
 {
    for (int idx = *len - 1; idx >= 0; --idx)
    {
-      if (src[idx] == ':') 
+      if (src[idx] == ':')
       {
          port = strtoul (&src[idx + 1], NULL, 0);
         *len = idx;
@@ -275,4 +289,3 @@ static uint16_t getPort (const char *src, int *len, uint16_t port)
    return port;
 }
 /* ---------------------------------------------------------------------- */
-

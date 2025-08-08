@@ -6,19 +6,19 @@
 /* ---------------------------------------------------------------------- *//*!
 
   \file   ldmx/builder/client/Contribution.hh
-  \brief  The base class for all contribution types to an LDMX Event 
+  \brief  The base class for all contribution types to an LDMX Event
   \author JJRussell - russell@slac.stanford.edu
 
   \par
-   This file is part of the LDMX software platform. It is subject to 
+   This file is part of the LDMX software platform. It is subject to
    the license terms in the LICENSE.txt file found in the top-level
-   directory of this distribution and at: 
+   directory of this distribution and at:
 
    \verbatim
-     https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html. 
+     https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html.
    \endverbatim
 
-   No part of the rogue software platform, including this file, may be 
+   No part of the rogue software platform, including this file, may be
    copied, modified, propagated, or distributed except according to the
    terms contained in the LICENSE.txt file.
 
@@ -28,7 +28,7 @@
 
 
 /* ---------------------------------------------------------------------- *\
- * 
+ *
  * HISTORY
  * -------
  *
@@ -71,7 +71,7 @@ class Contribution : public ldmx::utl::ListsInterlocked::Node
 {
 public:
    Contribution () { return; }
-   Contribution (uint32_t   nbytes, 
+   Contribution (uint32_t   nbytes,
                  uint32_t sequence,
                  uint64_t  rcvTime);
   ~Contribution ();
@@ -86,7 +86,8 @@ public:
    enum class Type
    {
       Trigger = 0,                 /*!< Trigger contribution              */
-      Svt     = 1                  /*!< SVT     contribution              */
+      Svt     = 1,                  /*!< SVT     contribution              */
+      Tracker = 2                   /*!< Tracker    contribution              */
    };
 
 public:
@@ -111,7 +112,7 @@ public:
 
   \param[in]   nbytes  The size, int bytes of the contribution
   \param[in] sequence  The sequence number of the contribution
-  \param[in] rcvtTime  The absolute time, in nanoseconds the contribution 
+  \param[in] rcvtTime  The absolute time, in nanoseconds the contribution
                        was received
                                                                           */
 /* ---------------------------------------------------------------------- */
@@ -127,7 +128,7 @@ inline Contribution::Contribution (uint32_t   nbytes,
 /* ---------------------------------------------------------------------- */
 
 
-   
+
 
 
 /* ---------------------------------------------------------------------- *//*!
@@ -143,7 +144,7 @@ inline Contribution::Contribution (uint32_t   nbytes,
    waits until such time that there is one.
                                                                           */
 /* ---------------------------------------------------------------------- */
-inline void *Contribution::operator 
+inline void *Contribution::operator
        new (size_t nbytes, ldmx::utl::FixedPacket &fpa)
 {
    return fpa.getW ();

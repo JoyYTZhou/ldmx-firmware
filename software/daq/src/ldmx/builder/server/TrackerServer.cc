@@ -56,9 +56,9 @@ static void dump       (char const *label, void const *ptr, int nbytes);
 
 /* ---------------------------------------------------------------------- */
 TrackerServer::TrackerServer (ldmx::builder::server::Configuration const &cfg) :
-   m_path           (  cfg.m_trgPipe),
-   m_fd (createPipe (  cfg.m_trgPipe)),
-   m_ntrgEvents     (cfg.m_ntrgEvents),
+   m_path           (  cfg.m_trkPipe),
+   m_fd (createPipe (  cfg.m_trkPipe)),
+   m_ntrkEvents     (cfg.m_ntrkEvents),
    m_nevents        (               0),
    m_blockNumber    (               0),
    m_eventNumber    (               0),
@@ -259,14 +259,14 @@ bool TrackerServer::addEvent (uint64_t timestamp)
    m_cur     += sizeof (ldmx::data::server::TrackerEventLong);
    m_nevents += 1;
 
-   printf ("NtrgEvents = %d/%d\n", (int)m_nevents, m_ntrgEvents);
+   printf ("NtrkEvents = %d/%d\n", (int)m_nevents, m_ntrkEvents);
 
 
 
    // -------------
    // Check if full
    // -------------
-   bool full = (m_nevents == m_ntrgEvents);
+   bool full = (m_nevents == m_ntrkEvents);
    if (full)
    {
       new (m_cur) ldmx::data::server::TrackerTrailer ();

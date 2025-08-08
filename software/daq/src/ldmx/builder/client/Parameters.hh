@@ -10,16 +10,16 @@
   \author JJRussell - russell@slac.stanford.edu
 
   \par
-   This file is part of the LDMX software platform. It is subject to 
-   the license terms in the LICENSE.txt file found in the top-level directory 
-   of this distribution and at: 
+   This file is part of the LDMX software platform. It is subject to
+   the license terms in the LICENSE.txt file found in the top-level directory
+   of this distribution and at:
 
    \verbatim
-     https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html. 
+     https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html.
    \endverbatim
 
-   No part of the rogue software platform, including this file, may be 
-   copied, modified, propagated, or distributed except according to the terms 
+   No part of the rogue software platform, including this file, may be
+   copied, modified, propagated, or distributed except according to the terms
    ontained in the LICENSE.txt file.
 
 \* ---------------------------------------------------------------------- */
@@ -28,7 +28,7 @@
 
 
 /* ---------------------------------------------------------------------- *\
- * 
+ *
  * HISTORY
  * -------
  *
@@ -91,11 +91,12 @@ public:
 public:
    ConnectionType            m_type; /*!< Connection type                 */
    char const        *m_triggerPipe; /*! Name of pipe for the trigger     */
-   char const               *m_srcs; /*!< IP addresses, comma separated 
+   char const        *m_trackerPipe; /*! Name of pipe for the trigger     */
+   char const               *m_srcs; /*!< IP addresses, comma separated
                                                                    list   */
    uint16_t                  m_port; /*!< IP port                         */
    int32_t           m_toConnection; /*!< Connection timeout, in seconds  */
-   ldmx::builder::Logging::Level 
+   ldmx::builder::Logging::Level
                             m_level; /*!< The logging level               */
 
    /* ------------------------------------------------------------------- */
@@ -112,11 +113,14 @@ public:
    unsigned short int m_nrssiFrames; /*!< Number RSSI frames to maintain  */
    unsigned short int       m_irsvd; /*!< Reserved for future use         */
    unsigned short int m_ntrgBatches; /*!< Number trigger batches          */
-   unsigned short int  
+   unsigned short int
                m_ntrgEventsPerBatch; /*!< Number of trigger events/batch  */
+   unsigned short int m_ntrkBatches; /*!< Number tracker batches          */
+   unsigned short int
+               m_ntrkEventsPerBatch; /*!< Number of tracker events/batch  */
    unsigned short int  m_nsvtEvents; /*!< Number SVT     events to buffer */
    /* ------------------------------------------------------------------- */
-   
+
 };
 /* ---------------------------------------------------------------------- */
 

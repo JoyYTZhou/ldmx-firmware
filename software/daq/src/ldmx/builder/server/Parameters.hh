@@ -92,6 +92,7 @@ public:
    char const             *m_server; /*!< IP addresse                     */
    char const              *m_ports; /*!< IP ports, comma separated list  */
    char const            *m_trgPipe; /*!< Name of pipe for the trigger    */
+   char const            *m_trkPipe; /*!< Name of pipe for the tracker    */
    int                     m_period; /*!< The trigger period (usecs)      */
    unsigned short int  m_ntrgEvents; /*!< # trigger events/batch          */
    unsigned short int  m_nsvtEvents; /*!< Number of events in an SVT batch*/
